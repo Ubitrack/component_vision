@@ -1,0 +1,261 @@
+This is pdfTeX, Version 3.1415926-1.40.10 (MiKTeX 2.8) (preloaded format=pdflatex 2010.1.8)  17 JUL 2012 09:20
+entering extended mode
+**C:/Users/Frieder/Documents/TUM/Ubitrack/Ubitrack/doc/misc/markers-more-large/
+marker.tex
+
+(C:/Users/Frieder/Documents/TUM/Ubitrack/Ubitrack/doc/misc/markers-more-large/m
+arker.tex
+LaTeX2e <2005/12/01>
+Babel <v3.8l> and hyphenation patterns for english, dumylang, nohyphenation, ge
+rman, ngerman, german-x-2009-06-19, ngerman-x-2009-06-19, french, loaded.
+("C:\Program Files\MiKTeX 2.8\tex\latex\koma-script\scrartcl.cls"
+Document Class: scrartcl 2009/07/24 v3.04a KOMA-Script document class (article)
+
+("C:\Program Files\MiKTeX 2.8\tex\latex\koma-script\scrkbase.sty"
+Package: scrkbase 2009/07/24 v3.04a KOMA-Script package (KOMA-Script-dependent 
+basics and keyval usage)
+
+("C:\Program Files\MiKTeX 2.8\tex\latex\koma-script\scrbase.sty"
+Package: scrbase 2009/07/24 v3.04a KOMA-Script package (KOMA-Script-independent
+ basics and keyval usage)
+
+("C:\Program Files\MiKTeX 2.8\tex\latex\graphics\keyval.sty"
+Package: keyval 1999/03/16 v1.13 key=value parser (DPC)
+\KV@toks@=\toks14
+)
+("C:\Program Files\MiKTeX 2.8\tex\latex\koma-script\scrlfile.sty"
+Package: scrlfile 2009/03/25 v3.03 KOMA-Script package (loading files)
+
+Package scrlfile, 2009/03/25 v3.03 KOMA-Script package (loading files)
+                  Copyright (C) Markus Kohm
+
+))) ("C:\Program Files\MiKTeX 2.8\tex\latex\koma-script\tocbasic.sty"
+Package: tocbasic 2009/06/08 v3.03b KOMA-Script package (handling toc-files)
+)
+Package tocbasic Info: omitting babel extension for `toc'
+(tocbasic)             because of feature `nobabel' available
+(tocbasic)             for `toc' on input line 115.
+Package tocbasic Info: omitting babel extension for `lof'
+(tocbasic)             because of feature `nobabel' available
+(tocbasic)             for `lof' on input line 116.
+Package tocbasic Info: omitting babel extension for `lot'
+(tocbasic)             because of feature `nobabel' available
+(tocbasic)             for `lot' on input line 117.
+Package scrartcl Info: You've used obsolete option `11pt'.
+(scrartcl)             \KOMAExecuteOptions{fontsize=11pt} will be
+(scrartcl)             used instead.
+(scrartcl)             You may simply replace `11pt'
+(scrartcl)             by `fontsize=11pt'.
+Class scrartcl Info: File `scrsize11pt.clo' used to setup font sizes on input l
+ine 1171.
+
+("C:\Program Files\MiKTeX 2.8\tex\latex\koma-script\scrsize11pt.clo"
+File: scrsize11pt.clo 2009/07/24 v3.04a KOMA-Script font size class option (11p
+t)
+)
+("C:\Program Files\MiKTeX 2.8\tex\latex\koma-script\typearea.sty"
+Package: typearea 2009/07/24 v3.04a KOMA-Script package (type area)
+
+Package typearea, 2009/07/24 v3.04a KOMA-Script package (type area)
+                  Copyright (C) Frank Neukam, 1992-1994
+                  Copyright (C) Markus Kohm, 1994-
+
+\ta@bcor=\skip41
+\ta@div=\count79
+\ta@hblk=\skip42
+\ta@vblk=\skip43
+\ta@temp=\skip44
+Package typearea Info: These are the values describing the layout:
+(typearea)             DIV  = 10
+(typearea)             BCOR = 0.0pt
+(typearea)             \paperwidth      = 597.50793pt
+(typearea)              \textwidth      = 418.25555pt
+(typearea)              DIV departure   = -6%
+(typearea)              \evensidemargin = 17.3562pt
+(typearea)              \oddsidemargin  = 17.3562pt
+(typearea)             \paperheight     = 845.04694pt
+(typearea)              \textheight     = 595.80026pt
+(typearea)              \topmargin      = -25.16531pt
+(typearea)              \headheight     = 17.0pt
+(typearea)              \headsep        = 20.40001pt
+(typearea)              \topskip        = 11.0pt
+(typearea)              \footskip       = 47.60002pt
+(typearea)              \baselineskip   = 13.6pt
+(typearea)              on input line 1115.
+)
+\c@part=\count80
+\c@section=\count81
+\c@subsection=\count82
+\c@subsubsection=\count83
+\c@paragraph=\count84
+\c@subparagraph=\count85
+\abovecaptionskip=\skip45
+\belowcaptionskip=\skip46
+\c@pti@nb@sid@b@x=\box26
+\c@figure=\count86
+\c@table=\count87
+\bibindent=\dimen102
+) ("C:\Program Files\MiKTeX 2.8\tex\latex\graphics\graphicx.sty"
+Package: graphicx 1999/02/16 v1.0f Enhanced LaTeX Graphics (DPC,SPQR)
+
+("C:\Program Files\MiKTeX 2.8\tex\latex\graphics\graphics.sty"
+Package: graphics 2006/02/20 v1.0o Standard LaTeX Graphics (DPC,SPQR)
+
+("C:\Program Files\MiKTeX 2.8\tex\latex\graphics\trig.sty"
+Package: trig 1999/03/16 v1.09 sin cos tan (DPC)
+)
+("C:\Program Files\MiKTeX 2.8\tex\latex\00miktex\graphics.cfg"
+File: graphics.cfg 2007/01/18 v1.5 graphics configuration of teTeX/TeXLive
+)
+Package graphics Info: Driver file: pdftex.def on input line 90.
+
+("C:\Program Files\MiKTeX 2.8\tex\latex\pdftex-def\pdftex.def"
+File: pdftex.def 2009/08/25 v0.04m Graphics/color for pdfTeX
+\Gread@gobject=\count88
+))
+\Gin@req@height=\dimen103
+\Gin@req@width=\dimen104
+)
+("C:\Program Files\MiKTeX 2.8\tex\latex\rotating\rotating.sty"
+Package: rotating 2009/03/28 v2.16a rotated objects in LaTeX
+
+("C:\Program Files\MiKTeX 2.8\tex\latex\base\ifthen.sty"
+Package: ifthen 2001/05/26 v1.1c Standard LaTeX ifthen package (DPC)
+)
+\c@r@tfl@t=\count89
+\rotFPtop=\skip47
+\rotFPbot=\skip48
+\rot@float@box=\box27
+\rot@mess@toks=\toks15
+)
+Package typearea Info: These are the values describing the layout:
+(typearea)             DIV  = areaset
+(typearea)             BCOR = 0.0pt
+(typearea)             \paperwidth      = 597.50793pt
+(typearea)              \textwidth      = 540.60236pt
+(typearea)              \evensidemargin = -43.81721pt
+(typearea)              \oddsidemargin  = -43.81721pt
+(typearea)             \paperheight     = 845.04694pt
+(typearea)              \textheight     = 711.3189pt
+(typearea)              \topmargin      = -64.04399pt
+(typearea)              \headheight     = 15.95pt
+(typearea)              \headsep        = 20.40001pt
+(typearea)              \topskip        = 11.0pt
+(typearea)              \footskip       = 47.60002pt
+(typearea)              \baselineskip   = 13.6pt
+(typearea)              on input line 7.
+
+
+LaTeX Warning: Unused global option(s):
+    [a4].
+
+
+(C:\Users\Frieder\Documents\TUM\Ubitrack\Ubitrack\doc\misc\markers-more-large\m
+arker.aux)
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 8.
+LaTeX Font Info:    ... okay on input line 8.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 8.
+LaTeX Font Info:    ... okay on input line 8.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 8.
+LaTeX Font Info:    ... okay on input line 8.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 8.
+LaTeX Font Info:    ... okay on input line 8.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 8.
+LaTeX Font Info:    ... okay on input line 8.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 8.
+LaTeX Font Info:    ... okay on input line 8.
+ ("C:\Program Files\MiKTeX 2.8\tex\context\base\supp-pdf.tex"
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count90
+\scratchdimen=\dimen105
+\scratchbox=\box28
+\nofMPsegments=\count91
+\nofMParguments=\count92
+\everyMPshowfont=\toks16
+\MPscratchCnt=\count93
+\MPscratchDim=\dimen106
+\MPnumerator=\count94
+\everyMPtoPDFconversion=\toks17
+) <340a.png, id=1, 6.0225pt x 6.0225pt>
+File: 340a.png Graphic file (type png)
+ <use 340a.png>
+<1bea.png, id=2, 6.0225pt x 6.0225pt>
+File: 1bea.png Graphic file (type png)
+ <use 1bea.png>
+<5cc5.png, id=3, 6.0225pt x 6.0225pt>
+File: 5cc5.png Graphic file (type png)
+ <use 5cc5.png>
+<18f.png, id=4, 6.0225pt x 6.0225pt>
+File: 18f.png Graphic file (type png)
+ <use 18f.png>
+<1ba9.png, id=5, 6.0225pt x 6.0225pt>
+File: 1ba9.png Graphic file (type png)
+ <use 1ba9.png>
+<54de.png, id=6, 6.0225pt x 6.0225pt>
+File: 54de.png Graphic file (type png)
+ <use 54de.png>
+<d6d.png, id=7, 6.0225pt x 6.0225pt>
+File: d6d.png Graphic file (type png)
+ <use d6d.png>
+<911d.png, id=8, 6.0225pt x 6.0225pt>
+File: 911d.png Graphic file (type png)
+ <use 911d.png>
+<1dac.png, id=9, 6.0225pt x 6.0225pt>
+File: 1dac.png Graphic file (type png)
+ <use 1dac.png>
+<67bd.png, id=10, 6.0225pt x 6.0225pt>
+File: 67bd.png Graphic file (type png)
+ <use 67bd.png>
+<90bf.png, id=11, 6.0225pt x 6.0225pt>
+File: 90bf.png Graphic file (type png)
+ <use 90bf.png>
+<3de2.png, id=12, 6.0225pt x 6.0225pt>
+File: 3de2.png Graphic file (type png)
+ <use 3de2.png>
+<51a9.png, id=13, 6.0225pt x 6.0225pt>
+File: 51a9.png Graphic file (type png)
+ <use 51a9.png>
+<124d.png, id=14, 6.0225pt x 6.0225pt>
+File: 124d.png Graphic file (type png)
+ <use 124d.png>
+<76e.png, id=15, 6.0225pt x 6.0225pt>
+File: 76e.png Graphic file (type png)
+ <use 76e.png> [1{C:/ProgramData/MiKTeX/2.8/pdftex/config/pdftex.map} <C:/Users
+/Frieder/Documents/TUM/Ubitrack/Ubitrack/doc/misc/markers-more-large/340a.png (
+PNG copy)>] [2 <C:/Users/Frieder/Documents/TUM/Ubitrack/Ubitrack/doc/misc/marke
+rs-more-large/1bea.png (PNG copy)>]
+[3 <C:/Users/Frieder/Documents/TUM/Ubitrack/Ubitrack/doc/misc/markers-more-larg
+e/5cc5.png (PNG copy)>] [4 <C:/Users/Frieder/Documents/TUM/Ubitrack/Ubitrack/do
+c/misc/markers-more-large/18f.png (PNG copy)>] [5 <C:/Users/Frieder/Documents/T
+UM/Ubitrack/Ubitrack/doc/misc/markers-more-large/1ba9.png (PNG copy)>] [6 <C:/U
+sers/Frieder/Documents/TUM/Ubitrack/Ubitrack/doc/misc/markers-more-large/54de.p
+ng (PNG copy)>] [7 <C:/Users/Frieder/Documents/TUM/Ubitrack/Ubitrack/doc/misc/m
+arkers-more-large/d6d.png (PNG copy)>] [8 <C:/Users/Frieder/Documents/TUM/Ubitr
+ack/Ubitrack/doc/misc/markers-more-large/911d.png (PNG copy)>] [9 <C:/Users/Fri
+eder/Documents/TUM/Ubitrack/Ubitrack/doc/misc/markers-more-large/1dac.png (PNG 
+copy)>] [10 <C:/Users/Frieder/Documents/TUM/Ubitrack/Ubitrack/doc/misc/markers-
+more-large/67bd.png (PNG copy)>] [11 <C:/Users/Frieder/Documents/TUM/Ubitrack/U
+bitrack/doc/misc/markers-more-large/90bf.png (PNG copy)>] [12 <C:/Users/Frieder
+/Documents/TUM/Ubitrack/Ubitrack/doc/misc/markers-more-large/3de2.png (PNG copy
+)>] [13 <C:/Users/Frieder/Documents/TUM/Ubitrack/Ubitrack/doc/misc/markers-more
+-large/51a9.png (PNG copy)>] [14 <C:/Users/Frieder/Documents/TUM/Ubitrack/Ubitr
+ack/doc/misc/markers-more-large/124d.png (PNG copy)>] [15 <C:/Users/Frieder/Doc
+uments/TUM/Ubitrack/Ubitrack/doc/misc/markers-more-large/76e.png (PNG copy)>]
+(C:\Users\Frieder\Documents\TUM\Ubitrack\Ubitrack\doc\misc\markers-more-large\m
+arker.aux) ) 
+Here is how much of TeX's memory you used:
+ 1940 strings out of 495285
+ 28139 string characters out of 3180389
+ 101293 words of memory out of 3000000
+ 5161 multiletter control sequences out of 15000+200000
+ 3940 words of font info for 15 fonts, out of 3000000 for 9000
+ 14 hyphenation exceptions out of 8191
+ 35i,7n,35p,318b,255s stack positions out of 5000i,500n,10000p,200000b,50000s
+<C:/Program Files/MiKTeX 2.8/fonts/type1/public/amsfonts/cm/cmr10.p
+fb>
+Output written on marker.pdf (15 pages, 27952 bytes).
+PDF statistics:
+ 70 PDF objects out of 1000 (max. 8388607)
+ 0 named destinations out of 1000 (max. 500000)
+ 76 words of extra memory for PDF output out of 10000 (max. 10000000)
+

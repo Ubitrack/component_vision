@@ -1,0 +1,38 @@
+import os
+
+# import variables from other scons files
+Import( '*' )
+env = masterEnv.Clone()
+
+
+# setup compiler and linker flags
+env.AppendUnique( **mergeOptions( utfacade_options, boost_options, log4cpp_options, lapack_options, utcore_options ) )
+if have_opencv:
+	env.AppendUnique( **opencv_options )
+	env.AppendUnique( **utvision_options )
+env.AppendUnique( LIBS = boost_libs( [ "serialization", "program_options", "system", "filesystem", "regex" ] ) )
+
+allUtilSources = []
+
+# find all subdirectories
+utils = globSourceFiles( '*' )
+thisSrcDir = Dir( '.' ).srcnode().abspath
+if not have_opencv:
+	for dir in [ 'MarkerBundle', 'CornerFinder' ]:
+		utils.remove( dir );
+	
+
+for util in utils:
+	if os.path.isdir( os.path.join( thisSrcDir, util ) ):
+		scriptFile = os.path.join( thisSrcDir, util, 'SConscript' )
+		if os.path.exists( scriptFile ):
+			# use SConscript file if exists
+			SConscript( scriptFile )
+		else:
+			# build all sources together if no SConscript
+			sources = globSourceFiles( os.path.join( util, '*.cpp' ) )
+			if sources:
+				setupAppBuild( env, sources, util, 'utApps')
+				allUtilSources += sources
+
+

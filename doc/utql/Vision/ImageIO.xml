@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<UTQLPatternTemplates xmlns='http://ar.in.tum.de/ubitrack/utql'
+                      xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+                      xmlns:xi='http://www.w3.org/2001/XInclude'
+                      xmlns:h="http://www.w3.org/1999/xhtml"
+                      xsi:schemaLocation='http://ar.in.tum.de/ubitrack/utql ../../schema/utql_templates.xsd'>
+    
+    <Pattern name="ImageReader" displayName="Image Reader">
+        <Description>
+            <h:p>Loads either a single stored image or a bunch of images residing in one directory using OpenCV's
+                <h:code>cvLoadImage</h:code> and provides it as an pull measurement. In case of multiple image files, they will be
+                sorted alphabetically, in ascending order.<h:br/><h:br/>
+                Following the functional principle of the
+                <h:code>TimeToSpaceExpansionConverter</h:code> component, the list wraps around after the last image has been retrieved and
+                the next pull will provide the first image in the list again. In case of a single image only, always the same image is
+                provided.<h:br/><h:br/>
+                Still images to be used with this component can be recoreded either via the <h:code>Image Writer</h:code> or the
+                <h:code>Image File Recorder</h:code> components.
+            </h:p>
+        </Description>
+        <Output>
+            <Node name="A" displayName="A"/>
+            <Node name="B" displayName="B"/>
+            <Edge name="Output" source="A" destination="B" displayName="Loaded Image">
+                <Description>
+                    <h:p>The loaded image, unchanged.</h:p>
+                </Description>
+                <Attribute name="type" value="Image" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="mode" value="pull" xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+        </Output>
+        <DataflowConfiguration>
+            <UbitrackLib class="ImageReader"/>
+            <Attribute name="file" displayName="Path" default="tmp.png" xsi:type="PathAttributeDeclarationType">
+                <Description>
+                    <h:p>Path to either a single image file or a directory containing image files.</h:p>
+                </Description>
+            </Attribute>
+        </DataflowConfiguration>
+    </Pattern>
+	
+    <Pattern name="ImageWriter" displayName="Image Writer">
+        <Description>
+            <h:p>Stores a given image to harddisk using OpenCV's
+                <h:code>cvSaveImage</h:code> under a given name.
+            </h:p>
+        </Description>
+        <Input>
+            <Node name="A" displayName="A"/>
+            <Node name="B" displayName="B"/>
+            <Edge name="Input" source="A" destination="B" displayName="Loaded Image">
+                <Description>
+                    <h:p>Image that should be stored.</h:p>
+                </Description>
+                <Predicate>type=='Image'&amp;&amp;mode=='push'</Predicate>
+            </Edge>
+        </Input>
+        <DataflowConfiguration>
+            <UbitrackLib class="ImageWriter"/>
+            <Attribute name="file" displayName="Filename of image" default="tmp.png" xsi:type="PathAttributeDeclarationType"/>
+        </DataflowConfiguration>
+    </Pattern>
+
+    
+    <!-- Attribute declarations -->
+    
+    <GlobalNodeAttributeDeclarations>
+        <xi:include href="../GlobalAttrSpec.xml" xpointer="element(/1/1/1)"/>
+    </GlobalNodeAttributeDeclarations>
+    
+    <GlobalEdgeAttributeDeclarations>
+        <xi:include href="../GlobalAttrSpec.xml" xpointer="element(/1/2/1)"/>
+        <xi:include href="../GlobalAttrSpec.xml" xpointer="element(/1/2/2)"/>
+        <xi:include href="../GlobalAttrSpec.xml" xpointer="element(/1/2/3)"/>
+    </GlobalEdgeAttributeDeclarations>
+    
+    <GlobalDataflowAttributeDeclarations>
+        <xi:include href="../GlobalAttrSpec.xml" xpointer="element(/1/3/1)"/>
+    </GlobalDataflowAttributeDeclarations>
+ 
+    
+</UTQLPatternTemplates>

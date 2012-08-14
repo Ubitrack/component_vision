@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<UTQLPatternTemplates xmlns='http://ar.in.tum.de/ubitrack/utql'
+                      xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+                      xmlns:xi='http://www.w3.org/2001/XInclude'
+                      xmlns:h="http://www.w3.org/1999/xhtml"
+                      xsi:schemaLocation='http://ar.in.tum.de/ubitrack/utql ../../schema/utql_templates.xsd'>
+    
+    <Pattern name="ImageVideoSink" displayName="Video Recorder">
+        <Description>
+            <h:p>This component grabs an image stream and exports it in a video file having the configured format.
+            </h:p>
+        </Description>
+        
+        <Input>
+            <Node name="A" displayName="A"/>
+            <Node name="B" displayName="B"/>
+            <Edge name="Input" source="A" destination="B" displayName="Input Image">
+                <Description>
+                    <h:p>The input image</h:p>
+                </Description>
+                <Predicate>type=='Image'&amp;&amp;mode=='push'</Predicate>
+            </Edge>
+        </Input>
+        
+        <DataflowConfiguration>
+            <UbitrackLib class="ImageSink"/>
+            <Attribute name="filename" displayName="Filename" value="foobar.avi" xsi:type="PathAttributeDeclarationType"/>
+            <Attribute name="width" displayName="Width" default="640" xsi:type="IntAttributeDeclarationType"/>
+            <Attribute name="height" displayName="Height" default="480" xsi:type="IntAttributeDeclarationType"/>
+            <Attribute name="bitrate" displayName="Bitrate" default="600000" xsi:type="IntAttributeDeclarationType"/>
+            <Attribute name="FPS" displayName="Frames per second" default="15" xsi:type="IntAttributeDeclarationType"/>
+            <Attribute name="shortname" displayName="Codec Description" default="mpeg" xsi:type="EnumAttributeDeclarationType">
+                <EnumValue name="mpeg" displayName="mpeg (MPEG)"/>
+                <EnumValue name="mpegvideo" displayName="mpegvideo (MPEG)"/>
+                <EnumValue name="mpeg2video" displayName="mpeg2video (MPEG2)"/>
+                <EnumValue name="mp4" displayName="mp4 (MPEG4)"/>
+                <EnumValue name="mv4" displayName="mv4 (MPEG4)"/>
+                <EnumValue name="avi" displayName="avi (MPEG4)"/>
+                <EnumValue name="rawvideo" displayName="rawvideo (RawVideo)"/>
+                <EnumValue name="mjpg" displayName="mjpg (Motion JPEG)"/>
+                <EnumValue name="vc1" displayName="vc1 (VC1)"/>
+                <EnumValue name="h261" displayName="h261 (H.261)"/>
+                <EnumValue name="h263" displayName="h263 (H.263)"/>
+                <EnumValue name="h264" displayName="h264 (H.264)"/>
+            </Attribute>
+        </DataflowConfiguration>
+    </Pattern>
+	
+    <Pattern name="VideoLiveStream" displayName="Video Live Streaming">
+        <Description>
+            <h:p>This component grabs images an streams them using sockets and specified codec, if available.
+            </h:p>
+        </Description>
+        
+        <Input>
+            <Node name="A" displayName="A"/>
+            <Node name="B" displayName="B"/>
+            <Edge name="Input" source="A" destination="B" displayName="Input Image">
+                <Description>
+                    <h:p>The input image</h:p>
+                </Description>
+                <Predicate>type=='Image'&amp;&amp;mode=='push'</Predicate>
+            </Edge>
+        </Input>
+        
+        <DataflowConfiguration>
+            <UbitrackLib class="ImageSink"/>
+            <Attribute name="filename" displayName="Receiver" default="udp://localhost:1234" xsi:type="StringAttributeDeclarationType">
+                <Description>
+                    <h:p>Receiver is specified by: <h:code>udp://hostname:port</h:code></h:p>
+                </Description>
+            </Attribute>
+            <Attribute name="width" displayName="Width" default="640" xsi:type="IntAttributeDeclarationType"/>
+            <Attribute name="height" displayName="Height" default="480" xsi:type="IntAttributeDeclarationType"/>
+            <Attribute name="bitrate" displayName="Bitrate" default="600000" xsi:type="IntAttributeDeclarationType"/>
+            <Attribute name="FPS" displayName="Frames per second" default="15" xsi:type="IntAttributeDeclarationType"/>
+            <Attribute name="shortname" displayName="Codec Description" default="mpeg" xsi:type="EnumAttributeDeclarationType">
+                <Description>
+                    <h:p>Unfortunately not all codecs are supported on every OS</h:p>
+                </Description>
+                <EnumValue name="mpeg" displayName="mpeg (MPEG)"/>
+                <EnumValue name="mpegvideo" displayName="mpegvideo (MPEG)"/>
+                <EnumValue name="mpeg2video" displayName="mpeg2video (MPEG2)"/>
+                <EnumValue name="mp4" displayName="mp4 (MPEG4)"/>
+                <EnumValue name="mv4" displayName="mv4 (MPEG4)"/>
+                <EnumValue name="avi" displayName="avi (MPEG4)"/>
+                <EnumValue name="rawvideo" displayName="rawvideo (RawVideo)"/>
+                <EnumValue name="mjpg" displayName="mjpg (Motion JPEG)"/>
+                <EnumValue name="vc1" displayName="vc1 (VC1)"/>
+                <EnumValue name="h261" displayName="h261 (H.261)"/>
+                <EnumValue name="h263" displayName="h263 (H.263)"/>
+                <EnumValue name="h264" displayName="h264 (H.264)"/>
+            </Attribute>
+        </DataflowConfiguration>
+    </Pattern>
+	
+    <Pattern name="ImageFileSink" displayName="Image File Recorder">
+        <Description>
+            <h:p>This component saves single images to disk and lists their paths and timestamps in an additional text file image for
+            reproduction of the measurments in real-time.<h:br/><h:br/>
+            The counterpart of this component is the <h:code>Image File Framegrabber</h:code>.
+            </h:p>
+        </Description>
+        
+        <Input>
+            <Node name="A" displayName="A"/>
+            <Node name="B" displayName="B"/>
+            <Edge name="Input" source="A" destination="B" displayName="Input Image">
+                <Description>
+                    <h:p>The input image</h:p>
+                </Description>
+                <Predicate>type=='Image'&amp;&amp;mode=='push'</Predicate>
+            </Edge>
+        </Input>
+        
+        <DataflowConfiguration>
+            <UbitrackLib class="ImageFileRecorder"/>
+            <Attribute name="path" displayName="Storage Directory" default="." xsi:type="PathAttributeDeclarationType"/>
+            <Attribute name="prefix" displayName="File Prefix" default="img" xsi:type="StringAttributeDeclarationType"/>
+            <Attribute name="suffix" displayName="File Suffix" default="png" xsi:type="EnumAttributeDeclarationType">
+                <EnumValue name="png" displayName="PNG (Portable Network Graphics)"/>
+                <EnumValue name="jpg" displayName="JPG (Joint Photographic Experts Group image)"/>
+                <EnumValue name="ppm" displayName="PPM (Portable Image Format)"/>
+                <EnumValue name="tif" displayName="TIF (Tagged Image File Format)"/>
+                <EnumValue name="jp2" displayName="JP2 (JPEG 2000 images)"/>
+            </Attribute>
+            <Attribute name="file" displayName="Timestamp File" default="frames.log" xsi:type="PathAttributeDeclarationType"/>
+        </DataflowConfiguration>
+    </Pattern>
+    
+    <!-- Attribute declarations -->
+    
+    <GlobalNodeAttributeDeclarations>
+        <xi:include href="file:GlobalAttrSpec.xml" xpointer="element(/1/1/1)"/>
+    </GlobalNodeAttributeDeclarations>
+    
+    <GlobalEdgeAttributeDeclarations>
+        <xi:include href="file:GlobalAttrSpec.xml" xpointer="element(/1/2/1)"/>
+        <xi:include href="file:GlobalAttrSpec.xml" xpointer="element(/1/2/2)"/>
+        <xi:include href="file:GlobalAttrSpec.xml" xpointer="element(/1/2/3)"/>
+        <xi:include href="file:GlobalAttrSpec.xml" xpointer="element(/1/2/4)"/>
+        <xi:include href="file:GlobalAttrSpec.xml" xpointer="element(/1/2/5)"/>
+        <xi:include href="file:GlobalAttrSpec.xml" xpointer="element(/1/2/6)"/>
+        <xi:include href="file:GlobalAttrSpec.xml" xpointer="element(/1/2/7)"/>
+        <xi:include href="file:GlobalAttrSpec.xml" xpointer="element(/1/2/8)"/>
+    </GlobalEdgeAttributeDeclarations>
+    
+    <GlobalDataflowAttributeDeclarations>
+        <!-- Unfortunately, the xpointer used in Xinclude is currently restricted to the element scheme and absolute element indices in Xerces (and thus XMLBeans) -->
+        <xi:include href="file:GlobalAttrSpec.xml" xpointer="element(/1/3/1)"/>
+        <xi:include href="file:GlobalAttrSpec.xml" xpointer="element(/1/3/2)"/>
+    </GlobalDataflowAttributeDeclarations>
+    
+</UTQLPatternTemplates>

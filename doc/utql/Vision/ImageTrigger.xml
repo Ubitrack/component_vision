@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<UTQLPatternTemplates xmlns='http://ar.in.tum.de/ubitrack/utql'
+                      xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+                      xmlns:xi='http://www.w3.org/2001/XInclude'
+                      xmlns:h="http://www.w3.org/1999/xhtml"
+                      xsi:schemaLocation='http://ar.in.tum.de/ubitrack/utql ../../schema/utql_templates.xsd'>
+    
+    <Pattern name="ImageTrigger" displayName="Trigger (Image)">
+    	<Description><h:p>This component performs a pull-to-push
+    	conversion. If a signal event is received on the <h:code>Trigger Input</h:code> edge, a measurement
+    	is pulled on the <h:code>Data Input</h:code> edge for the the timestamp of the signal event and pushed onwards
+        on the <h:code>Triggered Push Output</h:code> edge.
+        <h:br/><h:br/>
+        The counterpart of this component is the <h:code>Signal Generator</h:code>. It generates signal events upon incoming measurements.
+    	</h:p></Description>
+
+        <Input>
+            <Node name="A" displayName="A"/>
+            <Node name="B" displayName="B"/>
+            <Node name="Event" displayName="Event"/>
+            <Node name="EventSpace" displayName="Event Space"/>
+            <Edge name="Input" source="A" destination="B" displayName="Data Input">
+            	<Description><h:p>Data input used for pulling measurements</h:p></Description>
+                <Predicate>type=='Image'&amp;&amp;mode=='pull'</Predicate>
+            </Edge>
+            <Edge name="Trigger" source="Event" destination="EventSpace" displayName="Trigger Input">
+            	<Description><h:p>Trigger input used to initiate processing of this component</h:p></Description>
+                <Predicate>type=='Button'&amp;&amp;mode=='push'</Predicate>
+            </Edge>
+        </Input>
+        <Output>
+            <Edge name="Output" source="A" destination="B" displayName="Triggered Push Output">
+            	<Description><h:p>Output</h:p></Description>
+                <Attribute name="type" value="Image" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+        </Output>
+
+        <DataflowConfiguration>
+            <UbitrackLib class="ImageTrigger"/>
+            <Attribute name="event" displayName="Button" default=" " xsi:type="StringAttributeDeclarationType">
+                <Description><h:p>The signal that triggers the gate as a single-character string.
+                Defaults to the space bar. If this attribute is left empty, all signals will trigger the gate.</h:p></Description>
+            </Attribute>
+        </DataflowConfiguration>
+    </Pattern>
+
+    <!-- Attribute declarations -->
+    
+    <GlobalNodeAttributeDeclarations>
+        <xi:include href="../../GlobalAttrSpec.xml" xpointer="element(/1/1/1)"/>
+    </GlobalNodeAttributeDeclarations>
+    
+    <GlobalEdgeAttributeDeclarations>
+        <xi:include href="../../GlobalAttrSpec.xml" xpointer="element(/1/2/1)"/>
+        <xi:include href="../../GlobalAttrSpec.xml" xpointer="element(/1/2/2)"/>
+        <xi:include href="../../GlobalAttrSpec.xml" xpointer="element(/1/2/3)"/>
+    </GlobalEdgeAttributeDeclarations>
+    
+    <GlobalDataflowAttributeDeclarations>
+        <xi:include href="../../GlobalAttrSpec.xml" xpointer="element(/1/3/1)"/>
+    </GlobalDataflowAttributeDeclarations>
+ 
+    
+</UTQLPatternTemplates>

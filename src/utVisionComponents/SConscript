@@ -1,0 +1,27 @@
+import sys
+import glob
+import os.path
+
+# import variables from other scons files
+Import( '*' )
+env = utComponentEnv.Clone()
+
+# create component libraries
+comp_sources = globSourceFiles( '*.cpp' )
+
+if not have_lapack:
+	for src in [ "MarkerTracker.cpp", "CameraProjectionMatrix.cpp", "ReorderGrid.cpp" ]:
+		comp_sources.remove( src );
+
+# setup environment
+env.AppendUnique( **mergeOptions( utvision_options, opencv_options, lapack_options, utcomponents_options ) )
+env.AppendUnique( LIBS = boost_libs( [ 'thread' ] ) )
+env.Replace( no_import_lib = 1 )
+
+
+# compile components as shared libraries
+setupComponentBuild(env, comp_sources, 'utVisionComponents')
+
+sources = globSourceFiles( '*.cpp' )
+headers = globSourceFiles( '*.h' )
+createVisualStudioProject(env, sources, headers, 'utVision-Components')

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<UTQLPatternTemplates xmlns='http://ar.in.tum.de/ubitrack/utql'
+                      xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+                      xmlns:xi='http://www.w3.org/2001/XInclude'
+                      xmlns:h="http://www.w3.org/1999/xhtml"
+                      xsi:schemaLocation='http://ar.in.tum.de/ubitrack/utql ../../../schema/utql_templates.xsd'>
+    
+    <Pattern name="ChessBoardTracking" displayName="Chessboard 6DOF Tracking (Deprecated)">
+    	<Description><h:p>Detects a chessboard pattern in greyscale images and calculates its pose.</h:p></Description>
+    	
+        <Input>
+            <Node name="Camera" displayName="Camera"/>
+            <Node name="ImagePlane" displayName="Image Plane"/>
+            <Edge name="Image" source="Camera" destination="ImagePlane" displayName="Image">
+               	<Description><h:p>The <h:em>distorted</h:em> image.</h:p></Description>
+                <Predicate>type=='Image'&amp;&amp;mode=='push'</Predicate>
+            </Edge>
+            <Edge name="Intrinsic" source="Camera" destination="ImagePlane" displayName="Intrinsic Matrix">
+                <Predicate>type=='3x3Matrix'&amp;&amp;mode=='pull'</Predicate>
+            </Edge>
+            <Edge name="Distortion" source="Camera" destination="ImagePlane" displayName="Distortion Coefficients">
+                <Predicate>type=='4DVector'&amp;&amp;mode=='pull'</Predicate>
+            </Edge>
+        </Input>
+        
+        <Output>
+            <Node name="ChessBoard" displayName="Chessboard">
+                <Attribute name="chessBoardWidth" displayName="internal corners x" default="7" min="2" xsi:type="IntAttributeDeclarationType">
+                	<Description><h:p>Number of internal chessboard corners in one direction</h:p></Description>
+                </Attribute>
+                <Attribute name="chessBoardHeight" displayName="internal corners y" default="6" min="2" xsi:type="IntAttributeDeclarationType">
+                	<Description><h:p>Number of internal chessboard corners in the other direction</h:p></Description>
+                </Attribute>
+                <Attribute name="chessBoardSize" displayName="square width (m)" default="0.025" min="0" xsi:type="DoubleAttributeDeclarationType">
+                	<Description><h:p>Edge length of a single chessboard square in m.</h:p></Description>
+                </Attribute>
+            </Node>
+            <Edge name="Output" source="Camera" destination="ChessBoard" displayName="Chessboard Pose">
+            	<Description><h:p>The pose of the chessboard in the camera coordinate frame.</h:p></Description>
+                <Attribute name="type" value="6D" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+        </Output>
+        
+        <DataflowConfiguration>
+            <UbitrackLib class="ChessBoardTracking"/>
+        </DataflowConfiguration>
+    </Pattern>
+	
+	<Pattern name="ChessboardTracking" displayName="Chessboard 6DOF Tracking">
+    	<Description><h:p>Detects a chessboard pattern in greyscale images and calculates its pose.</h:p></Description>
+    	
+        <Input>
+            <Node name="Camera" displayName="Camera"/>
+            <Node name="ImagePlane" displayName="Image Plane"/>
+            <Edge name="Image" source="Camera" destination="ImagePlane" displayName="Image">
+               	<Description><h:p>The <h:em>distorted</h:em> image.</h:p></Description>
+                <Predicate>type=='Image'&amp;&amp;mode=='push'</Predicate>
+            </Edge>
+            <Edge name="Intrinsic" source="Camera" destination="ImagePlane" displayName="Intrinsic Matrix">
+                <Predicate>type=='3x3Matrix'&amp;&amp;mode=='pull'</Predicate>
+            </Edge>
+            <Edge name="Distortion" source="Camera" destination="ImagePlane" displayName="Distortion Coefficients">
+                <Predicate>type=='4DVector'&amp;&amp;mode=='pull'</Predicate>
+            </Edge>
+        </Input>
+        
+        <Output>
+            <Node name="ChessBoard" displayName="Chessboard">
+                <Attribute name="chessBoardWidth" displayName="inner corners x (width)" default="7" min="2" xsi:type="IntAttributeDeclarationType">
+                	<Description><h:p>Number of internal chessboard corners in x direction</h:p></Description>
+                </Attribute>
+                <Attribute name="chessBoardHeight" displayName="inner corners y (height)" default="6" min="2" xsi:type="IntAttributeDeclarationType">
+                	<Description><h:p>Number of internal chessboard corners in y direction</h:p></Description>
+                </Attribute>
+                <Attribute name="xAxisLength" displayName="length of x-axis (width) [m]" default="0.025" min="0" xsi:type="DoubleAttributeDeclarationType">
+                	<Description><h:p>Length of the chessboard axis from the first to the last corner in meter.</h:p></Description>
+                </Attribute>
+				<Attribute name="yAxisLength" displayName="length of y-axis (height) [m]" default="0.025" min="0" xsi:type="DoubleAttributeDeclarationType">
+                	<Description><h:p>Length of the chessboard axis from the first to the last corner in meter.</h:p></Description>
+                </Attribute>
+				<Attribute name="scaleFactor" displayName="Shrink factor for corner detection." default="0" min="0" xsi:type="IntAttributeDeclarationType">
+                	<Description><h:p>Number of pyrDown calls before the corner detection. Edge refinement then happens on the full size images.</h:p></Description>
+                </Attribute>
+            </Node>
+            <Edge name="Pose" source="Camera" destination="ChessBoard" displayName="Chessboard Pose">
+            	<Description><h:p>The pose of the chessboard in the camera coordinate frame.</h:p></Description>
+                <Attribute name="type" value="6D" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+			<Edge name="DebugImage" source="Camera" destination="ImagePlane" displayName="Debug Image">
+            	<Description><h:p>The image with corners for debugging reasons.</h:p></Description>
+                <Attribute name="type" value="Image" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+        </Output>
+        
+        <DataflowConfiguration>
+            <UbitrackLib class="ChessboardFunctions"/>
+        </DataflowConfiguration>
+    </Pattern>  
+    
+    <!-- Attribute declarations -->
+    
+    <GlobalNodeAttributeDeclarations>
+        <xi:include href="../GlobalAttrSpec.xml" xpointer="element(/1/1/1)"/>
+    </GlobalNodeAttributeDeclarations>
+    
+    <GlobalEdgeAttributeDeclarations>
+        <xi:include href="../GlobalAttrSpec.xml" xpointer="element(/1/2/1)"/>
+        <xi:include href="../GlobalAttrSpec.xml" xpointer="element(/1/2/2)"/>
+        <xi:include href="../GlobalAttrSpec.xml" xpointer="element(/1/2/3)"/>
+    </GlobalEdgeAttributeDeclarations>
+    
+    <GlobalDataflowAttributeDeclarations>
+        <xi:include href="../GlobalAttrSpec.xml" xpointer="element(/1/3/1)"/>
+    </GlobalDataflowAttributeDeclarations>
+ 
+    
+</UTQLPatternTemplates>
