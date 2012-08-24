@@ -733,7 +733,12 @@ void BAInfo::writeUTQL( std::ostream& of )
 	{
 		of << "<Pattern name=\"MarkerTracker\" id=\"Marker" << std::hex << it->first << "\">\n";
 		of << "    <Input>\n";
-		of << "        <Node name=\"Camera\" id=\"node_1\"/>\n";
+		of << " 		<Node name=\"Camera\" id=\"CameraNode\"> \n";
+        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerIdMask\" value=\"0xFFFFFFE7E7FFFFFF\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
+		of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerBitSize\" value=\"12\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
+        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"codeBitSize\" value=\"8\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
+        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"enableInnerEdgels\" value=\"true\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
+        of << "        </Node> \n";
 		of << "        <Node name=\"ImagePlane\" id=\"node_2\"/>\n";
 		of << "        <Node name=\"Marker\" id=\"node_3\">\n";
 		of << "            <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerId\" value=\"0x" << std::hex << it->first << "\" />\n";
@@ -831,7 +836,7 @@ void BAInfo::writeUTQL( std::ostream& of )
 	of << "    </Input>\n";
 	of << "    <Output>\n";
 	of << "        <Edge name=\"Output\" source=\"Camera\" destination=\"Marker\">\n";
-	of << "            <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"type\" value=\"6D\" />\n";
+	of << "            <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"type\" value=\"6DError\" />\n";
 	of << "            <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"mode\" value=\"push\" />\n";
 	of << "        </Edge>\n";
 	of << "    </Output>\n";
@@ -854,7 +859,12 @@ void BAInfo::writeUTQL_TrackingContest( std::ostream& of )
 	{
 		of << "<Pattern name=\"MarkerTracker\" id=\"Marker" << std::hex << it->first << "\">\n";
 		of << "    <Input>\n";
-		of << "        <Node name=\"Camera\" id=\"CameraNode\"/>\n";
+		of << " 		<Node name=\"Camera\" id=\"CameraNode\"> \n";
+        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerIdMask\" value=\"0xFFFFFFE7E7FFFFFF\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
+		of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerBitSize\" value=\"12\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
+        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"codeBitSize\" value=\"8\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
+        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"enableInnerEdgels\" value=\"true\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
+        of << "        </Node> \n";
 		of << "        <Node name=\"ImagePlane\" id=\"ImageNode\"/>\n";
 		of << "        <Node name=\"Marker\" id=\"MarkerNode" << std::hex << firstMarkerID << "\">\n";
 		of << "            <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerId\" value=\"0x" << std::hex << it->first << "\" />\n";
@@ -960,7 +970,7 @@ void BAInfo::writeUTQL_TrackingContest( std::ostream& of )
 	of << "    </Input>\n";
 	of << "    <Output>\n";
 	of << "        <Edge name=\"Output\" source=\"Camera\" destination=\"Marker\">\n";
-	of << "            <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"type\" value=\"6D\" />\n";
+	of << "            <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"type\" value=\"6DError\" />\n";
 	of << "            <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"mode\" value=\"push\" />\n";
 	of << "        </Edge>\n";
 	of << "    </Output>\n";
