@@ -6,7 +6,7 @@ env = masterEnv.Clone()
 
 
 # setup compiler and linker flags
-env.AppendUnique( **mergeOptions( utfacade_options, boost_options, log4cpp_options, lapack_options, utcore_options ) )
+env.AppendUnique( **mergeOptions( utfacade_options, boost_options, log4cpp_options, lapack_options, utcore_options, tbb_options ) )
 if have_opencv:
 	env.AppendUnique( **opencv_options )
 	env.AppendUnique( **utvision_options )

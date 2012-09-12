@@ -51,6 +51,12 @@
 
 #include <cv.h>
 
+#define DO_TIMING
+
+#ifdef DO_TIMING
+#include <utUtil/BlockTimer.h>
+#endif
+
 // get a logger
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.MarkerTracker" ) );
 
@@ -63,6 +69,9 @@ using namespace Ubitrack::Math;
 namespace ublas = boost::numeric::ublas;
 
 namespace Ubitrack { namespace Drivers {
+
+
+
 
 
 /** the component key -- reads the marker ID */
@@ -109,6 +118,10 @@ public:
 		, m_codeSize( 4 )
 		, m_codeMask( 0xFFFF )
 		, m_useInnerEdgels( true )
+#ifdef DO_TIMING
+		, m_detectMarkersTimer( "detectMarkers", "Ubitrack.Timing" )
+		, m_detectMarkersTimerRefine( "detectMarkersRefine", "Ubitrack.Timing" )
+#endif
 	{
 		// get configuration
 		std::string sMask = subgraph->getNode( "Camera" )->getAttributeString( "markerIdMask" );
@@ -156,6 +169,11 @@ protected:
 	
 	/** Incorporate inner edgelets in pose refinement, may be unstable! */
 	bool m_useInnerEdgels;
+
+	#ifdef DO_TIMING
+	Ubitrack::Util::BlockTimer m_detectMarkersTimer;
+	Ubitrack::Util::BlockTimer m_detectMarkersTimerRefine;
+	#endif
 };
 
 
@@ -265,15 +283,15 @@ public:
 		
 		if ( subgraph->m_DataflowAttributes.hasAttribute( "enableTracking" ) ) // enable Tracking
 			m_info.bEnableTracking = subgraph->m_DataflowAttributes.getAttributeString( "enableTracking" ) == "true";
-
+		
 		if ( subgraph->m_DataflowAttributes.hasAttribute( "enablePixelFlow" ) ) // enable Pixel Flow
 			m_info.bEnablePixelFlow = subgraph->m_DataflowAttributes.getAttributeString( "enablePixelFlow" ) == "true";
-
+		
 		if ( subgraph->m_DataflowAttributes.hasAttribute( "enableFlipCheck" ) ) // enable Flip chaeck 
 			m_info.bEnableFlipCheck = subgraph->m_DataflowAttributes.getAttributeString( "enableFlipCheck" ) == "true";
 		
 		if ( subgraph->m_DataflowAttributes.hasAttribute( "enableFastTracking" ) ) // enable Fast Tracking
-			m_info.bEnableFastTracking = subgraph->m_DataflowAttributes.getAttributeString( "enableFastTracking" ) == "true";
+			m_info.bEnableFastTracking = subgraph->m_DataflowAttributes.getAttributeString( "enableFastTracking" ) == "true";		
 	}
 
 	/** is the debug port connected? */
@@ -401,7 +419,12 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 	// try to refine markers with fast tracking enabled
 	if ( !refineMarkerMap.empty() )
 	{
-		detectMarkers( *m, refineMarkerMap, K, pDebugImg.get(), true, m_codeSize, m_markerSize, m_codeMask, m_useInnerEdgels );
+		{
+			#ifdef DO_TIMING
+			Util::BlockTimer::Time timeExpr( m_detectMarkersTimerRefine );
+			#endif
+			detectMarkers( *m, refineMarkerMap, K, pDebugImg.get(), true, m_codeSize, m_markerSize, m_codeMask, m_useInnerEdgels );
+		}
 	
 		// copy not-found markers to marker map and update others
 		BOOST_FOREACH( MarkerInfoMap::value_type& mapEl, refineMarkerMap )
@@ -420,7 +443,12 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 	// run marker tracker with full analysis on other and not-found markers
 	if ( !markerMap.empty() )
 	{
-		detectMarkers( *m, markerMap, K, pDebugImg.get(), false, m_codeSize, m_markerSize, m_codeMask, m_useInnerEdgels );
+		{
+			#ifdef DO_TIMING
+			Util::BlockTimer::Time timeExpr( m_detectMarkersTimer );
+			#endif
+			detectMarkers( *m, markerMap, K, pDebugImg.get(), false, m_codeSize, m_markerSize, m_codeMask, m_useInnerEdgels );
+		}
 
 		// update information of found markers and move not-found not-fast-tracking markers to refinement
 		BOOST_FOREACH( MarkerInfoMap::value_type& mapEl, markerMap )
@@ -433,7 +461,12 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 	// try to refine not-fast-tracking markers not found by full scan 
 	if ( !refineMarkerMap.empty() )
 	{
-		detectMarkers( *m, refineMarkerMap, K, pDebugImg.get(), true, m_codeSize, m_markerSize, m_codeMask, m_useInnerEdgels );
+		{
+			#ifdef DO_TIMING
+			Util::BlockTimer::Time timeExpr( m_detectMarkersTimerRefine );
+			#endif
+			detectMarkers( *m, refineMarkerMap, K, pDebugImg.get(), true, m_codeSize, m_markerSize, m_codeMask, m_useInnerEdgels );
+		}
 	
 		// update found markers
 		BOOST_FOREACH( MarkerInfoMap::value_type& mapEl, refineMarkerMap )
