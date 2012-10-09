@@ -37,7 +37,7 @@
 
 // OpenCV
 #include <utVision/Image.h>
-#include <cv.h>
+#include <opencv\cv.h>
  
 // boost
 #include <boost/scoped_array.hpp>

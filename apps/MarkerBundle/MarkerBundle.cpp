@@ -42,7 +42,7 @@
 #ifdef _WIN32
 #include <utUtil/CleanWindows.h>
 #endif
-#include <highgui.h>
+#include <opencv/highgui.h>
 
 #include <utMath/NewFunction/Function.h>
 #include <utMath/NewFunction/Addition.h>

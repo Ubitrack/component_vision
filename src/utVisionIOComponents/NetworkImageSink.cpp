@@ -59,7 +59,7 @@
 
 #ifdef HAVE_OPENCV
 	#include <utVision/Image.h>
-	#include <highgui.h>
+	#include <opencv/highgui.h>
 #endif
 using namespace Ubitrack::Measurement;
 namespace Ubitrack { namespace Vision {

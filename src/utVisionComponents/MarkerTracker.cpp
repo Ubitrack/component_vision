@@ -49,7 +49,7 @@
 #include <utVision/Image.h>
 #include <utVision/MarkerDetection.h>
 
-#include <cv.h>
+#include <opencv/cv.h>
 
 // get a logger
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.MarkerTracker" ) );
