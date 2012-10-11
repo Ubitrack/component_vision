@@ -59,7 +59,7 @@
 #include <utMeasurement/Measurement.h>
 
 #include <utVision/Image.h>
-#include <highgui.h>
+#include <opencv/highgui.h>
 
 namespace Ubitrack { namespace Vision {
 

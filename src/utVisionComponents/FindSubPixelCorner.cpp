@@ -49,7 +49,7 @@
 #include <utUtil/Exception.h>
 #include <utVision/Image.h>
 
-#include <cv.h>
+#include <opencv/cv.h>
 
 using namespace Ubitrack;
 using namespace Ubitrack::Vision;

@@ -38,7 +38,7 @@
 
 #include <utVision/Image.h>
 #include <boost/scoped_array.hpp>
-#include <cv.h>
+#include <opencv/cv.h>
 
 namespace ublas = boost::numeric::ublas;
 using namespace Ubitrack::Measurement;

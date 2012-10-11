@@ -43,7 +43,7 @@
 #include <utDataflow/ComponentFactory.h>
 #include <utVision/Image.h>
 
-#include <cv.h>
+#include <opencv/cv.h>
 
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.UndistortImage" ) );
 

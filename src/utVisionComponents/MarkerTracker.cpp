@@ -49,7 +49,7 @@
 #include <utVision/Image.h>
 #include <utVision/MarkerDetection.h>
 
-#include <cv.h>
+#include <opencv/cv.h>
 
 #define DO_TIMING
 

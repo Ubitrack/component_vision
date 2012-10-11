@@ -47,7 +47,7 @@
 #include <utUtil/Exception.h>
 #include <utVision/Image.h>
 
-#include <highgui.h>
+#include <opencv/highgui.h>
 
 using namespace Ubitrack;
 using namespace Ubitrack::Vision;

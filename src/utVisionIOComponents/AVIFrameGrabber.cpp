@@ -45,7 +45,7 @@
 #include <utUtil/OS.h>
 #include <utVision/Image.h>
 
-#include <highgui.h>
+#include <opencv/highgui.h>
 
 // get a logger
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.AVIFrameGrabber" ) );

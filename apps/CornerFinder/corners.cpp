@@ -43,8 +43,8 @@
 #ifdef _WIN32
 #include <utUtil/CleanWindows.h>
 #endif
-#include <highgui.h>
-#include <cv.h>
+#include <opencv/highgui.h>
+#include <opencv/cv.h>
 
 #include <utMath/NewFunction/Function.h>
 #include <utMath/NewFunction/Addition.h>

@@ -42,7 +42,7 @@
 #include <boost/scoped_array.hpp>
 
 #include <utVision/Image.h>
-#include <cv.h>
+#include <opencv/cv.h>
 
 namespace ublas = boost::numeric::ublas;
 
