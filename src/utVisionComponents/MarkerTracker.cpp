@@ -421,7 +421,7 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 	{
 		{
 			#ifdef DO_TIMING
-			Util::BlockTimer::Time timeExpr( m_detectMarkersTimerRefine );
+			UBITRACK_TIME( m_detectMarkersTimerRefine );
 			#endif
 			detectMarkers( *m, refineMarkerMap, K, pDebugImg.get(), true, m_codeSize, m_markerSize, m_codeMask, m_useInnerEdgels );
 		}
@@ -445,7 +445,7 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 	{
 		{
 			#ifdef DO_TIMING
-			Util::BlockTimer::Time timeExpr( m_detectMarkersTimer );
+			UBITRACK_TIME( m_detectMarkersTimer );
 			#endif
 			detectMarkers( *m, markerMap, K, pDebugImg.get(), false, m_codeSize, m_markerSize, m_codeMask, m_useInnerEdgels );
 		}
@@ -463,7 +463,7 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 	{
 		{
 			#ifdef DO_TIMING
-			Util::BlockTimer::Time timeExpr( m_detectMarkersTimerRefine );
+			UBITRACK_TIME( m_detectMarkersTimerRefine );
 			#endif
 			detectMarkers( *m, refineMarkerMap, K, pDebugImg.get(), true, m_codeSize, m_markerSize, m_codeMask, m_useInnerEdgels );
 		}

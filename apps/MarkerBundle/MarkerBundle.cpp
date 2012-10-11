@@ -1065,7 +1065,7 @@ int main( int, char** )
 	const Math::Matrix< 3, 3, float >& K, Image* pDebugImg = 0, bool bRefine = false, unsigned int iCodeSize = 4, 
 	unsigned int iMarkerSize = 6, unsigned long long int uiMask = 0xFFFF, bool useInnerEdgels = true );
 			*/
-			Markers::detectMarkers( *pImage, markerMap, intrinsics, NULL, false, 8, 12, 0xFFFFFFE7E7FFFFFF, true );
+			Markers::detectMarkers( *pImage, markerMap, intrinsics, NULL, false, 8, 12, 0xFFFFFFFFFFFFFFFF, true );
 			//Markers::detectMarkers( *pImage, markerMap, intrinsics, NULL, false, 4, 6, 0xFFFF, true );
 			
 			
