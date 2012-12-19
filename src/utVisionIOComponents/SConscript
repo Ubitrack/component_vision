@@ -4,7 +4,10 @@ import os.path
 
 # import variables from other scons files
 Import( '*' )
-env = utComponentEnv.Clone()
+env = masterEnv.Clone()
+
+env.AppendUnique( **mergeOptions( utdataflow_all_options, utvision_all_options, utcomponents_options ) )
+env.AppendUnique( LIBS = boost_libs( [ 'thread' ] ) )
 
 # create component libraries
 comp_sources = globSourceFiles( '*.cpp' )
