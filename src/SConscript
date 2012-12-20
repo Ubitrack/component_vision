@@ -2,6 +2,9 @@ import glob
 
 Import( '*' )
 
+if not have_utvision :
+	success = True
+	Return('success')
 
 # glob all SConscript files in subdirectories
 sconsfiles = globSourceFiles( "*/SConscript" )
