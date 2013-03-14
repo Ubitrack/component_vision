@@ -21,8 +21,6 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-// TODO: implement module start/stop mechanics
-
 /**
  * @ingroup vision_components
  * @file
@@ -35,16 +33,19 @@
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
-#include <log4cpp/Category.hh>
 
+#include <opencv/cv.h>
+
+#include <utMath/Vector.h>
+#include <utMath/Matrix.h>
+#include <utMath/CameraIntrinsics.h>
 #include <utDataflow/TriggerComponent.h>
 #include <utDataflow/TriggerInPort.h>
 #include <utDataflow/TriggerOutPort.h>
 #include <utDataflow/ComponentFactory.h>
 #include <utVision/Image.h>
 
-#include <opencv/cv.h>
-
+#include <log4cpp/Category.hh>
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.UndistortImage" ) );
 
 using namespace Ubitrack;
@@ -59,36 +60,38 @@ class UndistortImage
 public:
 	UndistortImage( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > pConfig )
 		: TriggerComponent( sName, pConfig )
-		, m_coeffPort( "Distortion", *this )
-		, m_intrinsicsPort( "Intrinsic", *this )
+		, m_coeffPort( "Distortion", *this ) //old port
+		, m_matrixPort( "Intrinsic", *this ) //old port
+		, m_intrinsicsPort( "Intrinsics", *this ) //new port
 		, m_imageIn( "Input", *this )
 		, m_imageOut( "Output", *this )
 	{
 	}
 
 	
-	void initMap( int width, int height, const Math::Vector< 4 >& coeffs, const Math::Matrix< 3, 3 >& intrinsics )
+	void initMap( int width, int height, const Math::Vector< 8 >& coeffs, const Math::Matrix< 3, 3 >& intrinsics )
 	{
 		// skip if already initialized with same values
-		if ( m_pMapX && m_pMapX->width == width && m_pMapX->height == height && 
-			coeffs == m_distortionCoeffs && intrinsics == m_intrinsicMatrix )
+		if ( m_pMapX && m_pMapX->width == width && m_pMapX->height == height )
 			return;
 			
 		LOG4CPP_INFO( logger, "Creating undistortion map" );
 		LOG4CPP_DEBUG( logger, "coeffs=" << coeffs );
 		LOG4CPP_DEBUG( logger, "intrinsic=" << intrinsics );
-		
-		m_distortionCoeffs = coeffs;
-		m_intrinsicMatrix = intrinsics;
-			
+	
+#if (CV_MAJOR_VERSION>1) && (CV_MINOR_VERSION>2)
+		const std::size_t dist_size = 8;
+#else
+		const std::size_t dist_size = 4;
+#endif
 		// copy ublas to OpenCV parameters
-		CvMat* pCvCoeffs = cvCreateMat( 1, 4, CV_32FC1 );
-		for ( unsigned i = 0; i < 4; i++ )
-			pCvCoeffs->data.fl[ i ] = static_cast< float >( coeffs( i ) );
-			
+		CvMat* pCvCoeffs = cvCreateMat( 1, dist_size, CV_32FC1 );
+		for ( std::size_t i = 0; i< dist_size; ++i )
+			reinterpret_cast< float* >( pCvCoeffs->data.ptr )[ i ] = static_cast< float >( coeffs( i ) );
+		
 		CvMat* pCvIntrinsics = cvCreateMat( 3, 3, CV_32FC1 );
-		for ( unsigned i = 0; i < 3; i++ )
-			for ( unsigned j = 0; j < 3; j++ )
+		for ( std::size_t i = 0; i < 3; i++ )
+			for ( std::size_t j = 0; j < 3; j++ )
 				reinterpret_cast< float* >( pCvIntrinsics->data.ptr + i * pCvIntrinsics->step)[ j ] 
 					= static_cast< float >( intrinsics( i, j ) );
 		
@@ -97,14 +100,13 @@ public:
 		m_pMapY.reset( new Image( width, height, 1, IPL_DEPTH_32F ) );
 		
 		cvInitUndistortMap( pCvIntrinsics, pCvCoeffs, *m_pMapX, *m_pMapY );
-		
- 		LOG4CPP_DEBUG( logger, "first pixel mapped from " << 
+
+ 		LOG4CPP_TRACE( logger, "first pixel mapped from " << 
 			*reinterpret_cast< float* >( m_pMapX->imageData ) << ", " <<
 			*reinterpret_cast< float* >( m_pMapY->imageData ) );
-			
-		// release data
-		cvReleaseMat( &pCvCoeffs );
+		
 		cvReleaseMat( &pCvIntrinsics );
+		cvReleaseMat( &pCvCoeffs );
 	}
 
 	
@@ -114,9 +116,44 @@ public:
 		Measurement::ImageMeasurement pImage = m_imageIn.get();
 
 		// read parameters
-		Math::Vector< 4 > coeffs = *m_coeffPort.get( t );
-		Math::Matrix< 3, 3 > intrinsics = *m_intrinsicsPort.get( t );
+		Math::Vector< 8 > coeffs;
+		Math::Matrix< 3, 3 > intrinsics;
 		
+		try
+		{
+			//support for new camera intrinsics measurement
+			if( m_intrinsicsPort.isConnected() )
+			{
+				Math::CameraIntrinsics< double > camIntrinsics = *m_intrinsicsPort.get( t );
+				
+				intrinsics = camIntrinsics.matrix;
+				Math::CameraIntrinsics< double >::radial_type radDist = camIntrinsics.radial_params;
+				Math::CameraIntrinsics< double >::tangential_type tanDist =	camIntrinsics.tangential_params;
+				coeffs( 0 )  = radDist[ 0 ];
+				coeffs( 1 )  = radDist[ 1 ];
+				coeffs( 2 )  = tanDist[ 0 ];
+				coeffs( 3 )  = tanDist[ 1 ];
+				coeffs( 4 ) = coeffs( 5 ) = coeffs( 6 ) = coeffs( 7 ) = 0;
+				for(std::size_t i = 2; i < camIntrinsics.radial_size; ++i )
+					coeffs( i+2 )  = radDist[ i ];
+			}
+			else //suppoert for old pattern
+			{
+				intrinsics = *m_matrixPort.get( t );
+				Math::Vector< 4 > dist = *m_coeffPort.get( t );
+				coeffs( 0 )  = dist( 0 );
+				coeffs( 1 )  = dist( 1 );
+				coeffs( 2 )  = dist( 2 );
+				coeffs( 3 )  = dist( 3 );
+				coeffs( 4 ) = coeffs( 5 ) = coeffs( 6 ) = coeffs( 7 ) = 0;
+			}
+		}catch( ... )
+		{
+			coeffs( 0 ) = coeffs( 1 ) = coeffs( 2 ) = coeffs( 3 ) = 0;
+			coeffs( 4 ) = coeffs( 5 ) = coeffs( 6 ) = coeffs( 7 ) = 0;
+			intrinsics = Math::Matrix< 3, 3 >::identity();
+			LOG4CPP_WARN( logger, "Setting some default value" );
+		}
 		// compensate for left-handed OpenCV coordinate frame
 		boost::numeric::ublas::column( intrinsics, 2 ) *= -1;
 		
@@ -142,14 +179,20 @@ public:
 	}
 
 protected:
+	/** @deprecated (radial and tangential) distortion parameters */
 	PullConsumer< Measurement::Vector4D > m_coeffPort;
-	PullConsumer< Measurement::Matrix3x3 > m_intrinsicsPort;
 	
+	/** @deprecated intrinsic camera matrix */
+	PullConsumer< Measurement::Matrix3x3 > m_matrixPort;
+	
+	/** intrinsic camera parameters: 3x3matrix + distortion parameters */
+	PullConsumer< Measurement::CameraIntrinsics > m_intrinsicsPort;
+	
+	/** distorted incoming image */
 	TriggerInPort< Measurement::ImageMeasurement > m_imageIn;
-	TriggerOutPort< Measurement::ImageMeasurement > m_imageOut;
 	
-	Math::Vector< 4 > m_distortionCoeffs;
-	Math::Matrix< 3, 3 > m_intrinsicMatrix;
+	/** undistorted image */
+	TriggerOutPort< Measurement::ImageMeasurement > m_imageOut;
 	
 	boost::scoped_ptr< Image > m_pMapX;
 	boost::scoped_ptr< Image > m_pMapY;

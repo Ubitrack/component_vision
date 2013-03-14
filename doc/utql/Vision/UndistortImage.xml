@@ -6,7 +6,40 @@
                       xmlns:h="http://www.w3.org/1999/xhtml"
                       xsi:schemaLocation='http://ar.in.tum.de/ubitrack/utql ../../../schema/utql_templates.xsd'>
     
-    <Pattern name="UndistortImage" displayName="Image Undistortion">
+	<Pattern name="ImageUndistortion" displayName="Image Undistortion">
+    	<Description><h:p>Removes radial and tangential distortion from images.</h:p></Description>
+    	
+        <Input>
+            <Node name="Camera" displayName="Camera"/>
+            <Node name="ImagePlane" displayName="Image Plane"/>
+            <Edge displayName="Camera Intrinsics" name="Intrinsics" source="Camera" destination="ImagePlane">
+                <Predicate>type=='3x3Matrix'&amp;&amp;mode=='pull'</Predicate>
+            </Edge>
+            <Edge displayName="Distorted Image" name="Input" source="Camera" destination="ImagePlane">
+                <Predicate>type=='Image'</Predicate>
+            </Edge>
+        </Input>
+        
+        <Output>
+            <Edge displayName="Undistorted Image" name="Output" source="Camera" destination="ImagePlane">
+                <Attribute name="type" value="Image" xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+        </Output>
+        
+        <Constraints>
+        	<TriggerGroup>
+                <Edge edge-ref="Input"/>
+                <Edge edge-ref="Output"/>
+            </TriggerGroup>
+        </Constraints>
+
+        <DataflowConfiguration>
+            <UbitrackLib class="UndistortImage"/>
+        </DataflowConfiguration>
+    </Pattern>    
+	
+	
+    <Pattern name="UndistortImage" displayName="Deprecated: Image Undistortion">
     	<Description><h:p>Removes radial distortion from images.</h:p></Description>
     	
         <Input>
@@ -39,7 +72,7 @@
         <DataflowConfiguration>
             <UbitrackLib class="UndistortImage"/>
         </DataflowConfiguration>
-    </Pattern>    
+    </Pattern>
     
     <!-- Attribute declarations -->
     

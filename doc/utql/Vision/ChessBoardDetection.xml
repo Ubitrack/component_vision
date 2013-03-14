@@ -6,7 +6,7 @@
                       xmlns:h="http://www.w3.org/1999/xhtml"
                       xsi:schemaLocation='http://ar.in.tum.de/ubitrack/utql ../../schema/utql_templates.xsd'>
     
-    <Pattern name="ChessBoardDetection" displayName="Chessboard Detection (Deprecated)">
+    <Pattern name="ChessBoardDetection" displayName="Deprecated: Chessboard Detection ">
     	<Description><h:p>Detects chessboard patterns in greyscale images and returns the coordinates of
     	the internal corners as a list of 2D points.</h:p></Description>
     	
@@ -63,6 +63,7 @@
         </Input>
         
         <Output>
+			<Node name="World" displayName="World">
             <Node name="ChessBoard" displayName="Chessboard">
                 <Attribute name="chessBoardWidth" displayName="inner corners x (width)" default="7" min="2" xsi:type="IntAttributeDeclarationType">
                 	<Description><h:p>Number of internal chessboard corners in one direction</h:p></Description>
@@ -80,10 +81,16 @@
                 	<Description><h:p>Number of pyrDown calls before the corner detection. Edge refinement then happens on the full size images.</h:p></Description>
                 </Attribute>
             </Node>
-            <Edge name="Corners" source="ImagePlane" destination="ChessBoard" displayName="Chessboard Corners" >
+            <Edge name="Corners2D" source="ImagePlane" destination="ChessBoard" displayName="Chessboard Corners" >
             	<Description><h:p>A list of 2D-Coordinates that contain the locations of the chessboard
             	corners in the image. The list is sorted by the coordinates on the chesboard.</h:p></Description>
                 <Attribute name="type" value="2DPositionList" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+			<Edge name="Corners3D" source="World" destination="ChessBoard" displayName="Chessboard Corners" >
+            	<Description><h:p>A list of 3D-Coordinates that contain the locations of the chessboard
+            	corners in the image. The list is sorted by the coordinates on the chesboard.</h:p></Description>
+                <Attribute name="type" value="3DPositionList" xsi:type="EnumAttributeReferenceType"/>
                 <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
             </Edge>
             <Edge name="DebugImage" source="Camera" destination="ImagePlane" displayName="Corner Image" >
