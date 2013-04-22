@@ -19,4 +19,4 @@ env.Replace( no_import_lib = 1 )
 
 
 # compile components as shared libraries
-setupComponentBuild(env, comp_sources, 'utVisionComponents')
+setupComponentBuild(env, comp_sources, 'visioncomponents')
