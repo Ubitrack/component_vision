@@ -1,0 +1,7 @@
+IF(HAVE_TBB AND HAVE_OPENCV)
+	set(the_description "The UbiTrack Vision Components Module")
+	ut_add_module(utvisioncomponents INTERNAL utcore utdataflow utvision ${Freeglut_LIBRARIES})
+	ut_module_include_directories("${UBITRACK_MODULES_PATH}/utcomponents/src" ${TINYXML_INCLUDE_DIR} ${LOG4CPP_INCLUDE_DIR} ${BOOSTBINDINGS_INCLUDE_DIR} ${LAPACK_INCLUDE_DIR} ${Boost_INCLUDE_DIR} ${OpenCV_INCLUDE_DIR} ${TBB_INCLUDE_DIR} ${Freeglut_INCLUDE_DIR})
+	ut_glob_module_sources()
+	ut_create_module_components()
+ENDIF(HAVE_TBB AND HAVE_OPENCV)
