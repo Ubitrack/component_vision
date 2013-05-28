@@ -63,7 +63,7 @@
         </Input>
         
         <Output>
-			<Node name="World" displayName="World">
+			<Node name="World" displayName="World"/>
             <Node name="ChessBoard" displayName="Chessboard">
                 <Attribute name="chessBoardWidth" displayName="inner corners x (width)" default="7" min="2" xsi:type="IntAttributeDeclarationType">
                 	<Description><h:p>Number of internal chessboard corners in one direction</h:p></Description>
