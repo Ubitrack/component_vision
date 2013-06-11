@@ -210,7 +210,7 @@ public:
 			Vision::Image::Ptr tmpa = img->Clone();
 			for( int i( 0 ) ; i < m_scaleFactor; ++i ) 
 				tmpa = tmpa->PyrDown();
-			pattern_was_found = cvFindChessboardCorners( *tmpa, cvSize( m_width, m_height ) , reinterpret_cast< CvPoint2D32f* >( corners.begin() ), &found, CV_CALIB_CB_ADAPTIVE_THRESH );
+			pattern_was_found = cvFindChessboardCorners( *tmpa, cvSize( m_width, m_height ) , corners.get(), &found, CV_CALIB_CB_ADAPTIVE_THRESH );
 
 			// Rescale 2d measurements to original image size
 			for( int i=0; i<m_edges; i++ )
@@ -224,7 +224,7 @@ public:
 #if CV_MAJOR_VERSION > 1 && CV_MINOR_VERSION > 2
 			cv::Mat calib_image( *img, false );
 			
-			std::vector< CvPoint2D32f > centers; //( CvPoint2D32f == cv::Point2f )
+			std::vector< cv::Point2f > centers; //( CvPoint2D32f == cv::Point2f )
 			centers.reserve( m_edges ); //allocate some space for the values
 			
 			switch( m_grid_type ) //switch for correct detection method
@@ -434,7 +434,7 @@ public:
 			boost::shared_ptr< Image > debugImg;
 
 			if( img->nChannels == 1 )
-				debugImg = img->CvtColor( CV_GRAY2BGR, 3 );
+				debugImg = img->CvtColor( CV_GRAY2RGB, 3 );
 			else
 				debugImg = img->Clone();
 				
