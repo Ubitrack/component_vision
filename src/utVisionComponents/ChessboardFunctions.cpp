@@ -116,19 +116,21 @@ public:
 	 */
 	ChessboardFunctionsComponent( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > pCfg )
 		: Dataflow::Component( sName )
+		, m_grid_type( 0 )
 		, m_width( -1 )
 		, m_height( -1 )
 		, m_sizeX( 0.025f )
 		, m_sizeY( 0.025f )
 		, m_edges( 0 )
-		, m_scaleFactor (0)
+		, m_scaleFactor( 0 )
 		, m_inPort( "Image", *this, boost::bind( &ChessboardFunctionsComponent::pushImage, this, _1 ) )
 		, m_intrinsicPort( "Intrinsic", *this )
 		, m_distortionPort( "Distortion", *this )
 		// the old files ChessBoardDetection and ChessBoardTracking used the same name "Output" for their different Output Ports
 		// thats why here is a distinction for the name
 		, m_outPosePort( ( 0 == pCfg->m_DataflowClass.compare( 0, 18, "ChessBoardTracking" )  ) ? "Output" : "Pose", *this )
-		, m_outPositionsPort( ( 0 == pCfg->m_DataflowClass.compare( 0, 19, "ChessBoardDetection" )  ) ? "Output" : "Corners", *this )
+		, m_outPoints2DPort( ( 0 == pCfg->m_DataflowClass.compare( 0, 19, "ChessBoardDetection" )  ) ? "Output" : "Corners", *this )
+		, m_outPoints3DPort(  "Corners3D", *this )
 		, m_debugPort( "DebugImage", *this )
 		
     {
@@ -137,11 +139,20 @@ public:
 			
 		if(	0 == pCfg->m_DataflowClass.compare( 0, 18, "ChessBoardTracking" ) )
 			LOG4CPP_ERROR( logger, "ChessBoardTracking is a deprecated Component.\nPlease switch to the newer ChessboardFunctions Component and use the according pattern." );
-		
+
 		// get height and width attributes from ChessBoard node
 		Graph::UTQLSubgraph::NodePtr pCbNode = pCfg->getNode( "ChessBoard" );
 		pCbNode->getAttributeData( "chessBoardHeight", m_height );
 		pCbNode->getAttributeData( "chessBoardWidth", m_width );
+		if ( pCbNode->hasAttribute( "gridtype" ) ) // chosse the type of the calibration grid
+		{
+			if( pCbNode->getAttributeString( "gridtype" ) == "chessboard" ) //also the default value
+				m_grid_type = 0;
+			if( pCbNode->getAttributeString( "gridtype" ) == "circularsymmetric" )	
+				m_grid_type = 1;
+			if( pCbNode->getAttributeString( "gridtype" ) == "circularasymmetric" )	
+				m_grid_type = 2;
+		}		
 		
 		if ( m_height <= 0 || m_width <= 0  )
 			UBITRACK_THROW( "Chessboard nodes has no valid chessBoardHeight, chessBoardWidth" );
@@ -174,54 +185,73 @@ public:
 			objPoints[ 3 * i + 2 ] = 0.0;
 		}
 		
-		if ( pCbNode->hasAttribute( "scaleFactor" ) ) // overall size of xAxis
+		if ( pCbNode->hasAttribute( "scaleFactor" ) ) // scalefactor for smaller images
 			pCbNode->getAttributeData( "scaleFactor", m_scaleFactor );
 		
     }
-
-	// Recursive helper funcction to scale images.
-	IplImage* downscaleImage(IplImage* img, int s) {
-		IplImage *tmpa = cvCreateImage( cvSize( static_cast< int > ( img->width * 0.5 ), static_cast< int > ( img->height * 0.5 ) ), IPL_DEPTH_8U, 1 );
-		tmpa->origin = img->origin;
-		cvPyrDown( img, tmpa );
-		cvReleaseImage( &img );
-		if (s > 1)
-			return downscaleImage(tmpa, s-1);
-		return tmpa;
-	}
-
-	IplImage* downscaleImageMeasurement(const Measurement::ImageMeasurement& img, int s) {
-		IplImage *source = cvCreateImage( cvSize( static_cast< int > ( img->width * 0.5 ), static_cast< int > ( img->height * 0.5 ) ), IPL_DEPTH_8U, 1 );
-		cvPyrDown(*img, source);
-		if (s == 1)
-			return source;
-		return downscaleImage(source, s-1);
-	}
 
 	/** Method that computes the result. */
 	void pushImage( const Measurement::ImageMeasurement& img )
 	{
 		boost::scoped_array< CvPoint2D32f > corners( new CvPoint2D32f[ m_edges ] );
+		
 		int found;
 		int pattern_was_found;
-		if (m_scaleFactor > 0) {
+		if( m_scaleFactor > 0 )
+		{
 			/**
 			Problem: cvFindChessboardCorners takes ages on large images.
 			Idea: Shrink image for corner detection and do the subpixel refinement on the
 			original fullsize image.
 			m_scaleFactor is optional, but when specified the image is shrinked m_scaleFactor -times.
+			CW@2013-06-11: there is also the shrink image component doing a similar job.
+			however, I leave this in here, just changed the code to use the already existing image function
 			*/
-			IplImage *tmpa = downscaleImageMeasurement(img, m_scaleFactor);
-			pattern_was_found = cvFindChessboardCorners( tmpa, cvSize( m_width, m_height ) , corners.get(), &found, CV_CALIB_CB_ADAPTIVE_THRESH );
-			cvReleaseImage( &tmpa );
+			Vision::Image::Ptr tmpa = img->Clone();
+			for( int i( 0 ) ; i < m_scaleFactor; ++i ) 
+				tmpa = tmpa->PyrDown();
+			pattern_was_found = cvFindChessboardCorners( *tmpa, cvSize( m_width, m_height ) , reinterpret_cast< CvPoint2D32f* >( corners.begin() ), &found, CV_CALIB_CB_ADAPTIVE_THRESH );
+
 			// Rescale 2d measurements to original image size
-			for (int i=0; i<m_edges; i++) {
+			for( int i=0; i<m_edges; i++ )
+			{
 				corners[ i ].x *= 1<<m_scaleFactor;
 				corners[ i ].y *= 1<<m_scaleFactor;
 			}
-		} else { // m_scaleFactor == 0
-			pattern_was_found = cvFindChessboardCorners( *img, cvSize( m_width, m_height ) , corners.get(), &found, CV_CALIB_CB_ADAPTIVE_THRESH );
 		}
+		else  // m_scaleFactor == 0
+		{
+#if CV_MAJOR_VERSION > 1 && CV_MINOR_VERSION > 2
+			cv::Mat calib_image( *img, false );
+			
+			std::vector< CvPoint2D32f > centers; //( CvPoint2D32f == cv::Point2f )
+			centers.reserve( m_edges ); //allocate some space for the values
+			
+			switch( m_grid_type ) //switch for correct detection method
+			{
+			case 0:
+				pattern_was_found = cv::findChessboardCorners( calib_image, cvSize( m_width, m_height ), centers );
+				break;
+			case 1:
+				pattern_was_found = cv::findCirclesGrid( calib_image, cvSize( m_width, m_height ), centers, cv::CALIB_CB_SYMMETRIC_GRID );
+				break;
+			case 2:
+				pattern_was_found = cv::findCirclesGrid( calib_image, cvSize( m_width, m_height ), centers, cv::CALIB_CB_ASYMMETRIC_GRID );
+				break;
+			default:
+				LOG4CPP_ERROR( logger, "The type of the calibration grid is not specified correctly." );
+			}
+			//assgin the values to the other array again -> will get better with c++11
+			if( pattern_was_found )
+				for( int i( 0 ); i < m_edges; ++i )
+					corners[ i ] = centers[ i ];
+				
+#else
+			pattern_was_found = cvFindChessboardCorners( *img, cvSize( m_width, m_height ) , corners.get(), &found, CV_CALIB_CB_ADAPTIVE_THRESH );
+#endif
+		}
+		
+		
 		if( pattern_was_found && found == m_edges )
 		{
 			cvFindCornerSubPix( *img, corners.get(), m_edges, cvSize( 10, 10 ), cvSize( -1, -1 ), cvTermCriteria( CV_TERMCRIT_ITER, 10, 0.1f ) );
@@ -255,6 +285,12 @@ public:
 					corner will always reside in the same checkerboard corner, regardless imaging parameters, and 
 					corners will always be detected row-by-row. */
 					/*
+					CW@2013-06-11 still the problem exists that whenever you use the chessboard for tracking it will
+					result in a different pose for the chessboard depending on the image orientation.
+					If you want to have the chessboard-origin always at the same chessboard corner uncomment the following code:
+					*/
+					
+					/*
 					int index = ( m_height - 1 ) * m_width - i + ( ( i % m_width ) << 1 );
 					//equivalent to:
 					// int index = ( m_height - ( i / m_width ) - 1 ) * m_width + ( i % m_width );
@@ -273,14 +309,25 @@ public:
 				}
 			}
 			
-			if( m_outPositionsPort.isConnected() )
+			if( m_outPoints2DPort.isConnected() )
 			{
 				std::vector< Math::Vector< 2 > > positions;
 				positions.reserve( m_edges );
 				for( int i = 0; i < m_edges; ++i )
 					positions.push_back( Math::Vector< 2 >( imgPoints[ 2*i ], imgPoints[ 2*i+1 ] ) );
 
-				m_outPositionsPort.send( Measurement::PositionList2( img.time(), positions ) );
+				m_outPoints2DPort.send( Measurement::PositionList2( img.time(), positions ) );
+			}
+			
+			if( m_outPoints3DPort.isConnected() )
+			{
+				std::vector< Math::Vector< 3 > > positions;
+				
+				positions.reserve( m_edges );
+				for( int i = 0; i < m_edges; ++i )
+					positions.push_back( Math::Vector< 3 >( objPoints[ 2*i ], objPoints[ 2*i+1 ], objPoints[ 2*i+2 ] ) );
+
+				m_outPoints3DPort.send( Measurement::PositionList( img.time(), positions ) );
 			}
 			
 			if( m_outPosePort.isConnected() )
@@ -356,7 +403,7 @@ public:
 
 				/** convert rotation vector into a matrix */
 				float m_current_rotation_matrix[9];
-				CvMat current_rot_mat = cvMat (3, 3, CV_32FC1, m_current_rotation_matrix);
+				CvMat current_rot_mat = cvMat ( 3, 3, CV_32FC1, m_current_rotation_matrix);
 				
 				cvRodrigues2( &current_rot_vec , &current_rot_mat);
 
@@ -387,42 +434,22 @@ public:
 			boost::shared_ptr< Image > debugImg;
 
 			if( img->nChannels == 1 )
-				debugImg = img->CvtColor( CV_GRAY2RGB, 3 );
+				debugImg = img->CvtColor( CV_GRAY2BGR, 3 );
 			else
 				debugImg = img->Clone();
 				
 			debugImg->origin = img->origin; // it should not flip.....
-
-			CvScalar color = ( pattern_was_found && found == m_edges )? CV_RGB( 0, 255, 0 ) : CV_RGB( 255, 0, 0 );
-			for( int i = 0; i < found; ++i ) 
-			{
-				// draw corner point
-				cvLine( *debugImg
-					, cvPoint((int)corners[i].x - 3, (int)corners[i].y - 3 )
-					, cvPoint((int)corners[i].x + 3, (int)corners[i].y + 3 )
-					, CV_RGB( 255, 0, 0 ), 6 );
-				cvLine( *debugImg
-					, cvPoint((int)corners[i].x + 3, (int)corners[i].y - 3 )
-					, cvPoint((int)corners[i].x - 3, (int)corners[i].y + 3 )
-					, CV_RGB( 255, 0, 0 ), 6 );
-
-			}
-
-			cvCircle( *debugImg, cvPointFrom32f( corners[0] ), 30, CV_RGB( 255, 255, 0 ), -1 );
 			
-			for(int i = 1; i < found; i++) 
-			{
-				cvLine( *debugImg
-						, cvPointFrom32f( corners[ i - 1 ] )
-						, cvPointFrom32f( corners[ i ] )
-						, color, 6 );
-			}
+			cvDrawChessboardCorners( *debugImg, cvSize( m_width, m_height ), corners.get(), m_edges, pattern_was_found );
 
 			m_debugPort.send( Measurement::ImageMeasurement( img.time(), debugImg ) );
 		}
     }
 
 protected:	
+
+	/** specifies the type of the grid (corners, (asymetric-)circles */
+	int m_grid_type;
 	
 	/** number of inner corners in x-direction ( equals width or rows ) */
 	int m_width;
@@ -445,15 +472,25 @@ protected:
 	/** the chessboard's object points */
 	boost::scoped_array< float > objPoints;
 	
-	
-	/** Input port of the component. */
+	/** Image to search for chessboard corners. */
 	Dataflow::PushConsumer< Measurement::ImageMeasurement > m_inPort;
+	
+	/** Intrinsic matrix for chessboard tracking*/
 	Dataflow::PullConsumer< Measurement::Matrix3x3 > m_intrinsicPort;
+	
+	/** distortion parameters for chessboard tracking */
 	Dataflow::PullConsumer< Measurement::Vector4D > m_distortionPort;
 	
-	/** Output ports of the component. */
+	/** pose of the calibration board */
 	Dataflow::PushSupplier< Measurement::Pose > m_outPosePort;
-	Dataflow::PushSupplier< Measurement::PositionList2 > m_outPositionsPort;
+	
+	/** Chessboard Corners in image coordinates */
+	Dataflow::PushSupplier< Measurement::PositionList2 > m_outPoints2DPort;
+	
+	/** Chessboard Corners in object coordinates */
+	Dataflow::PushSupplier< Measurement::PositionList > m_outPoints3DPort;
+	
+	/** Image for debugging purposes */
 	Dataflow::PushSupplier< Measurement::ImageMeasurement > m_debugPort;
 };
 
