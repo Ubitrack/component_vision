@@ -128,7 +128,7 @@ public:
 		// the old files ChessBoardDetection and ChessBoardTracking used the same name "Output" for their different Output Ports
 		// thats why here is a distinction for the name
 		, m_outPosePort( ( 0 == pCfg->m_DataflowClass.compare( 0, 18, "ChessBoardTracking" )  ) ? "Output" : "Pose", *this )
-		, m_outPositionsPort( ( 0 == pCfg->m_DataflowClass.compare( 0, 19, "ChessBoardDetection" )  ) ? "Output" : "Corners", *this )
+		, m_outPositionsPort( ( 0 == pCfg->m_DataflowClass.compare( 0, 19, "ChessBoardDetection" )  ) ? "Output" : "Corners2D", *this )
 		, m_debugPort( "DebugImage", *this )
 		
     {
