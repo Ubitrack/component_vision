@@ -6,7 +6,7 @@
                       xmlns:h="http://www.w3.org/1999/xhtml"
                       xsi:schemaLocation='http://ar.in.tum.de/ubitrack/utql ../../schema/utql_templates.xsd'>
     
-    <Pattern name="ChessBoardDetection" displayName="Deprecated: Chessboard Detection ">
+    <Pattern name="ChessBoardDetection" displayName="Deprecated: Chessboard Detection">
     	<Description><h:p>Detects chessboard patterns in greyscale images and returns the coordinates of
     	the internal corners as a list of 2D points.</h:p></Description>
     	
@@ -79,6 +79,12 @@
                 </Attribute>
                 <Attribute name="scaleFactor" displayName="Shrink factor for corner detection." default="0" min="0" xsi:type="IntAttributeDeclarationType">
                 	<Description><h:p>Number of pyrDown calls before the corner detection. Edge refinement then happens on the full size images.</h:p></Description>
+                </Attribute>
+				<Attribute name="gridtype" displayName="gridtype of calibration pattern" default="chessboard" xsi:type="EnumAttributeDeclarationType">
+                	<Description><h:p>Defines the type of calibration grid that is used to detection. </h:p></Description>
+					<EnumValue name="chessboard" displayName="Grid of black/white squares(Chessboard)"/>
+                    <EnumValue name="circularsymmetric"  displayName="Symmetric grid of circular markers"/>
+					<EnumValue name="circularasymmetric"  displayName="Asymmetric grid of circular markers"/>
                 </Attribute>
             </Node>
             <Edge name="Corners2D" source="ImagePlane" destination="ChessBoard" displayName="Chessboard Corners" >
