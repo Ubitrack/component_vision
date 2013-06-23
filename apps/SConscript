@@ -2,15 +2,26 @@ import os
 
 # import variables from other scons files
 Import( '*' )
+
+
+if not have_utvision:
+	print "utVision missing -- not building vision apps"
+	success = False
+	Return('success')	
+
 env = masterEnv.Clone()
 
-
 # setup compiler and linker flags
-env.AppendUnique( **mergeOptions( utfacade_options, boost_options, log4cpp_options, lapack_options, utcore_options, tbb_options ) )
-if have_opencv:
+env.AppendUnique( **utcore_all_options )
+env.AppendUnique( **utfacade_all_options )
+if have_utvision:
+	env.AppendUnique( **utvision_all_options )
 	env.AppendUnique( **opencv_options )
-	env.AppendUnique( **utvision_options )
-env.AppendUnique( LIBS = boost_libs( [ "serialization", "program_options", "system", "filesystem", "regex" ] ) )
+
+
+
+#env.AppendUnique( LIBS = boost_libs( [ "serialization", "program_options", "system", "filesystem", "regex" ] ) )
+
 
 allUtilSources = []
 

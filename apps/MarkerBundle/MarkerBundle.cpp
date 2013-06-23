@@ -988,8 +988,11 @@ void createImageList( std::vector< std::string >& l )
 	using namespace boost::filesystem;
 	
 	boost::regex ext( ".*\\.(jpg|JPG|png|PNG|bmp|BMP)" );
-	
+#if BOOST_FILESYSTEM_VERSION == 3
+	path compPath( ".");
+#else
 	path compPath( ".", native );
+#endif
 	if ( !exists( compPath ) )
 		throw std::string( "path does not exist" );
 	
