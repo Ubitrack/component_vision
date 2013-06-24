@@ -60,7 +60,7 @@
 
 #include <utUtil/Logging.h>
 #include <log4cpp/Category.hh>
-static log4cpp::Category& optLogger( log4cpp::Category::getInstance( "Ubitrack.Utils.MarkerFinder" ) );
+//static log4cpp::Category& optLogger( log4cpp::Category::getInstance( "Ubitrack.Utils.MarkerFinder" ) );
 
 
 using namespace Ubitrack;

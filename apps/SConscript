@@ -4,8 +4,8 @@ import os
 Import( '*' )
 
 
-if not have_utvision:
-	print "utVision missing -- not building vision apps"
+if not have_utvision or not have_lapack:
+	print "utVision or lapack missing -- not building vision apps"
 	success = False
 	Return('success')	
 

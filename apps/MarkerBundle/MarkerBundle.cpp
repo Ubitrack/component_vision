@@ -59,10 +59,12 @@
 #include <utUtil/Logging.h>
 #include <utUtil/CalibFile.h>
 
-#define OPTIMIZATION_LOGGING
 #include <log4cpp/Category.hh>
-static log4cpp::Category& optLogger( log4cpp::Category::getInstance( "MarkerBundle" ) );
+//#define OPTIMIZATION_LOGGING
+//static log4cpp::Category& optLogger( log4cpp::Category::getInstance( "MarkerBundle" ) );
 #include <utMath/LevenbergMarquardt.h>
+
+static log4cpp::Category& logger( log4cpp::Category::getInstance( "MarkerBundle" ) );
 
 using namespace Ubitrack;
 namespace Markers = Ubitrack::Vision::Markers;
@@ -300,7 +302,6 @@ unsigned BAInfo::size() const
 
 void BAInfo::initMarkers()
 {
-	LOG4CPP_INFO(optLogger, "2.1");
 	// number markers
 	unsigned iMarker = 0;
 	for ( MarkerMap::iterator it = markers.begin(); it != markers.end(); it++ )
@@ -308,16 +309,11 @@ void BAInfo::initMarkers()
 	
 	// initialize poses
 	std::deque< unsigned long long int> markerQueue;
-	std::deque< unsigned > cameraQueue;
-	LOG4CPP_INFO(optLogger, "2.2");
-	const unsigned long long int startMarker = markers.begin()->first;
-	LOG4CPP_INFO(optLogger, "2.2.1");
-	markers[ startMarker ].pose = Math::Pose( Math::Quaternion( 0, 0, 0, 1 ), Math::Vector< 3 >( 0, 0, 0 ) );
-	LOG4CPP_INFO(optLogger, "2.2.2");
+	std::deque< unsigned > cameraQueue;	
+	const unsigned long long int startMarker = markers.begin()->first;	
+	markers[ startMarker ].pose = Math::Pose( Math::Quaternion( 0, 0, 0, 1 ), Math::Vector< 3 >( 0, 0, 0 ) );	
 	markers[ startMarker ].bPoseComputed = true;
-	LOG4CPP_INFO(optLogger, "2.2.3");
 	markerQueue.push_back( startMarker );
-	LOG4CPP_INFO(optLogger, "2.2.4");
 	// kind of a breadth-first search over markers and cameras 
 	while ( !markerQueue.empty() || !cameraQueue.empty() )
 	{
@@ -498,7 +494,7 @@ void BAInfo::evaluateWithJacobian( VT1& result, const VT2& input, MT1& J ) const
 		subJOrigin = ublas::identity_matrix< double >( 6 );
 	}
 
-	LOG4CPP_TRACE( optLogger, "J: " << J );
+	LOG4CPP_TRACE( logger, "J: " << J );
 }
 
 
@@ -595,9 +591,9 @@ void BAInfo::bundleAdjustment( bool bUseRefPoints )
 	ublas::vector< double > parameters( parameterSize() );
 	genParameterVector( parameters );
 
-	LOG4CPP_DEBUG( optLogger, "original parameters: " << parameters );
+	LOG4CPP_DEBUG( logger, "original parameters: " << parameters );
 	Math::levenbergMarquardt( *this, parameters, measurements, Math::OptTerminate( 200, 1e-6 ), Math::OptNoNormalize() );
-	LOG4CPP_DEBUG( optLogger, "improved parameters: " << parameters );
+	LOG4CPP_DEBUG( logger, "improved parameters: " << parameters );
 
 	updateParameters( parameters );
 }
@@ -1012,13 +1008,13 @@ void createImageList( std::vector< std::string >& l )
 #if BOOST_FILESYSTEM_VERSION == 3
 		if ( exists( p ) && !is_directory( p ) && regex_match( p.leaf().string(), ext ) )
 		{
-			LOG4CPP_INFO(optLogger, "Found image:" << p.leaf().string() << "\n");			
+			LOG4CPP_INFO(logger, "Found image:" << p.leaf().string() << "\n");			
 			l.push_back( p.leaf().string() );
 		}
 #else
 		if ( exists( p ) && !is_directory( p ) && regex_match( p.leaf(), ext ) )
 		{
-			LOG4CPP_INFO(optLogger, "Found image:" << p.leaf() << "\n");			
+			LOG4CPP_INFO(logger, "Found image:" << p.leaf() << "\n");			
 			l.push_back( p.leaf() );
 		}
 #endif
@@ -1059,7 +1055,7 @@ int main( int, char** )
 			// load image			
 			IplImage* myImage = cvLoadImage( itImage->c_str(), CV_LOAD_IMAGE_GRAYSCALE );	
 			if(myImage == 0){
-				LOG4CPP_ERROR(optLogger, "Image could not be loaded" << itImage->c_str() << "\n");
+				LOG4CPP_ERROR(logger, "Image could not be loaded" << itImage->c_str() << "\n");
 				continue;
 			} 
 			
@@ -1098,17 +1094,14 @@ int main( int, char** )
 			
 		}
 		
-		LOG4CPP_INFO(optLogger, "2");
 		
 		// initialize poses
 		baInfo.initMarkers();
-		LOG4CPP_INFO(optLogger, "3");
 		// do bundle adjustment
 		baInfo.bundleAdjustment( false );
 		baInfo.printConfiguration();
 		baInfo.printResiduals();
-		LOG4CPP_INFO(optLogger, "4");
-
+		
 		if ( !g_config.refPoints.empty() )
 		{
 			// add information from reference points
