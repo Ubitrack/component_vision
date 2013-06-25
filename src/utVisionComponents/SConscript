@@ -6,8 +6,10 @@ import os.path
 Import( '*' )
 env = masterEnv.Clone()
 
-have_dataflow = False
 env.AppendUnique( **mergeOptions( utdataflow_all_options, utvision_all_options ) )
+env.AppendUnique( **utcomponents_options )
+env.AppendUnique( **glut_options )
+
 env.AppendUnique( LIBS = boost_libs( [ 'thread' ] ) )
 
 # create component libraries
@@ -17,10 +19,14 @@ if not have_lapack:
 	for src in [ "MarkerTracker.cpp", "CameraProjectionMatrix.cpp", "ReorderGrid.cpp" ]:
 		comp_sources.remove( src );
 		
-if not have_dataflow:
+if not have_utcomponents:
 	for src in [ "ImageTrigger.cpp", "FrameBuffer.cpp", "ImageGate.cpp", "FrameSampler.cpp" ]:
 		comp_sources.remove( src );
 
+if not have_glut:
+	for src in [ "TextureUpdate.cpp" ]:
+		comp_sources.remove( src );
+		
 # setup environment
 env.AppendUnique( **mergeOptions( utvision_options, opencv_options, lapack_options ) )
 env.AppendUnique( LIBS = boost_libs( [ 'thread' ] ) )
