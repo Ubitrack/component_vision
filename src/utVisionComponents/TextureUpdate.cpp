@@ -34,7 +34,7 @@
 
 #include <utDataflow/Component.h>
 #include <utDataflow/PushConsumer.h>
-#include <utDataflow/PushSupplier.h>
+#include <utDataflow/PullSupplier.h>
 #include <utDataflow/ComponentFactory.h>
 #include <utMeasurement/Measurement.h>
 #include <utVision/Image.h>
@@ -79,8 +79,10 @@ namespace Ubitrack { namespace Components {
     TextureUpdateOpenGL( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > subgraph  )
       : Dataflow::Component( sName )      
       , m_inPort( "Input", *this, boost::bind( &TextureUpdateOpenGL::receiveImage, this, _1 ) )
-	  , m_inPortTextureID( "Input", *this, boost::bind( &TextureUpdateOpenGL::receiveUpdateTexture, this, _1 ) )      
+	  , m_inPortTextureID( "InputTextureID", *this, boost::bind( &TextureUpdateOpenGL::receiveUpdateTexture, this, _1 ) )      
       , m_logger( log4cpp::Category::getInstance( "Ubitrack.Components.TextureUpdate" ) )
+//	,m_lastUpdate(0)
+	,rgbaImage(new Vision::Image(320,240,4))
     {
       		
 
@@ -90,37 +92,57 @@ namespace Ubitrack { namespace Components {
     /** Method that computes the result. */
     void receiveImage( const Measurement::ImageMeasurement& image )
     {
+		LOG4CPP_INFO(m_logger, "receiveImage");
 		boost::mutex::scoped_lock l( m_mutex );
 		currentImage = image;
+		LOG4CPP_INFO(m_logger, "receiveImage:"<<currentImage.get());
     }
 	
-	void receiveUpdateTexture( const Measurement::Button& textureID )
+	Measurement::Position receiveUpdateTexture( Measurement::Timestamp textureID )
     {
-		boost::shared_ptr< Vision::Image > rgbaImage;
+		
+		Measurement::Position b(textureID, Math::Vector<3>(0,0,0));
+			LOG4CPP_INFO(m_logger, "receiveUpdateTexture");
 		{
+
 			boost::mutex::scoped_lock l( m_mutex );
 			
-			rgbaImage = currentImage->CvtColor( CV_RGB2RGBA, 4, IPL_DEPTH_8U );
+			LOG4CPP_INFO(m_logger, "receiveUpdateTexture:"<<currentImage.get());
+			if(currentImage.get() == NULL){
+				LOG4CPP_INFO(m_logger, "receiveUpdateTexture: return, no new data");
+				return b;
+			}
+
+	
+			cvCvtColor(currentImage.get(), rgbaImage.get(), CV_RGB2RGBA);
+			currentImage.reset();
+
 		}
-		glBindTexture( GL_TEXTURE_2D, (GLuint) textureID.get() );
+		LOG4CPP_INFO(m_logger, "receiveUpdateTexture ID:"<<textureID);
+		glBindTexture( GL_TEXTURE_2D, (GLuint) textureID );
 		glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, rgbaImage->width, rgbaImage->height, 
 			GL_RGBA, GL_UNSIGNED_BYTE, rgbaImage->imageData );
+		LOG4CPP_ERROR(m_logger, "value"<<rgbaImage->imageData[4960]);
+		return b;
+
     }
 
   protected:
     
-    Measurement::ImageMeasurement currentImage;
+    boost::shared_ptr< Vision::Image >  currentImage;
 
     /** Input port of the component. */
     Dataflow::PushConsumer< Measurement::ImageMeasurement > m_inPort;
 	
-	Dataflow::PushConsumer< Measurement::Button > m_inPortTextureID;
+	Dataflow::PullSupplier< Measurement::Position > m_inPortTextureID;
 
 
     /** log4cpp logger reference */
     log4cpp::Category& m_logger;	
 	
 	boost::mutex m_mutex;
+	Measurement::Timestamp m_lastUpdate;
+	boost::shared_ptr< Vision::Image >  rgbaImage;
 
   };
 
