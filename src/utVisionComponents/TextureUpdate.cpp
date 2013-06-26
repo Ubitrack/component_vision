@@ -114,7 +114,7 @@ namespace Ubitrack { namespace Components {
 			}
 
 	
-			cvCvtColor(currentImage.get(), rgbaImage.get(), CV_RGB2RGBA);
+			cvCvtColor(currentImage.get(), rgbaImage.get(), CV_BGR2RGBA);
 			currentImage.reset();
 
 		}
