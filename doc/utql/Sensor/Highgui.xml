@@ -56,7 +56,7 @@
 				<EnumValue name="4" displayName="RGBA"/>
 			</Attribute>
 			
-			<Attribute name="androidExposure" min="-2" max="2" default="0" xsi:type="IntAttributeDeclarationType" displayName="Android exposure compensation">
+			<Attribute name="androidExposure" default="0" xsi:type="IntAttributeDeclarationType" displayName="Android exposure compensation">
 				<Description>
 					<h:p>Exposure compensation of android camera driver</h:p>
 				</Description>
@@ -67,15 +67,20 @@
 				</Description>
 				<EnumValue name="0" displayName="AUTO"/>
 				<EnumValue name="1" displayName="OFF"/>				
-				<EnumValue name="2" displayName="TORCH"/>
+				<EnumValue name="2" displayName="ON"/>
+				<EnumValue name="3" displayName="RED_EYE"/>
+				<EnumValue name="4" displayName="TORCH"/>
 			</Attribute>			
-			<Attribute name="androidFocus" displayName="Android focus mode" default="2" xsi:type="EnumAttributeDeclarationType">
+			<Attribute name="androidFocus" displayName="Android focus mode" default="4" xsi:type="EnumAttributeDeclarationType">
 				<Description>
 					<h:p>Focus mode of android camera</h:p>
 				</Description>
 				<EnumValue name="0" displayName="AUTO"/>
-				<EnumValue name="1" displayName="FIXED"/>				
-				<EnumValue name="2" displayName="INFINITY"/>
+				<EnumValue name="1" displayName="CONTINUOUS_VIDEO"/>				
+				<EnumValue name="2" displayName="EDOF"/>	
+				<EnumValue name="3" displayName="FIXED"/>					
+				<EnumValue name="4" displayName="INFINITY"/>
+				<EnumValue name="5" displayName="MACRO"/>
 			</Attribute>
 			<Attribute name="androidWhiteBalance" displayName="Android white balance" default="0" xsi:type="EnumAttributeDeclarationType">
 				<Description>
@@ -96,6 +101,7 @@
 				<EnumValue name="0" displayName="50HZ"/>
 				<EnumValue name="1" displayName="60HZ"/>				
 				<EnumValue name="2" displayName="AUTO"/>
+				<EnumValue name="3" displayName="OFF"/>
 			</Attribute>
 		
         </DataflowConfiguration>
