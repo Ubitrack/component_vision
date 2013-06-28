@@ -92,39 +92,46 @@ namespace Ubitrack { namespace Components {
     /** Method that computes the result. */
     void receiveImage( const Measurement::ImageMeasurement& image )
     {
-		LOG4CPP_INFO(m_logger, "receiveImage");
+		LOG4CPP_DEBUG(m_logger, "receiveImage start");
 		boost::mutex::scoped_lock l( m_mutex );
 		currentImage = image;
-		LOG4CPP_INFO(m_logger, "receiveImage:"<<currentImage.get());
+		LOG4CPP_DEBUG(m_logger, "receiveImage:"<<currentImage.get());
     }
 	
 	Measurement::Position receiveUpdateTexture( Measurement::Timestamp textureID )
     {
 		
-		Measurement::Position b(textureID, Math::Vector<3>(0,0,0));
+
+
+		if( textureID == 0 && currentImage.get() != NULL){
+			Measurement::Position result(textureID, Math::Vector<3>(currentImage->width,currentImage->height,currentImage->nChannels));
+			return result;
+		}
+
 		boost::shared_ptr< Vision::Image > sourceImage;
-			LOG4CPP_INFO(m_logger, "receiveUpdateTexture");
+			LOG4CPP_DEBUG(m_logger, "receiveUpdateTexture start");
 		{
 
 			boost::mutex::scoped_lock l( m_mutex );
 			if(currentImage.get() == NULL){
-				LOG4CPP_ERROR(m_logger, "receiveUpdateTexture: return, no new data");
-				return b;
+				LOG4CPP_WARN(m_logger, "receiveUpdateTexture: return, no new data");
+				return Measurement::Position(0, Math::Vector<3>(0,0,0));
 			}
 
-			LOG4CPP_INFO(m_logger, "receiveUpdateTexture:"<<currentImage.get());
+			LOG4CPP_DEBUG(m_logger, "receiveUpdateTextureASDF:"<<currentImage.get());
 			if(currentImage->nChannels == 4){
-				LOG4CPP_INFO(m_logger, "image correct channels");
+				LOG4CPP_DEBUG(m_logger, "image correct channels");
 				sourceImage = currentImage;
 				currentImage.reset();
 			}
 			else{
+				LOG4CPP_DEBUG(m_logger, "convert else");
 				if(rgbaImage.get() == 0){
 					LOG4CPP_INFO(m_logger, "create buffer image");
 					rgbaImage.reset(new Vision::Image(currentImage->width, currentImage->height, 4));
 					
 				}
-				LOG4CPP_INFO(m_logger, "convert image");
+				LOG4CPP_DEBUG(m_logger, "convert image");
 				cvCvtColor(currentImage.get(), rgbaImage.get(), CV_BGR2RGBA);
 				sourceImage = rgbaImage;
 				currentImage.reset();
@@ -136,11 +143,11 @@ namespace Ubitrack { namespace Components {
 			
 
 		}
-		//LOG4CPP_INFO(m_logger, "receiveUpdateTexture ID:"<<textureID);
+		LOG4CPP_DEBUG(m_logger, "receiveUpdateTexture ID:"<<textureID);
 		glBindTexture( GL_TEXTURE_2D, (GLuint) textureID );
 		glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, sourceImage->width, sourceImage->height, 
 			GL_RGBA, GL_UNSIGNED_BYTE, sourceImage->imageData );		
-		return b;
+		return Measurement::Position(textureID, Math::Vector<3>(0,0,0));;
 
     }
 

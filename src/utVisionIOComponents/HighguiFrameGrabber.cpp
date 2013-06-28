@@ -219,6 +219,7 @@ void HighguiFrameGrabber::ThreadProc()
 	cvSetCaptureProperty( cap, CV_CAP_PROP_FRAME_WIDTH, m_width );
 	cvSetCaptureProperty( cap, CV_CAP_PROP_FRAME_HEIGHT, m_height );
 #ifdef ANDROID
+	
 	cvSetCaptureProperty( cap, CV_CAP_PROP_EXPOSURE, m_exposure);
 	cvSetCaptureProperty( cap, CV_CAP_PROP_ANDROID_FLASH_MODE, m_flash );
 	cvSetCaptureProperty( cap, CV_CAP_PROP_ANDROID_FOCUS_MODE, m_focus );
@@ -232,6 +233,7 @@ void HighguiFrameGrabber::ThreadProc()
 
 
 	//Grabbing a frame in order to get the cam properties
+	cvGrabFrame( cap );
 	IplImage* pIpl = cvRetrieveFrame( cap , m_imageFormat);
 
 	// reading the frame size from the frame
@@ -248,7 +250,7 @@ void HighguiFrameGrabber::ThreadProc()
 		LOG4CPP_DEBUG( logger, "time = " << time / 1000000 );
 		
 #ifdef ANDROID
-		IplImage* pIpl = cvRetrieveFrame( cap, m_imageFormat );
+		IplImage* pIpl = cvRetrieveFrame( cap, m_imageFormat );		
 #else
 		IplImage* pIpl = cvRetrieveFrame( cap );
 #endif
@@ -273,8 +275,9 @@ void HighguiFrameGrabber::ThreadProc()
 				// convert to color
 #ifdef ANDROID
 				boost::shared_ptr< Image > pImage( new Image( pIpl->width, pIpl->height, pIpl->nChannels ) );
-				cvConvertImage( pIpl, *pImage );
-				pImage->origin = pIpl->origin;				
+				//cvConvertImage( pIpl, *pImage );
+				cvCopy( pIpl, *pImage );	
+				pImage->origin = pIpl->origin;			
 				m_colorPort.send( ImageMeasurement( time, pImage ) );
 #else
 				boost::shared_ptr< Image > pImage( new Image( pIpl->width, pIpl->height, 3 ) );
