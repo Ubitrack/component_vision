@@ -101,6 +101,18 @@ protected:
 	// divisor
 	int m_divisor;
 
+	/**
+	* New property values	
+	*/
+	int m_width;
+	int m_height;
+	int m_imageFormat;
+	int m_exposure;
+	int m_flash;
+	int m_focus;
+	int m_whiteBalance;
+	int m_antibanding;
+
 	// the thread
 	boost::scoped_ptr< boost::thread > m_Thread;
 
@@ -148,10 +160,32 @@ HighguiFrameGrabber::HighguiFrameGrabber( const std::string& sName, boost::share
 	, m_bStop( true )
 	, m_outPort( "Output", *this )
 	, m_colorPort( "ColorOutput", *this )
+	, m_width(320)
+	, m_height(240)
+	, m_imageFormat(0)
+	, m_exposure(0)
+	, m_flash(1)
+	, m_focus(2)
+	, m_whiteBalance(0)
+	, m_antibanding(2)
 {
 	subgraph->m_DataflowAttributes.getAttributeData( "highguiCameraIndex", m_cameraIndex );
 	
 	subgraph->m_DataflowAttributes.getAttributeData( "divisor", m_divisor );
+
+	subgraph->m_DataflowAttributes.getAttributeData( "imageWidth", m_width );
+	subgraph->m_DataflowAttributes.getAttributeData( "imageHeight", m_height );
+
+	subgraph->m_DataflowAttributes.getAttributeData( "imageFormat", m_imageFormat );
+#ifdef ANDROID
+	
+	
+	subgraph->m_DataflowAttributes.getAttributeData( "androidExposure", m_exposure );
+	subgraph->m_DataflowAttributes.getAttributeData( "androidFlash", m_flash );
+	subgraph->m_DataflowAttributes.getAttributeData( "androidFocus", m_focus );
+	subgraph->m_DataflowAttributes.getAttributeData( "androidWhiteBalance", m_whiteBalance );
+	subgraph->m_DataflowAttributes.getAttributeData( "androidAntibanding", m_antibanding );
+#endif
 
 	stop();
 }
@@ -182,20 +216,42 @@ void HighguiFrameGrabber::ThreadProc()
 // 	cvSetCaptureProperty( cap, CV_CAP_PROP_GAIN, 0.1 );
 
 
+	cvSetCaptureProperty( cap, CV_CAP_PROP_FRAME_WIDTH, m_width );
+	cvSetCaptureProperty( cap, CV_CAP_PROP_FRAME_HEIGHT, m_height );
+#ifdef ANDROID
+	cvSetCaptureProperty( cap, CV_CAP_PROP_EXPOSURE, m_exposure);
+	cvSetCaptureProperty( cap, CV_CAP_PROP_ANDROID_FLASH_MODE, m_flash );
+	cvSetCaptureProperty( cap, CV_CAP_PROP_ANDROID_FOCUS_MODE, m_focus );
+	cvSetCaptureProperty( cap, CV_CAP_PROP_ANDROID_WHITE_BALANCE, m_whiteBalance );
+	cvSetCaptureProperty( cap, CV_CAP_PROP_ANDROID_ANTIBANDING, m_antibanding );
+	
+#else
+	
+#endif
+
+
 
 	//Grabbing a frame in order to get the cam properties
-	//	IplImage* pIpl = cvRetrieveFrame( cap );
+	IplImage* pIpl = cvRetrieveFrame( cap , m_imageFormat);
 
 	// reading the frame size from the frame
-	//LOG4CPP_INFO(logger, "Frame width: " << pIpl->width << "pixel");
-	//LOG4CPP_INFO(logger, "Frame height: " << pIpl->height  << "pixel");
+	LOG4CPP_INFO(logger, "Frame width: " << pIpl->width << "pixel");
+	LOG4CPP_INFO(logger, "Frame height: " << pIpl->height  << "pixel");
+	LOG4CPP_INFO(logger, "Frame channels: " << pIpl->nChannels);
+	LOG4CPP_INFO(logger, "Frame depth: " << pIpl->depth );
+	LOG4CPP_INFO(logger, "Frame ChannelSequence: " << pIpl->channelSeq[0]<< pIpl->channelSeq[1]<< pIpl->channelSeq[2]<< pIpl->channelSeq[3] );	
 
 	while ( !m_bStop )
 	{
 		cvGrabFrame( cap );
 		Measurement::Timestamp time( Measurement::now() - 10000000L );
 		LOG4CPP_DEBUG( logger, "time = " << time / 1000000 );
+		
+#ifdef ANDROID
+		IplImage* pIpl = cvRetrieveFrame( cap, m_imageFormat );
+#else
 		IplImage* pIpl = cvRetrieveFrame( cap );
+#endif
 		
 		// choose only certain frames and drop the others
 		if( (  m_counter++ % m_divisor ) != 0 )
@@ -215,13 +271,20 @@ void HighguiFrameGrabber::ThreadProc()
 		{
 			if (m_colorPort.isConnected()) {
 				// convert to color
+#ifdef ANDROID
+				boost::shared_ptr< Image > pImage( new Image( pIpl->width, pIpl->height, pIpl->nChannels ) );
+				cvConvertImage( pIpl, *pImage );
+				pImage->origin = pIpl->origin;				
+				m_colorPort.send( ImageMeasurement( time, pImage ) );
+#else
 				boost::shared_ptr< Image > pImage( new Image( pIpl->width, pIpl->height, 3 ) );
 				cvConvertImage( pIpl, *pImage );
 				pImage->origin = pIpl->origin;
 				pImage->channelSeq[0]='B';
 				pImage->channelSeq[1]='G';
 				pImage->channelSeq[2]='R';
-				m_colorPort.send( ImageMeasurement( time, pImage ) );
+#endif
+				
 			}
 			if (m_outPort.isConnected()) {
 				// convert to greyscale

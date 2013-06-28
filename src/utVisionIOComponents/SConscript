@@ -20,3 +20,7 @@ env.Replace( no_import_lib = 1 )
 
 # compile components as shared libraries
 setupComponentBuild(env, comp_sources, 'visioncomponents')
+
+sources = globSourceFiles( '*.cpp' )
+headers = globSourceFiles( '*.h' )
+createVisualStudioProject(env, sources, headers, 'utVisionIO-Components')

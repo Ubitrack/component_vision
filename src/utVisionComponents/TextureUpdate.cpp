@@ -25,9 +25,9 @@
 /**
  * @ingroup dataflow_components
  * @file
- * Components that modifies timestamp
+ * Components that updates a texture using opengl
  *
- * @author Michael Schlegel <schlegem@in.tum.de>
+ * @author Frieder Pankratz <pankratz@in.tum.de>
  */
 
 #include <log4cpp/Category.hh>
@@ -82,7 +82,7 @@ namespace Ubitrack { namespace Components {
 	  , m_inPortTextureID( "InputTextureID", *this, boost::bind( &TextureUpdateOpenGL::receiveUpdateTexture, this, _1 ) )      
       , m_logger( log4cpp::Category::getInstance( "Ubitrack.Components.TextureUpdate" ) )
 //	,m_lastUpdate(0)
-	,rgbaImage(new Vision::Image(320,240,4))
+	,rgbaImage()
     {
       		
 
@@ -102,27 +102,44 @@ namespace Ubitrack { namespace Components {
     {
 		
 		Measurement::Position b(textureID, Math::Vector<3>(0,0,0));
+		boost::shared_ptr< Vision::Image > sourceImage;
 			LOG4CPP_INFO(m_logger, "receiveUpdateTexture");
 		{
 
 			boost::mutex::scoped_lock l( m_mutex );
-			
-			LOG4CPP_INFO(m_logger, "receiveUpdateTexture:"<<currentImage.get());
 			if(currentImage.get() == NULL){
-				LOG4CPP_INFO(m_logger, "receiveUpdateTexture: return, no new data");
+				LOG4CPP_ERROR(m_logger, "receiveUpdateTexture: return, no new data");
 				return b;
 			}
 
+			LOG4CPP_INFO(m_logger, "receiveUpdateTexture:"<<currentImage.get());
+			if(currentImage->nChannels == 4){
+				LOG4CPP_INFO(m_logger, "image correct channels");
+				sourceImage = currentImage;
+				currentImage.reset();
+			}
+			else{
+				if(rgbaImage.get() == 0){
+					LOG4CPP_INFO(m_logger, "create buffer image");
+					rgbaImage.reset(new Vision::Image(currentImage->width, currentImage->height, 4));
+					
+				}
+				LOG4CPP_INFO(m_logger, "convert image");
+				cvCvtColor(currentImage.get(), rgbaImage.get(), CV_BGR2RGBA);
+				sourceImage = rgbaImage;
+				currentImage.reset();
+			}
+			
+			
+
 	
-			cvCvtColor(currentImage.get(), rgbaImage.get(), CV_BGR2RGBA);
-			currentImage.reset();
+			
 
 		}
-		LOG4CPP_INFO(m_logger, "receiveUpdateTexture ID:"<<textureID);
+		//LOG4CPP_INFO(m_logger, "receiveUpdateTexture ID:"<<textureID);
 		glBindTexture( GL_TEXTURE_2D, (GLuint) textureID );
-		glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, rgbaImage->width, rgbaImage->height, 
-			GL_RGBA, GL_UNSIGNED_BYTE, rgbaImage->imageData );
-		LOG4CPP_ERROR(m_logger, "value"<<rgbaImage->imageData[4960]);
+		glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, sourceImage->width, sourceImage->height, 
+			GL_RGBA, GL_UNSIGNED_BYTE, sourceImage->imageData );		
 		return b;
 
     }

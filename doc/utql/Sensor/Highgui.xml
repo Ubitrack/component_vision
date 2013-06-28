@@ -3,7 +3,7 @@
 <UTQLPatternTemplates xmlns='http://ar.in.tum.de/ubitrack/utql'
                       xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
                       xmlns:xi='http://www.w3.org/2001/XInclude'
-                      xmlns:h="http://www.w3.org/1999/xhtml"
+                      xmlns:h="http://www.w3.org/1999/xhtml"					  
                       xsi:schemaLocation='http://ar.in.tum.de/ubitrack/utql ../../../schema/utql_templates.xsd'>
     
     <Pattern name="HighguiFrameGrabber" displayName="Highgui Framegrabber">
@@ -31,6 +31,73 @@
 			<Attribute name="divisor" default="1" min="1" displayName="Divisor" xsi:type="IntAttributeDeclarationType">
                 <Description><h:p>This parameters specifies the divisor. </h:p></Description>
             </Attribute>
+			
+			<Attribute name="imageWidth" min="1" default="320" xsi:type="IntAttributeDeclarationType" displayName="image width">
+				<Description>
+					<h:p>Desired image width in pixels. Note that this is only a recommendation and the actual
+					size will depend on the capabilities of the camera driver. </h:p>
+				</Description>
+			</Attribute>
+			<Attribute name="imageHeight" min="1" default="240" xsi:type="IntAttributeDeclarationType" displayName="image height">
+				<Description>
+					<h:p>Desired image height in pixels. Note that this is only a recommendation and the actual
+					size will depend on the capabilities of the camera driver. </h:p>
+				</Description>
+			</Attribute>
+			
+			<Attribute name="imageFormat" displayName="image format" default="2" xsi:type="EnumAttributeDeclarationType">
+				<Description>
+					<h:p>Format of output image, currently only for android</h:p>
+				</Description>
+				<EnumValue name="0" displayName="BGR"/>
+				<EnumValue name="1" displayName="GRAY"/>				
+				<EnumValue name="2" displayName="RGB"/>				
+				<EnumValue name="3" displayName="BGRA"/>
+				<EnumValue name="4" displayName="RGBA"/>
+			</Attribute>
+			
+			<Attribute name="androidExposure" min="-2" max="2" default="0" xsi:type="IntAttributeDeclarationType" displayName="Android exposure compensation">
+				<Description>
+					<h:p>Exposure compensation of android camera driver</h:p>
+				</Description>
+			</Attribute>			
+			<Attribute name="androidFlash" displayName="Android flash mode" default="1" xsi:type="EnumAttributeDeclarationType"> 
+				<Description>
+					<h:p>Flash mode of android camera</h:p>
+				</Description>
+				<EnumValue name="0" displayName="AUTO"/>
+				<EnumValue name="1" displayName="OFF"/>				
+				<EnumValue name="2" displayName="TORCH"/>
+			</Attribute>			
+			<Attribute name="androidFocus" displayName="Android focus mode" default="2" xsi:type="EnumAttributeDeclarationType">
+				<Description>
+					<h:p>Focus mode of android camera</h:p>
+				</Description>
+				<EnumValue name="0" displayName="AUTO"/>
+				<EnumValue name="1" displayName="FIXED"/>				
+				<EnumValue name="2" displayName="INFINITY"/>
+			</Attribute>
+			<Attribute name="androidWhiteBalance" displayName="Android white balance" default="0" xsi:type="EnumAttributeDeclarationType">
+				<Description>
+					<h:p>White balance of android camera</h:p>
+				</Description>
+				<EnumValue name="0" displayName="AUTO"/>
+				<EnumValue name="1" displayName="CLOUDY_DAYLIGHT"/>				
+				<EnumValue name="2" displayName="DAYLIGHT"/>
+				<EnumValue name="3" displayName="FLUORESCENT"/>
+				<EnumValue name="4" displayName="INCANDESCENT"/>
+				<EnumValue name="5" displayName="SHADE"/>
+				<EnumValue name="6" displayName="TWILIGHT"/>
+			</Attribute>
+			<Attribute name="androidAntibanding" displayName="Android anti banding mode" default="2" xsi:type="EnumAttributeDeclarationType">
+				<Description>
+					<h:p>Focus mode of android camera</h:p>
+				</Description>
+				<EnumValue name="0" displayName="50HZ"/>
+				<EnumValue name="1" displayName="60HZ"/>				
+				<EnumValue name="2" displayName="AUTO"/>
+			</Attribute>
+		
         </DataflowConfiguration>
     </Pattern>
     
