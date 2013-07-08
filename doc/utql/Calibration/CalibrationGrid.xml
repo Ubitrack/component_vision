@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<UTQLPatternTemplates xmlns='http://ar.in.tum.de/ubitrack/utql'
+                      xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+                      xmlns:xi='http://www.w3.org/2001/XInclude'
+                      xmlns:h="http://www.w3.org/1999/xhtml"
+                      xsi:schemaLocation='http://ar.in.tum.de/ubitrack/utql ../../../schema/utql_templates.xsd'>
+    <Pattern name="CalibartionGrid" displayName="(Planar) Calibration Grid">
+    	<Description><h:p>Provides the 3d structure of planar calibration grid.</h:p></Description>
+        <Output>
+			<Node name="Origin" displayName="Origin"/>
+			<Node name="CalibrationGridPoints" displayName="Calibration Grid Points">
+                  <Attribute name="gridPointsX" displayName="inner corners x (width)" default="4" min="2" xsi:type="IntAttributeDeclarationType">
+                	<Description><h:p>Number of calibration grid corners in x direction</h:p></Description>
+                </Attribute>
+                <Attribute name="gridPointsY" displayName="inner corners y (height)" default="11" min="2" xsi:type="IntAttributeDeclarationType">
+                	<Description><h:p>Number of calibration grid corners in y direction</h:p></Description>
+                </Attribute>
+                <Attribute name="gridAxisLengthX" displayName="length of x-axis (width) [m]" default="0.254" min="0" xsi:type="DoubleAttributeDeclarationType">
+                	<Description><h:p>Length of the calibration grids' x-axis (from the first to the last corner) in meter.</h:p></Description>
+                </Attribute>
+				<Attribute name="gridAxisLengthY" displayName="length of y-axis (height) [m]" default="0.4234" min="0" xsi:type="DoubleAttributeDeclarationType">
+                	<Description><h:p>Length of the calibration grids' y-axis (from the first to the last corner) in meter.</h:p></Description>
+                </Attribute>
+				<Attribute name="gridThirdDimension" displayName="3rd Dimension (z axis)" default="0" xsi:type="DoubleAttributeDeclarationType">
+                	<Description><h:p>Specifies the third dimension the grid should have (usually defaults to zero).</h:p></Description>
+                </Attribute>
+				<Attribute name="gridType" displayName="type of the calibration grid pattern" default="asymmetric" xsi:type="EnumAttributeDeclarationType">
+                	<Description><h:p>Defines the type of calibration grid that is used for detection. </h:p></Description>
+                    <EnumValue name="symmetric"  displayName="Symmetric grid is provided"/>
+					<EnumValue name="asymmetric"  displayName="Asymmetric grid is provided"/>
+                </Attribute>
+            </Node>
+            <Edge name="Output" source="Origin" destination="CalibrationGridPoints" displayName="3D Grid Points">
+            	<Description><h:p>The position of the grid corners in the calibration grid coordinate system.</h:p></Description>
+                <Attribute name="type" value="3DPositionList" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="mode" value="pull" xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+        </Output>
+        
+        <DataflowConfiguration>
+            <UbitrackLib class="CalibrationGrid"/>
+        </DataflowConfiguration>
+    </Pattern>
+	
+    <!-- Attribute declarations -->
+    
+    <GlobalNodeAttributeDeclarations>
+        <xi:include href="../GlobalAttrSpec.xml" xpointer="element(/1/1/1)"/>
+    </GlobalNodeAttributeDeclarations>
+    
+    <GlobalEdgeAttributeDeclarations>
+        <xi:include href="../GlobalAttrSpec.xml" xpointer="element(/1/2/1)"/>
+        <xi:include href="../GlobalAttrSpec.xml" xpointer="element(/1/2/2)"/>
+        <xi:include href="../GlobalAttrSpec.xml" xpointer="element(/1/2/3)"/>
+    </GlobalEdgeAttributeDeclarations>
+    
+    <GlobalDataflowAttributeDeclarations>
+        <xi:include href="../GlobalAttrSpec.xml" xpointer="element(/1/3/1)"/>
+    </GlobalDataflowAttributeDeclarations>
+ 
+    
+</UTQLPatternTemplates>
