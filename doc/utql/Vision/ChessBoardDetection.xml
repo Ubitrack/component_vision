@@ -50,7 +50,7 @@
     </Pattern>
 
 
-	<Pattern name="ChessboardDetection" displayName="Chessboard Detection">
+	<Pattern name="ChessboardDetection" displayName="Deprecated: Chessboard Detection">
     	<Description><h:p>Detects chessboard patterns in greyscale images and returns the coordinates of
     	the internal corners as a list of 2D points.</h:p></Description>
     	
@@ -110,7 +110,64 @@
         <DataflowConfiguration>
             <UbitrackLib class="ChessboardFunctions"/>
         </DataflowConfiguration>
-    </Pattern>    
+    </Pattern>
+
+	<Pattern name="CalibrationGridDetection" displayName="Calibration Grid Detection">
+    	<Description><h:p>Detects calibration grid patterns in greyscale images and returns the coordinates of
+    	the as a list of 2D points.</h:p></Description>
+    	
+        <Input>
+            <Node name="Camera" displayName="Camera"/>
+            <Node name="ImagePlane" displayName="Image Plane"/>
+            <Edge destination="ImagePlane" displayName="Image" name="Image" source="Camera">
+                <Predicate>type=='Image'&amp;&amp;mode=='push'</Predicate>
+            </Edge>
+        </Input>
+        
+        <Output>
+            <Node name="CalibrationGridPoints" displayName="Calibration Grid Points">
+				<Attribute name="gridPointsX" displayName="inner corners x (width)" default="4" min="2" xsi:type="IntAttributeDeclarationType">
+                	<Description><h:p>Number of calibration grid corners in x direction</h:p></Description>
+                </Attribute>
+                <Attribute name="gridPointsY" displayName="inner corners y (height)" default="11" min="2" xsi:type="IntAttributeDeclarationType">
+                	<Description><h:p>Number of calibration grid corners in y direction</h:p></Description>
+                </Attribute>
+				<Attribute name="gridType" displayName="type of the calibration grid structure" default="asymmetric" xsi:type="EnumAttributeDeclarationType">
+					<Description><h:p>Defines the type of calibration grid that is used for detection. </h:p></Description>
+					<EnumValue name="symmetric"  displayName="Symmetric grid is provided"/>
+					<EnumValue name="asymmetric"  displayName="Asymmetric grid is provided"/>
+				</Attribute>
+				<Attribute name="boardType" displayName="type of the calibration grid features" default="circular" xsi:type="EnumAttributeDeclarationType">
+                	<Description><h:p>Defines the type of calibration grid that is used for detection. </h:p></Description>
+                    <EnumValue name="chessboard"  displayName="Chessboard like Structure"/>
+					<EnumValue name="circular"  displayName="Dot like Structure (filled Circles)"/>
+                </Attribute>
+            </Node>
+            <Edge name="Corners" source="ImagePlane" destination="CalibrationGridPoints" displayName="2D Grid Points" >
+            	<Description><h:p>A list of 2D-Coordinates that contain the locations of the chessboard
+            	corners in the image. The list is sorted by the coordinates on the calibration grid.</h:p></Description>
+                <Attribute name="type" value="2DPositionList" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
+				<Attribute name="normalize" displayName="normalize image points" default="true" xsi:type="EnumAttributeDeclarationType">
+                <Description>
+                    <h:p>Signs if image points should be normalized.</h:p>
+                </Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true"  displayName="True"/>
+            </Attribute>
+            </Edge>
+            <Edge name="DebugImage" source="Camera" destination="ImagePlane" displayName="Corner Image" >
+            	<Description><h:p>Contains the input image augmented with information about which points 
+            	are detected. Helpful as a user feedback.</h:p></Description>
+                <Attribute name="type" value="Image" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+        </Output>
+        
+        <DataflowConfiguration>
+            <UbitrackLib class="ChessboardFunctions"/>
+        </DataflowConfiguration>
+    </Pattern>	
     
     <!-- Attribute declarations -->
     

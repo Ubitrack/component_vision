@@ -1,0 +1,49 @@
+import os
+import sys
+
+# add configuration options
+Import( '*' )
+
+if platform == "android":
+	#already in build enviroment
+	glut_options = {}
+	have_freeglut = False
+	have_glut = True
+else:
+
+	SConscript ( '#/config/libraryConfig.py' )
+	Import('standardLibFinder', 'standardLibConfig')
+
+	opts.Add( 'GLUT_PATH', 'Path to the glut library (only for VRML viewer component)' )
+	opts.Add( 'GLUT_INCLUDE', 'Path to the glut headers' )
+	opts.Add( 'GLUT_LIBPATH', 'Path to the glut libraries' )
+	opts.Add( 'GLUT_LIBS', 'Glut libraries to link against' )
+
+	libName = "GLUT"
+
+	libname_glut = ""
+
+	compileSettings = []
+	if sys.platform == 'darwin':
+		#[{additional compile settings}, {include files}, {language (C++)},{library to link against (optional)}, {source code (optional)}]
+		compileSettings =[ {}, "GLUT/glut.h", "C++",libname_glut, "glutInitWindowSize( 800, 600 );"]		
+	else:
+		if sys.platform != "win32":
+			libname_glut = "glut"
+		# prefer freeglut over glut	
+		#[{additional compile settings}, {include files}, {language (C++)},{library to link against (optional)}, {source code (optional)}]	
+		compileSettings =[ {}, "GL/freeglut.h", "C++",libname_glut, "glutMainLoopEvent();"]		
+	
+	
+
+	libFinder = standardLibFinder(libName,compileSettings)
+
+	configHelper = standardLibConfig(libName, libFinder)
+
+	glut_options = configHelper.getLibraryOptions()
+	have_freeglut = configHelper.haveLib()
+	have_glut = have_freeglut
+
+
+# export results
+Export( [ 'have_freeglut', 'glut_options', 'have_glut'] )

@@ -51,7 +51,7 @@
 
 #include <opencv/cv.h>
 
-#define DO_TIMING
+//#define DO_TIMING
 
 #ifdef DO_TIMING
 #include <utUtil/BlockTimer.h>
@@ -134,7 +134,7 @@ public:
 		m_useInnerEdgels = subgraph->getNode( "Camera" )->getAttributeString( "enableInnerEdgels" ) == "true";
 
 		LOG4CPP_DEBUG( logger, "Marker tracker configuration: marker bit size: " << m_markerSize << ", code bit size: " << m_codeSize << ", ID mask: " << m_codeMask << ", use inner edgelets: " << m_useInnerEdgels );
-	
+
 		bRefine = false;
 		bPrevPoseVal = false;
 		nframecounter = 0;

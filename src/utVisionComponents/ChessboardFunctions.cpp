@@ -117,12 +117,13 @@ public:
 	ChessboardFunctionsComponent( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > pCfg )
 		: Dataflow::Component( sName )
 		, m_grid_type( 0 )
-		, m_width( -1 )
-		, m_height( -1 )
-		, m_sizeX( 0.025f )
-		, m_sizeY( 0.025f )
+		, m_width( 0 )
+		, m_height( 0 )
+		, m_sizeX( 0 )
+		, m_sizeY( 0 )
 		, m_edges( 0 )
 		, m_scaleFactor( 0 )
+		, m_normalize ( false )
 		, m_inPort( "Image", *this, boost::bind( &ChessboardFunctionsComponent::pushImage, this, _1 ) )
 		, m_intrinsicPort( "Intrinsic", *this )
 		, m_distortionPort( "Distortion", *this )
@@ -140,54 +141,106 @@ public:
 		if(	0 == pCfg->m_DataflowClass.compare( 0, 18, "ChessBoardTracking" ) )
 			LOG4CPP_ERROR( logger, "ChessBoardTracking is a deprecated Component.\nPlease switch to the newer ChessboardFunctions Component and use the according pattern." );
 
-		// get height and width attributes from ChessBoard node
-		Graph::UTQLSubgraph::NodePtr pCbNode = pCfg->getNode( "ChessBoard" );
-		pCbNode->getAttributeData( "chessBoardHeight", m_height );
-		pCbNode->getAttributeData( "chessBoardWidth", m_width );
-		if ( pCbNode->hasAttribute( "gridtype" ) ) // chosse the type of the calibration grid
+			
+		// same stuff for the chessboard detection (very old (deprecated) + old)
+		if ( pCfg->hasNode( "ChessBoard" ) )
 		{
-			if( pCbNode->getAttributeString( "gridtype" ) == "chessboard" ) //also the default value
-				m_grid_type = 0;
-			if( pCbNode->getAttributeString( "gridtype" ) == "circularsymmetric" )	
-				m_grid_type = 1;
-			if( pCbNode->getAttributeString( "gridtype" ) == "circularasymmetric" )	
-				m_grid_type = 2;
-		}		
+			// get height and width attributes from ChessBoard node
+			Graph::UTQLSubgraph::NodePtr pCbNode = pCfg->getNode( "ChessBoard" );
+			pCbNode->getAttributeData( "chessBoardHeight", m_height );
+			pCbNode->getAttributeData( "chessBoardWidth", m_width );
+		
+		
+			if ( pCbNode->hasAttribute( "gridtype" ) ) // chosse the type of the calibration grid
+			{
+				if( pCbNode->getAttributeString( "gridtype" ) == "chessboard" ) //also the default value
+					m_grid_type = 0;
+				if( pCbNode->getAttributeString( "gridtype" ) == "circularsymmetric" )
+					m_grid_type = 1;
+				if( pCbNode->getAttributeString( "gridtype" ) == "circularasymmetric" )
+					m_grid_type = 2;
+			}
+			
+			//stuff of the old calibration pattern
+			{
+				if ( pCbNode->hasAttribute( "xAxisLength" ) ) // overall size of xAxis
+					pCbNode->getAttributeData( "xAxisLength", m_sizeX );
+				m_sizeX /= ( m_width - 1 );
+				
+				if ( pCbNode->hasAttribute( "yAxisLength" ) ) // overall size of yAxis
+					pCbNode->getAttributeData( "yAxisLength", m_sizeY );
+				m_sizeY /= ( m_height - 1 );
+				
+				if ( pCbNode->hasAttribute( "scaleFactor" ) ) // scalefactor for smaller images
+					pCbNode->getAttributeData( "scaleFactor", m_scaleFactor );
+			}
+
+			//stuff of the very old (deprecated) pattern
+			{
+				if ( pCbNode->hasAttribute( "chessBoardSize" ) ) // old parameters override new ones
+				{
+					pCbNode->getAttributeData( "chessBoardSize", m_sizeX );
+					pCbNode->getAttributeData( "chessBoardSize", m_sizeY );
+				}
+			}
+
+			
+				
+
+		}
+		
+		// very new pattern, uses no own chessboard size
+		// scaling was thrown away, this should be handled somewhere else
+		if ( pCfg->hasNode( "CalibrationGridPoints" ) )
+		{
+			Graph::UTQLSubgraph::NodePtr pCbNode = pCfg->getNode( "CalibrationGridPoints" );
+			std::size_t width, height = 0;
+			pCbNode->getAttributeData( "gridPointsX", m_width );
+			pCbNode->getAttributeData( "gridPointsY", m_height );
+			
+			// value_type m_sizeX, m_sizeY, lastDim = 0;
+			pCbNode->getAttributeData( "gridAxisLengthX", m_sizeX );
+			pCbNode->getAttributeData( "gridAxisLengthY", m_sizeY );
+			// pCbNode->getAttributeData( "gridThirdDimension", lastDim );
+			
+			// grid type is set to circular as default:)
+			m_grid_type = 1;
+			if ( pCbNode->hasAttribute( "gridType" ) )
+				if( pCbNode->getAttributeString( "gridType" ) == "asymmetric" )
+					m_grid_type = 2;
+					
+			if ( pCbNode->hasAttribute( "boardType" ) )
+				if( pCbNode->getAttributeString( "boardType" ) == "chessboard" )
+					m_grid_type = 0;
+			
+			
+			Graph::UTQLSubgraph::EdgePtr edge = pCfg->getEdge( "Corners" );
+			if ( edge->hasAttribute( "normalize" ) )
+				if( edge->getAttributeString( "normalize" ) == "true" )
+					m_normalize = true;
+				
+		}
 		
 		if ( m_height <= 0 || m_width <= 0  )
-			UBITRACK_THROW( "Chessboard nodes has no valid chessBoardHeight, chessBoardWidth" );
+			UBITRACK_THROW( "Could not perform calibration grid detection, specify the number of features to detect using the chessBoardHeight, chessBoardWidth parameters." );
 		
-		if ( pCbNode->hasAttribute( "xAxisLength" ) ) // overall size of xAxis
-			pCbNode->getAttributeData( "xAxisLength", m_sizeX );
-		m_sizeX /= ( m_width - 1 );
-			
-		if ( pCbNode->hasAttribute( "yAxisLength" ) ) // overall size of yAxis
-			pCbNode->getAttributeData( "yAxisLength", m_sizeY );
-		m_sizeY /= ( m_height - 1 );
+		if ( !( m_sizeY > 0 && m_sizeX > 0 ) )
+			UBITRACK_THROW( "Could not perform calibration grid detection, calibration grid axis size was not spezified correctly, use the chessBoardSize, yAxisLength or xAxisLength attribute." );
 		
-		if ( pCbNode->hasAttribute( "chessBoardSize" ) ) // old parameters override new ones
-		{
-			pCbNode->getAttributeData( "chessBoardSize", m_sizeX );
-			pCbNode->getAttributeData( "chessBoardSize", m_sizeY );
-		}
-
-		if ( m_sizeY < 0 || m_sizeX < 0 )
-			UBITRACK_THROW( "Chessboard node has no chessBoardSize, yAxisLength or xAxisLength attribute" );
-
+		
 		// prepare the object points, that always stay fix
 		m_edges = m_height * m_width;
 
 		objPoints.reset( new float[ 3 * m_edges ] );
+		const float offset = ( m_grid_type == 2 ) ? m_sizeX * 0.5 : 0;
 		for( int i = 0; i < m_edges ; ++i )
 		{
 			objPoints[ 3 * i + 0 ] = static_cast< float >( i % m_width ) * m_sizeX;
+			if( ( ( i / m_width ) % 2 ) == 1 )
+				objPoints[ 3 * i + 0 ] += offset;
 			objPoints[ 3 * i + 1 ] = static_cast< float >( i / m_width ) * m_sizeY;
 			objPoints[ 3 * i + 2 ] = 0.0;
 		}
-		
-		if ( pCbNode->hasAttribute( "scaleFactor" ) ) // scalefactor for smaller images
-			pCbNode->getAttributeData( "scaleFactor", m_scaleFactor );
-		
     }
 
 	/** Method that computes the result. */
@@ -239,22 +292,25 @@ public:
 				pattern_was_found = cv::findCirclesGrid( calib_image, cvSize( m_width, m_height ), centers, cv::CALIB_CB_ASYMMETRIC_GRID );
 				break;
 			default:
-				LOG4CPP_ERROR( logger, "The type of the calibration grid is not specified correctly." );
+				LOG4CPP_ERROR( logger, "Cannot perform calibration grid detection, the type of the calibration grid is not specified correctly." );
 			}
 			//assgin the values to the other array again -> will get better with c++11
 			if( pattern_was_found )
+			{
+				found = m_edges;
 				for( int i( 0 ); i < m_edges; ++i )
 					corners[ i ] = centers[ i ];
-				
+			}
+			
 #else
 			pattern_was_found = cvFindChessboardCorners( *img, cvSize( m_width, m_height ) , corners.get(), &found, CV_CALIB_CB_ADAPTIVE_THRESH );
 #endif
 		}
 		
-		
 		if( pattern_was_found && found == m_edges )
 		{
-			cvFindCornerSubPix( *img, corners.get(), m_edges, cvSize( 10, 10 ), cvSize( -1, -1 ), cvTermCriteria( CV_TERMCRIT_ITER, 10, 0.1f ) );
+			if( m_grid_type == 0 )
+				cvFindCornerSubPix( *img, corners.get(), m_edges, cvSize( 10, 10 ), cvSize( -1, -1 ), cvTermCriteria( CV_TERMCRIT_ITER, 10, 0.1f ) );
 
 			/** copies all values into OpenCV compatible formats */
 			boost::scoped_array< float > imgPoints( new float[ 2 * m_edges ] );
@@ -313,9 +369,13 @@ public:
 			{
 				std::vector< Math::Vector< 2 > > positions;
 				positions.reserve( m_edges );
-				for( int i = 0; i < m_edges; ++i )
-					positions.push_back( Math::Vector< 2 >( imgPoints[ 2*i ], imgPoints[ 2*i+1 ] ) );
-
+				if( m_normalize )				
+					for( int i = 0; i < m_edges; ++i )
+						positions.push_back( Math::Vector< 2 >( imgPoints[ 2*i ] / (img->width-1), imgPoints[ 2*i+1 ] / (img->height-1) ) );
+				else
+					for( int i = 0; i < m_edges; ++i )
+						positions.push_back( Math::Vector< 2 >( imgPoints[ 2*i ] , imgPoints[ 2*i+1 ] ) );
+							
 				m_outPoints2DPort.send( Measurement::PositionList2( img.time(), positions ) );
 			}
 			
@@ -468,6 +528,8 @@ protected:
 
 	/** number of pyrDown before chessboard detection */
 	int m_scaleFactor;
+	
+	bool m_normalize;
 	
 	/** the chessboard's object points */
 	boost::scoped_array< float > objPoints;
