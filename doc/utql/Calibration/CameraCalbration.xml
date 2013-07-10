@@ -6,7 +6,86 @@
                       xmlns:h="http://www.w3.org/1999/xhtml"
                       xsi:schemaLocation='http://ar.in.tum.de/ubitrack/utql ../../schema/utql_templates.xsd'>
 
-    <Pattern name="IntrinsicCalibration" displayName="Camera Calibration">
+					  
+	<Pattern name="CameraCalibration" displayName="Camera Calibration">
+        <Description>
+			<p xmlns="http://www.w3.org/1999/xhtml">
+			Computes (normalized) intrinsic camera parameters consisting of a 3x3 matrix and (radial+tangential) distortion parameters.
+			The component expects normalised image points. In particular this means that the points are within the range [0,1], arranged around image origin[0.5,0.5].
+			</p>
+		</Description>
+		
+        <Input>
+			<Node name="Origin" displayName="Origin" />
+			<Node name="ImagePlane" displayName="ImagePlane" />
+            <Node name="CalibrationGridPoints" displayName="Calibration Grid" />
+            <Edge name="Points2D" source="ImagePlane" destination="CalibrationGridPoints" displayName="Positions 2D (normalized)">
+                <Predicate>type=='2DPositionList'</Predicate>
+            </Edge>
+			<Edge name="Points3D" source="Origin" destination="CalibrationGridPoints" displayName="Positions 3D">
+                <Predicate>type=='3DPositionList'</Predicate>
+            </Edge>
+        </Input>
+		
+        <Output>
+            <Node name="Camera" displayName="Camera" />
+            <Edge name="CameraIntrinsics" source="Camera" destination="ImagePlane" displayName="Intrinsic Matrix">
+                <Attribute name="type" value="3x3Matrix" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="static" value="true" xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+        </Output>
+		
+		<Constraints>
+        	<TriggerGroup>
+                <Edge edge-ref="Points2D"/>
+                <Edge edge-ref="Points3D"/>
+				<Edge edge-ref="CameraIntrinsics"/>
+            </TriggerGroup>
+        </Constraints>
+		
+        <DataflowConfiguration>
+            <UbitrackLib class="CameraCalibration"/>
+			
+            <Attribute name="expansion" value="time" xsi:type="EnumAttributeReferenceType"/>
+			
+			<Attribute name="tangentialDistortion" displayName="Tangential Distortion" default="true" xsi:type="EnumAttributeDeclarationType">
+                <Description>
+                    <h:p>Signs if tangential distortion should be estimated from calibration procedure. </h:p>
+                </Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true"  displayName="True"/>
+            </Attribute>
+			
+			<Attribute name="fixPrincipalPoint" displayName="fix Principal Point" default="false" xsi:type="EnumAttributeDeclarationType">
+                <Description>
+                    <h:p>Signs if the principal point should be centered during calibration procedure.</h:p>
+                </Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true"  displayName="True"/>
+            </Attribute>
+
+			<Attribute name="fixAspectRatio" displayName="fix Aspect Ratio" default="false" xsi:type="EnumAttributeDeclarationType">
+                <Description>
+                    <h:p>Signs if the aspect ratio (fx/fy) should be fixed during calibration procedure.</h:p>
+                </Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true"  displayName="True"/>
+            </Attribute>
+			
+			<!-- not yet supported: Attribute name="wideAngleLens" displayName="wideAngle Lens" default="false" xsi:type="EnumAttributeDeclarationType">
+                <Description>
+                    <h:p> Signs if the calibration should estimate more radial distortion parameters for wide angle lenses. </h:p>
+                </Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true"  displayName="True"/>
+            </Attribute-->
+			
+        </DataflowConfiguration>
+    </Pattern>
+	
+	
+    <Pattern name="IntrinsicCalibration" displayName="Deprecated: Camera Calibration">
         <Description><p xmlns="http://www.w3.org/1999/xhtml">Computes intrinsic camera parameters consisting of a 3x3 matrix and 4 radial distortion parameters.</p></Description>
         <Input>
             <Node name="ImagePlane" displayName="ImagePlane">
