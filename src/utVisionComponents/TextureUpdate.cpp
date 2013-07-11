@@ -43,8 +43,12 @@
 #ifdef _WIN32
 	#include "GL/freeglut.h"	
 #elif __APPLE__
+  #ifdef HAVE_FREEGLUT
+        #include "GL/freeglut.h"
+  #else
 	#include <OpenGL/OpenGL.h>
 	#include <GLUT/glut.h>
+  #endif
 #elif ANDROID
 #include <GLES2/gl2.h>
 #else
