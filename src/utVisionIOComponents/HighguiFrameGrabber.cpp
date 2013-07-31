@@ -277,8 +277,7 @@ void HighguiFrameGrabber::ThreadProc()
 				boost::shared_ptr< Image > pImage( new Image( pIpl->width, pIpl->height, pIpl->nChannels ) );
 				//cvConvertImage( pIpl, *pImage );
 				cvCopy( pIpl, *pImage );	
-				pImage->origin = pIpl->origin;			
-				m_colorPort.send( ImageMeasurement( time, pImage ) );
+				pImage->origin = pIpl->origin;							
 #else
 				boost::shared_ptr< Image > pImage( new Image( pIpl->width, pIpl->height, 3 ) );
 				cvConvertImage( pIpl, *pImage );
@@ -287,6 +286,7 @@ void HighguiFrameGrabber::ThreadProc()
 				pImage->channelSeq[1]='G';
 				pImage->channelSeq[2]='R';
 #endif
+				m_colorPort.send( ImageMeasurement( time, pImage ) );
 				
 			}
 			if (m_outPort.isConnected()) {

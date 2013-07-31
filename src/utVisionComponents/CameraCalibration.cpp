@@ -38,9 +38,14 @@
 // OpenCV (for the calibration function)
 #include <opencv/cv.h> 
 
-// for data preperation.
-#include <boost/scoped_array.hpp>
 
+// Boost (for data preperation)
+#include <boost/bind.hpp>
+#include <boost/thread.hpp>
+#include <boost/scoped_ptr.hpp>
+
+// Ubitrack
+#include <utUtil/OS.h>
 #include <utMath/Vector.h>
 #include <utMath/Matrix.h>
 #include <utMath/CameraIntrinsics.h>
@@ -49,6 +54,9 @@
 #include <utDataflow/TriggerOutPort.h>
 #include <utDataflow/ComponentFactory.h>
 #include <utMeasurement/Measurement.h>
+
+#include <log4cpp/Category.hh>
+static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.CameraCalibration" ) );
 
 
 namespace Ubitrack { namespace Vision {
@@ -80,6 +88,12 @@ protected:
 	/** Output port of the component providing the camera intrinsic parameters. */
 	Dataflow::TriggerOutPort< Measurement::CameraIntrinsics > m_intrPort;
 	
+	/** signs if the thread is running. */
+	boost::mutex m_mutexThread;
+	
+	/** thread performing camera calibration in the background. */
+	boost::scoped_ptr< boost::thread > m_pThread;
+	
 public:
 	/**
 	 * Standard component constructor.
@@ -89,10 +103,11 @@ public:
 	 */
 	CameraCalibration( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > pCfg )
 		: Dataflow::TriggerComponent( sName, pCfg )
-		, m_flags( 0 )
+		, m_flags( CV_CALIB_RATIONAL_MODEL ) // for using 6 instead of 3 distortion parameters
 		, m_inPort2D( "Points2D", *this )
 		, m_inPort3D( "Points3D", *this )
 		, m_intrPort( "CameraIntrinsics", *this )
+		, m_mutexThread( )
     {
 		
 		// look for some flags which can be specified...
@@ -114,26 +129,44 @@ public:
 	/** Method that computes the result. */
 	void compute( Measurement::Timestamp t )
 	{
-		if( hasNewPush() )
-			computeIntrinsic();
+		if( hasNewPush() )		
+		{
+			if( !boost::mutex::scoped_try_lock ( m_mutexThread ) )
+			{
+				LOG4CPP_WARN( logger, "Cannot perform camera calibration, thread is still busy, sending old calibration data." );
+				return;
+			}
+			else
+			{
+				const std::vector< vector_2d_type >& points2D = *m_inPort2D.get();
+				const std::vector< vector_3d_type >& points3D = *m_inPort3D.get();
+				m_pThread.reset( new boost::thread( boost::bind( &CameraCalibration::computeIntrinsic, this, points3D, points2D )));
+			}
+		}
+			
 		m_intrPort.send( Measurement::CameraIntrinsics ( t, m_camIntrinsics ) );
 	}
 
-	void computeIntrinsic()
+	void computeIntrinsic( const std::vector< vector_3d_type > points3D, const std::vector< vector_2d_type > points2D )
 	{
-		//just fetch the reference here
-		const std::vector< vector_2d_type >& points2D = *m_inPort2D.get();
-		const std::vector< vector_3d_type >& points3D = *m_inPort3D.get();
-		
+		boost::mutex::scoped_lock lock( m_mutexThread );
 		const std::size_t m_values = points2D.size();
-
-		if( m_values != points3D.size() )
-			UBITRACK_THROW( "Cannot perform camera calibration, number of 2D/3D correspondences does not match." );
-			
+		
 		if( m_values < 2 )
-			UBITRACK_THROW( "Cannot perform camera calibration, need at lest two corresponding measurements." );
+		{
+			// UBITRACK_THROW( "Cannot perform camera calibration, need at lest two different views." );
+			LOG4CPP_ERROR( logger, "Cannot perform camera calibration, need at lest two different views." );
+			return;
+		}
+			
 		
-		
+		if( m_values != points3D.size() )
+		{
+			// UBITRACK_THROW( "Cannot perform camera calibration, number of views in 2D does not match number of 3D grids." );
+			LOG4CPP_ERROR( logger, "Cannot perform camera calibration, number of views in 2D does not match number of 3D grids." );
+			return;
+		}	
+
 		//count the number of available correspondences
 		boost::scoped_array< int > chessNumber( new int[ m_values ] );
 		
@@ -141,13 +174,17 @@ public:
 		std::vector< std::size_t > num_points;
 		num_points.reserve( m_values );
 		
-		
 		for( std::size_t i( 0 ); i < m_values; ++i )
 		{
 			const std::size_t n2D = points2D.at( i ).size();
 			const std::size_t n3D = points3D.at( i ).size();
 			if( n2D != n3D )
-				UBITRACK_THROW( "Cannot perform camera calibration, number of corresponding 2D/3D measurements does not match." );
+			{
+				// UBITRACK_THROW( "Cannot perform camera calibration, number of corresponding 2D/3D measurements does not match." );
+				LOG4CPP_ERROR( logger, "Cannot perform camera calibration, number of corresponding 2D/3D measurements does not match." );
+				return;
+			}
+				
 			num_points.push_back( n2D );
 			chessNumber[ i ] = static_cast< int > ( n2D );
 		}
@@ -179,7 +216,6 @@ public:
 			}
 		}
 
-		
 		CvMat object_points = cvMat ( summe2D3D, 3, CV_32F, objPoints.get() );
 		CvMat image_points = cvMat ( summe2D3D, 2, CV_32F, imgPoints.get() );
 		CvMat point_counts = cvMat( 1, m_values, CV_32S, chessNumber.get() );
@@ -190,23 +226,31 @@ public:
 		float disVal[8];
 		CvMat distortion_coeffs = cvMat( 8, 1, CV_32FC1, disVal );
 
-
-		cvCalibrateCamera2(
+		
+		try
+		{
+			cvCalibrateCamera2(
 						&object_points,
 						&image_points,
 						&point_counts,
-						cvSize( 1, 1 ),
+						cvSize( 2, 2 ), //OpenCV modifies centers to (cvSize -1) * 0.5
 						&intrinsic_matrix,
 						&distortion_coeffs,
 						NULL ,		//	NULL for no output
 						NULL ,	//	NULL for no output
 						m_flags );
+		}
+		catch( const std::exception & e )
+		{
+			LOG4CPP_ERROR( logger, "Cannot perform camera calibration, error in OpenCV function call.\n" << e.what() );
+			return;
+		}
 
 		///@todo check if the paramrers should not be flipped, as it is done at some other places.
-		const Math::Vector< 2, double > tangential( disVal[ 1 ], disVal[ 2 ] );
+		const Math::Vector< 2, double > tangential( disVal[ 2 ], disVal[ 3 ] );
 		Math::Vector< 6, double > radial;
 		radial( 0 ) = disVal[ 0 ];
-		radial( 1 ) = disVal[ 3 ];
+		radial( 1 ) = disVal[ 1 ];
 		radial( 2 ) = disVal[ 4 ];
 		radial( 3 ) = disVal[ 5 ];
 		radial( 4 ) = disVal[ 6 ];
@@ -224,6 +268,8 @@ public:
 		intrinsic( 2, 2 ) = -1.0;
 
 		m_camIntrinsics = Math::CameraIntrinsics< double > ( intrinsic, radial, tangential );
+		m_intrPort.send( Measurement::CameraIntrinsics ( Measurement::now(), m_camIntrinsics ) );		
+		LOG4CPP_INFO( logger, "Finished camera calibration using " << m_values << " views." );
     }
 };
 

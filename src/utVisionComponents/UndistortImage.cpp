@@ -52,17 +52,39 @@ using namespace Ubitrack;
 using namespace Ubitrack::Vision;
 using namespace Ubitrack::Dataflow;
 
-namespace Ubitrack { namespace Drivers {
+namespace Ubitrack { namespace Vision {
 
 class UndistortImage
 	: public TriggerComponent
 {
+
+protected:
+	/** @deprecated (radial and tangential) distortion parameters */
+	PullConsumer< Measurement::Vector4D > m_coeffPort;
+	
+	/** @deprecated intrinsic camera matrix */
+	PullConsumer< Measurement::Matrix3x3 > m_matrixPort;
+	
+	/** intrinsic camera parameters: 3x3matrix + distortion parameters */
+	PullConsumer< Measurement::CameraIntrinsics > m_intrinsicsPort;
+	
+	/** distorted incoming image */
+	TriggerInPort< Measurement::ImageMeasurement > m_imageIn;
+	
+	/** undistorted outgoing image */
+	TriggerOutPort< Measurement::ImageMeasurement > m_imageOut;
+	
+	/** mapping of the x coordinates */
+	boost::scoped_ptr< Image > m_pMapX;
+	
+	/** mapping of the y coordinates */
+	boost::scoped_ptr< Image > m_pMapY;
 public:
 	UndistortImage( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > pConfig )
 		: TriggerComponent( sName, pConfig )
 		, m_coeffPort( "Distortion", *this ) //old port
 		, m_matrixPort( "Intrinsic", *this ) //old port
-		, m_intrinsicsPort( "Intrinsics", *this ) //new port
+		, m_intrinsicsPort( "CameraIntrinsics", *this ) //new port
 		, m_imageIn( "Input", *this )
 		, m_imageOut( "Output", *this )
 	{
@@ -71,10 +93,6 @@ public:
 	
 	void initMap( int width, int height, const Math::Vector< 8 >& coeffs, const Math::Matrix< 3, 3 >& intrinsics )
 	{
-		// skip if already initialized with same values
-		if ( m_pMapX && m_pMapX->width == width && m_pMapX->height == height )
-			return;
-			
 		LOG4CPP_INFO( logger, "Creating undistortion map" );
 		LOG4CPP_DEBUG( logger, "coeffs=" << coeffs );
 		LOG4CPP_DEBUG( logger, "intrinsic=" << intrinsics );
@@ -112,96 +130,98 @@ public:
 	
 	void compute( Measurement::Timestamp t )
 	{
-		// get the image
-		Measurement::ImageMeasurement pImage = m_imageIn.get();
-
-		// read parameters
-		Math::Vector< 8 > coeffs;
-		Math::Matrix< 3, 3 > intrinsics;
 		
+		
+		// get the image
+		Measurement::ImageMeasurement pImage;
 		try
 		{
-			//support for new camera intrinsics measurement
-			if( m_intrinsicsPort.isConnected() )
-			{
-				Math::CameraIntrinsics< double > camIntrinsics = *m_intrinsicsPort.get( t );
-				
-				intrinsics = camIntrinsics.matrix;
-				Math::CameraIntrinsics< double >::radial_type radDist = camIntrinsics.radial_params;
-				Math::CameraIntrinsics< double >::tangential_type tanDist =	camIntrinsics.tangential_params;
-				coeffs( 0 )  = radDist[ 0 ];
-				coeffs( 1 )  = radDist[ 1 ];
-				coeffs( 2 )  = tanDist[ 0 ];
-				coeffs( 3 )  = tanDist[ 1 ];
-				coeffs( 4 ) = coeffs( 5 ) = coeffs( 6 ) = coeffs( 7 ) = 0;
-				for(std::size_t i = 2; i < camIntrinsics.radial_size; ++i )
-					coeffs( i+2 )  = radDist[ i ];
-			}
-			else //suppoert for old pattern
-			{
-				intrinsics = *m_matrixPort.get( t );
-				Math::Vector< 4 > dist = *m_coeffPort.get( t );
-				coeffs( 0 )  = dist( 0 );
-				coeffs( 1 )  = dist( 1 );
-				coeffs( 2 )  = dist( 2 );
-				coeffs( 3 )  = dist( 3 );
-				coeffs( 4 ) = coeffs( 5 ) = coeffs( 6 ) = coeffs( 7 ) = 0;
-			}
-		}catch( ... )
-		{
-			coeffs( 0 ) = coeffs( 1 ) = coeffs( 2 ) = coeffs( 3 ) = 0;
-			coeffs( 4 ) = coeffs( 5 ) = coeffs( 6 ) = coeffs( 7 ) = 0;
-			intrinsics = Math::Matrix< 3, 3 >::identity();
-			LOG4CPP_WARN( logger, "Setting some default value" );
+			pImage = m_imageIn.get( );
 		}
-		// compensate for left-handed OpenCV coordinate frame
-		boost::numeric::ublas::column( intrinsics, 2 ) *= -1;
+		catch( ... )
+		{
+			LOG4CPP_WARN( logger, "Could not undistort an image, no image available." );
+			return;
+		}
 		
-		// compensate if origin==0
-		if ( !pImage->origin )
+		// skip if already initialized with same values
+		if ( !m_pMapX || m_pMapX->width != pImage->width || m_pMapX->height != pImage->height )
 		{
-			intrinsics( 1, 2 ) = pImage->height - 1 - intrinsics( 1, 2 );
-			coeffs( 2 ) *= -1.0;
+		
+			// read parameters
+			Math::Vector< 8 > coeffs;
+			Math::Matrix< 3, 3 > intrinsics;
+			
+			try
+			{
+				//support for new camera intrinsics measurement
+				if( m_intrinsicsPort.isConnected() )
+				{
+					Math::CameraIntrinsics< double > camIntrinsics = *m_intrinsicsPort.get( t );
+					
+					intrinsics = camIntrinsics.matrix;
+					//scale the matrix, depending on the calibartion size
+					intrinsics( 0, 0 ) *= pImage->width / static_cast< double >( camIntrinsics.dimension( 0 ) );
+					intrinsics( 0, 2 ) *= pImage->width / static_cast< double >( camIntrinsics.dimension( 0 ) );
+					intrinsics( 1, 1 ) *= pImage->height / static_cast< double >( camIntrinsics.dimension( 1 ) );
+					intrinsics( 1, 2 ) *= pImage->height / static_cast< double >( camIntrinsics.dimension( 1 ) );
+
+					Math::CameraIntrinsics< double >::radial_type radDist = camIntrinsics.radial_params;
+					Math::CameraIntrinsics< double >::tangential_type tanDist =	camIntrinsics.tangential_params;
+					coeffs( 0 )  = radDist[ 0 ];
+					coeffs( 1 )  = radDist[ 1 ];
+					coeffs( 2 )  = tanDist[ 0 ];
+					coeffs( 3 )  = tanDist[ 1 ];
+					coeffs( 4 ) = coeffs( 5 ) = coeffs( 6 ) = coeffs( 7 ) = 0;
+					for(std::size_t i = 2; i < camIntrinsics.radial_size; ++i )
+						coeffs( i+2 )  = radDist[ i ];
+				}
+				else //support for old pattern
+				{
+					intrinsics = *m_matrixPort.get( t );
+					Math::Vector< 4 > dist = *m_coeffPort.get( t );
+					coeffs( 0 )  = dist( 0 );
+					coeffs( 1 )  = dist( 1 );
+					coeffs( 2 )  = dist( 2 );
+					coeffs( 3 )  = dist( 3 );
+					coeffs( 4 ) = coeffs( 5 ) = coeffs( 6 ) = coeffs( 7 ) = 0;
+				}
+			}catch( ... )
+			{
+				coeffs( 0 ) = coeffs( 1 ) = coeffs( 2 ) = coeffs( 3 ) = 0;
+				coeffs( 4 ) = coeffs( 5 ) = coeffs( 6 ) = coeffs( 7 ) = 0;
+				intrinsics = Math::Matrix< 3, 3 >::identity();
+				LOG4CPP_WARN( logger, "Setting default values for camera intrinsics." );
+			}
+			
+			// compensate for left-handed OpenCV coordinate frame
+			boost::numeric::ublas::column( intrinsics, 2 ) *= -1;
+			
+			// compensate if origin==0
+			if ( !pImage->origin )
+			{
+				intrinsics( 1, 2 ) = pImage->height - 1 - intrinsics( 1, 2 );
+				coeffs( 2 ) *= -1.0;
+			}
+		
+			// initialize the distortion map
+			initMap( pImage->width, pImage->height, coeffs, intrinsics );
 		}
-	
-		// initialize the distortion map
-		initMap( pImage->width, pImage->height, coeffs, intrinsics );
 		
 		// undistort
-		Measurement::ImageMeasurement pUndistorted( t, boost::shared_ptr< Image >( 
-			new Image( pImage->width, pImage->height, pImage->nChannels, pImage->depth ) ) );
-		pUndistorted->origin = pImage->origin;
-
-		cvRemap( *pImage, *pUndistorted, *m_pMapX, *m_pMapY );
+		boost::shared_ptr< Image > imgUndistorted( new Image( pImage->width, pImage->height, pImage->nChannels, pImage->depth ) );
+		imgUndistorted->origin = pImage->origin;
+		cvRemap( *pImage, *imgUndistorted, *m_pMapX, *m_pMapY );
 		
 		// send result
-		m_imageOut.send( pUndistorted );
+		m_imageOut.send( Measurement::ImageMeasurement( t, imgUndistorted ) );
 	}
-
-protected:
-	/** @deprecated (radial and tangential) distortion parameters */
-	PullConsumer< Measurement::Vector4D > m_coeffPort;
-	
-	/** @deprecated intrinsic camera matrix */
-	PullConsumer< Measurement::Matrix3x3 > m_matrixPort;
-	
-	/** intrinsic camera parameters: 3x3matrix + distortion parameters */
-	PullConsumer< Measurement::CameraIntrinsics > m_intrinsicsPort;
-	
-	/** distorted incoming image */
-	TriggerInPort< Measurement::ImageMeasurement > m_imageIn;
-	
-	/** undistorted image */
-	TriggerOutPort< Measurement::ImageMeasurement > m_imageOut;
-	
-	boost::scoped_ptr< Image > m_pMapX;
-	boost::scoped_ptr< Image > m_pMapY;
 };
 
-} } // namespace Ubitrack::Driver
+} } // namespace Ubitrack::Vision
 
 
 UBITRACK_REGISTER_COMPONENT( Dataflow::ComponentFactory* const cf ) 
 {
-	cf->registerComponent< Ubitrack::Drivers::UndistortImage > ( "UndistortImage" );
+	cf->registerComponent< Ubitrack::Vision::UndistortImage > ( "UndistortImage" );
 }
