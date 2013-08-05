@@ -1,336 +1,55 @@
 \documentclass[11pt,a4,BCOR=0cm]{scrartcl}
+\usepackage[a4paper,inner=1cm,outer=1cm,top=1cm,bottom=1cm,pdftex]{geometry}
+
 %Grafiken einbinden koennen
 \usepackage{graphicx}
 \usepackage[section] {placeins}
 \DeclareGraphicsExtensions{.jpg,.png,.pdf,.eps}
 \graphicspath{{figures/}}
+\usepackage{subfig}
+\usepackage{caption}
 \usepackage{rotating}
-\areaset[0cm]{19cm}{25cm}
+\areaset[0cm]{19cm}{26cm}
+
+\newcommand{\placemarkers}[6]{%
+	\begin{figure}[ht]
+    \vspace*{-1cm}
+	\captionsetup[subfloat]{labelformat=empty}
+	\centering
+	\subfloat[]{
+		\includegraphics[width=8.955cm]{#1.pdf}
+	}
+	\subfloat[]{
+		\includegraphics[width=8.955cm]{#2.pdf}
+	}\\
+	\vspace*{-0.9cm}
+	\subfloat[]{
+		\includegraphics[width=8.955cm]{#3.pdf}
+	}
+	\subfloat[]{
+		\includegraphics[width=8.955cm]{#4.pdf}
+	}\\
+	\vspace*{-0.9cm}
+	\subfloat[]{
+		\includegraphics[width=8.955cm]{#5.pdf}
+	}
+	\subfloat[]{
+		\includegraphics[width=8.955cm]{#6.pdf}
+	}
+	\caption{Size: 0.08m - IDs: #1 #2 #3 #4 #5 #6}
+	\end{figure}
+}
+
 \begin{document}
 
 
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x00A0.pdf}
-    \caption{0x00A0.png : 0.08 m}
-    \label{fig:0x00A0.pdf}
-  
-\end{figure} 
+\placemarkers{0x00A0}{0x00CB}{0x0A05}{0x0B0C}{0x0C5A}{0x0D01}
+\placemarkers{0x0E07}{0x0F25}{0x01C8}{0x1A1A}{0x1B3A}{0x1C0E}
+\placemarkers{0x1D7D}{0x1E0A}{0x1F04}{0x02B8}{0x02F8}{0x2A3B}
+\placemarkers{0x2B0C}{0x2C1B}{0x2D1F}{0x2E1F}{0x03AF}{0x3A1F}
+\placemarkers{0x3C1A}{0x3D2A}{0x04A3}{0x4D5E}{0x05C8}{0x5CC6}
+\placemarkers{0x5D1E}{0x5FD7}{0x07EB}{0x7A0B}{0x08DA}{0x9F3B}
 
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x00CB.pdf}
-    \caption{0x00CB.png : 0.08 m}
-    \label{fig:0x00CB.pdf}
-  
-\end{figure} 
-
-\clearpage
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x0A05.pdf}
-    \caption{0x0A05.png : 0.08 m}
-    \label{fig:0x0A05.pdf}
-  
-\end{figure} 
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x0B0C.pdf}
-    \caption{0x0B0C.png : 0.08 m}
-    \label{fig:0x0B0C.pdf}
-  
-\end{figure} 
-
-\clearpage
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x0C5A.pdf}
-    \caption{0x0C5A.png : 0.08 m}
-    \label{fig:0x0C5A.pdf}
-  
-\end{figure} 
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x0D01.pdf}
-    \caption{0x0D01.png : 0.08 m}
-    \label{fig:0x0D01.pdf}
-  
-\end{figure} 
-
-\clearpage
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x0E07.pdf}
-    \caption{0x0E07.png : 0.08 m}
-    \label{fig:0x0E07.pdf}
-  
-\end{figure} 
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x0F25.pdf}
-    \caption{0x0F25.png : 0.08 m}
-    \label{fig:0x0F25.pdf}
-  
-\end{figure} 
-
-\clearpage
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x01C8.pdf}
-    \caption{0x01C8.png : 0.08 m}
-    \label{fig:0x01C8.pdf}
-  
-\end{figure} 
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x1A1A.pdf}
-    \caption{0x1A1A.png : 0.08 m}
-    \label{fig:0x1A1A.pdf}
-  
-\end{figure} 
-
-\clearpage
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x1B3A.pdf}
-    \caption{0x1B3A.png : 0.08 m}
-    \label{fig:0x1B3A.pdf}
-  
-\end{figure} 
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x1C0E.pdf}
-    \caption{0x1C0E.png : 0.08 m}
-    \label{fig:0x1C0E.pdf}
-  
-\end{figure} 
-
-\clearpage
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x1D7D.pdf}
-    \caption{0x1D7D.png : 0.08 m}
-    \label{fig:0x1D7D.pdf}
-  
-\end{figure} 
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x1E0A.pdf}
-    \caption{0x1E0A.png : 0.08 m}
-    \label{fig:0x1E0A.pdf}
-  
-\end{figure} 
-
-\clearpage
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x1F04.pdf}
-    \caption{0x1F04.png : 0.08 m}
-    \label{fig:0x1F04.pdf}
-  
-\end{figure} 
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x02B8.pdf}
-    \caption{0x02B8.png : 0.08 m}
-    \label{fig:0x02B8.pdf}
-  
-\end{figure} 
-
-\clearpage
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x02F8.pdf}
-    \caption{0x02F8.png : 0.08 m}
-    \label{fig:0x02F8.pdf}
-  
-\end{figure} 
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x2A3B.pdf}
-    \caption{0x2A3B.png : 0.08 m}
-    \label{fig:0x2A3B.pdf}
-  
-\end{figure} 
-
-\clearpage
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x2B0C.pdf}
-    \caption{0x2B0C.png : 0.08 m}
-    \label{fig:0x2B0C.pdf}
-  
-\end{figure} 
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x2C1B.pdf}
-    \caption{0x2C1B.png : 0.08 m}
-    \label{fig:0x2C1B.pdf}
-  
-\end{figure} 
-
-\clearpage
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x2D1F.pdf}
-    \caption{0x2D1F.png : 0.08 m}
-    \label{fig:0x2D1F.pdf}
-  
-\end{figure} 
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x2E1F.pdf}
-    \caption{0x2E1F.png : 0.08 m}
-    \label{fig:0x2E1F.pdf}
-  
-\end{figure} 
-
-\clearpage
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x03AF.pdf}
-    \caption{0x03AF.png : 0.08 m}
-    \label{fig:0x03AF.pdf}
-  
-\end{figure} 
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x3A1F.pdf}
-    \caption{0x3A1F.png : 0.08 m}
-    \label{fig:0x3A1F.pdf}
-  
-\end{figure} 
-
-\clearpage
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x3C1A.pdf}
-    \caption{0x3C1A.png : 0.08 m}
-    \label{fig:0x3C1A.pdf}
-  
-\end{figure} 
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x3D2A.pdf}
-    \caption{0x3D2A.png : 0.08 m}
-    \label{fig:0x3D2A.pdf}
-  
-\end{figure} 
-
-\clearpage
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x04A3.pdf}
-    \caption{0x04A3.png : 0.08 m}
-    \label{fig:0x04A3.pdf}
-  
-\end{figure} 
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x4D5E.pdf}
-    \caption{0x4D5E.png : 0.08 m}
-    \label{fig:0x4D5E.pdf}
-  
-\end{figure} 
-
-\clearpage
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x05C8.pdf}
-    \caption{0x05C8.png : 0.08 m}
-    \label{fig:0x05C8.pdf}
-  
-\end{figure} 
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x5CC6.pdf}
-    \caption{0x5CC6.png : 0.08 m}
-    \label{fig:0x5CC6.pdf}
-  
-\end{figure} 
-
-\clearpage
-
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x5D1E.pdf}
-    \caption{0x5D1E.png : 0.08 m}
-    \label{fig:0x5D1E.pdf}
-  
-\end{figure} 
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x5FD7.pdf}
-    \caption{0x5FD7.png : 0.08 m}
-    \label{fig:0x5FD7.pdf}
-  
-\end{figure} 
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x07EB.pdf}
-    \caption{0x07EB.png : 0.08 m}
-    \label{fig:0x07EB.pdf}
-  
-\end{figure} 
-
-\clearpage
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x7A0B.pdf}
-    \caption{0x7A0B.png : 0.08 m}
-    \label{fig:0x7A0B.pdf}
-  
-\end{figure} 
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x08DA.pdf}
-    \caption{0x08DA.png : 0.08 m}
-    \label{fig:0x08DA.pdf}
-  
-\end{figure} 
-
-\clearpage
-
-\begin{figure}
-  \centering
-    \includegraphics[width=8.955cm]{0x9F3B.pdf}
-    \caption{0x9F3B.png : 0.08 m}
-    \label{fig:0x9F3B.pdf}
-  
-\end{figure} 
 
 \begin{figure}
   \centering
