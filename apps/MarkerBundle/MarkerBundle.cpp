@@ -34,9 +34,11 @@
 #include <string>
 #include <set>
 #include <fstream>
+#include <sstream>
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <boost/program_options.hpp>
 
 // highgui includes windows.h with the wrong parameters
 #ifdef _WIN32
@@ -1025,11 +1027,67 @@ void createImageList( std::vector< std::string >& l )
 }
 
 
-int main( int, char** )
+int main( int ac, char** av )
 {
+
+	int iCodeSize = 8;
+	int iMarkerSize = 12;
+	std::string sCodeMask = "0xFFFFFFE7E7FFFFFF";
+	unsigned int uiCodeMask = 0;
+
+
 	try
 	{
+		// initialize logging
 		Util::initLogging();
+
+		// describe program options
+		namespace po = boost::program_options;
+		po::options_description poDesc( "Allowed options", 80 );
+		poDesc.add_options()
+			( "help", "print this help message" )
+			( "codesize,c", po::value< int >( &iCodeSize ), "code size of the marker (default=8)" )
+			( "markersize,s", po::value< int >( &iMarkerSize ), "marker size of the marker (default=12)" )
+			( "codemask,m", po::value< int >( &iCodeSize ), "code mask of the marker (default=0xFFFFFFE7E7FFFFFF)" )
+		;
+
+		// specify default options
+		//po::positional_options_description inputOptions;
+		//inputOptions.add( "config", 1 );
+
+		// parse options from command line and environment
+		po::variables_map poOptions;
+		//po::store( po::command_line_parser( ac, av ).options( poDesc ).positional( inputOptions ).run(), poOptions );
+		po::store( po::command_line_parser( ac, av ).options( poDesc ).run(), poOptions );
+		//po::store( po::parse_environment( poDesc, "UBITRACK_" ), poOptions );
+		po::notify( poOptions );
+
+
+		// convert mask from hex string
+		std::stringstream ss;
+		ss << std::hex << sCodeMask;
+		ss >> uiCodeMask;
+
+		// print help message if nothing specified
+		if ( poOptions.count( "help" ) )
+		{
+			std::cout << "Syntax: MarkerBundle [options]" << std::endl << std::endl;
+			std::cout << poDesc << std::endl;
+			return 1;
+		}
+
+
+	}
+	catch( std::exception& e )
+	{
+		std::cerr << "Error parsing command line parameters : " << e.what() << std::endl;
+		std::cerr << "Try MarkerBundle --help for help" << std::endl;
+		return 1;
+	}
+
+
+	try
+	{
 
 		g_config.init();
 
@@ -1073,9 +1131,10 @@ int main( int, char** )
 	const Math::Matrix< 3, 3, float >& K, Image* pDebugImg = 0, bool bRefine = false, unsigned int iCodeSize = 4, 
 	unsigned int iMarkerSize = 6, unsigned long long int uiMask = 0xFFFF, bool useInnerEdgels = true );
 			*/
-			Markers::detectMarkers( *pImage, markerMap, intrinsics, NULL, false, 8, 12, 0xFFFFFFE7E7FFFFFF, true );
+			//Markers::detectMarkers( *pImage, markerMap, intrinsics, NULL, false, 8, 12, 0xFFFFFFE7E7FFFFFF, true );
 			//Markers::detectMarkers( *pImage, markerMap, intrinsics, NULL, false, 4, 6, 0xFFFF, true );
-			
+			Markers::detectMarkers( *pImage, markerMap, intrinsics, NULL, false, iCodeSize, iMarkerSize, uiCodeMask, true );
+
 			
 			// erase not-seen markers from map
 			for( std::map< unsigned long long int, Markers::MarkerInfo >::iterator itMarker = markerMap.begin(); itMarker != markerMap.end();  )
