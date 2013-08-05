@@ -72,6 +72,15 @@ using namespace Ubitrack;
 namespace Markers = Ubitrack::Vision::Markers;
 namespace ublas = boost::numeric::ublas;
 
+// command line options
+int iCodeSize = 8;
+int iMarkerSize = 12;
+std::string sCodeMask = "FFFFFFE7E7FFFFFF";
+unsigned int uiCodeMask = 0;
+
+
+
+
 static const Math::Vector< 3 > g_unitCorners[ 4 ] = 
 {
 	Math::Vector< 3 >( -0.5,  0.5, 0.0 ),
@@ -732,9 +741,9 @@ void BAInfo::writeUTQL( std::ostream& of )
 		of << "<Pattern name=\"MarkerTracker\" id=\"Marker" << std::hex << it->first << "\">\n";
 		of << "    <Input>\n";
 		of << " 		<Node name=\"Camera\" id=\"CameraNode\"> \n";
-        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerIdMask\" value=\"0xFFFFFFE7E7FFFFFF\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
-		of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerBitSize\" value=\"12\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
-        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"codeBitSize\" value=\"8\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
+        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerIdMask\" value=\"0x" << sCodeMask << "\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
+		of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerBitSize\" value=\"" << iMarkerSize << "\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
+        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"codeBitSize\" value=\"" << iCodeSize << "\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
         of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"enableInnerEdgels\" value=\"true\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
         of << "        </Node> \n";
 		of << "        <Node name=\"ImagePlane\" id=\"node_2\"/>\n";
@@ -1030,10 +1039,6 @@ void createImageList( std::vector< std::string >& l )
 int main( int ac, char** av )
 {
 
-	int iCodeSize = 8;
-	int iMarkerSize = 12;
-	std::string sCodeMask = "0xFFFFFFE7E7FFFFFF";
-	unsigned int uiCodeMask = 0;
 
 
 	try
@@ -1048,7 +1053,7 @@ int main( int ac, char** av )
 			( "help", "print this help message" )
 			( "codesize,c", po::value< int >( &iCodeSize ), "code size of the marker (default=8)" )
 			( "markersize,s", po::value< int >( &iMarkerSize ), "marker size of the marker (default=12)" )
-			( "codemask,m", po::value< int >( &iCodeSize ), "code mask of the marker (default=0xFFFFFFE7E7FFFFFF)" )
+			( "codemask,m", po::value< std::string >( &sCodeMask ), "code mask of the marker (default=0xFFFFFFE7E7FFFFFF)" )
 		;
 
 		// specify default options
