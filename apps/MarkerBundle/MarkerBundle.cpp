@@ -726,9 +726,9 @@ void BAInfo::writeUTQL( std::ostream& of )
     of << "        <UbitrackLib class=\"DirectShowFrameGrabber\"/>\n";
     of << "        <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"imageWidth\" value=\"320\"/>\n";
     of << "        <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"timeOffset\" value=\"0\"/>\n";
-    of << "        <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"intrinsicMatrixFile\" value=\"CamMatrix.calib\" />\n";
+	of << "        <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"intrinsicMatrixFile\" value=\""<< g_config.sMatrixFile << "\" />\n";
     of << "        <!--Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"cameraName\" value=\"\" /-->\n";
-    of << "        <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"distortionFile\" value=\"CamCoeffs.calib\" />\n";
+	of << "        <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"distortionFile\" value=\""<< g_config.sDistortionFile << "\" />\n";
     of << "        <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"divisor\" value=\"1\" />\n";
     of << "        <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"imageHeight\" value=\"240\" />\n";
     of << "    </DataflowConfiguration>\n";
