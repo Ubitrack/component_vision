@@ -192,12 +192,12 @@ struct BAMarkerInfo
 		: bPoseComputed( false )
 	{}
 
-	unsigned index;
+	std::size_t index;
 	bool bPoseComputed;
 	Math::Pose pose;
 	double fSize;
 	
-	std::set< unsigned > cameras;
+	std::set< std::size_t > cameras;
 };
 
 
@@ -233,15 +233,16 @@ struct BAInfo
 	MarkerMap markers;
 	typedef std::vector< BACameraInfo > CameraList;
 	CameraList cameras;
-	std::map< std::string, unsigned > imageToCam;
+	std::map< std::string, std::size_t > imageToCam;
 	
 	// initialization routines for minimization
 	void initMarkers();
 	void initRefPoints();
 	
 	// functions required for levenberg-marquardt
-	unsigned size() const;
-	unsigned parameterSize() const
+	std::size_t size() const;
+	
+	std::size_t parameterSize() const
 	{ return 6 * ( markers.size() + cameras.size() ); }
 	
 	template< class VT1, class VT2, class MT1 > 
@@ -279,9 +280,9 @@ struct BAInfo
 };
 
 
-unsigned BAInfo::size() const
+std::size_t BAInfo::size() const
 {
-	unsigned s = 0;
+	std::size_t s( 0 );
 	
 	// 8 measurements for each marker seen
 	for ( CameraList::const_iterator it = cameras.begin(); it != cameras.end(); it++ )
@@ -303,13 +304,13 @@ unsigned BAInfo::size() const
 void BAInfo::initMarkers()
 {
 	// number markers
-	unsigned iMarker = 0;
+	std::size_t iMarker( 0 );
 	for ( MarkerMap::iterator it = markers.begin(); it != markers.end(); it++ )
 		it->second.index = iMarker++;
 	
 	// initialize poses
 	std::deque< unsigned long long int> markerQueue;
-	std::deque< unsigned > cameraQueue;	
+	std::deque< std::size_t > cameraQueue;	
 	const unsigned long long int startMarker = markers.begin()->first;	
 	markers[ startMarker ].pose = Math::Pose( Math::Quaternion( 0, 0, 0, 1 ), Math::Vector< 3 >( 0, 0, 0 ) );	
 	markers[ startMarker ].bPoseComputed = true;
@@ -326,7 +327,7 @@ void BAInfo::initMarkers()
 			
 			
 			// iterate over cameras that saw the marker
-			for ( std::set< unsigned >::iterator it = info.cameras.begin(); it != info.cameras.end(); it++ )				
+			for ( std::set< std::size_t >::iterator it = info.cameras.begin(); it != info.cameras.end(); it++ )				
 				if ( !cameras[ *it ].bPoseComputed )
 				{
 					cameras[ *it ].bPoseComputed = true;
@@ -340,7 +341,7 @@ void BAInfo::initMarkers()
 		if ( !cameraQueue.empty() )
 		{
 			// take one camera out of the queue
-			unsigned id = cameraQueue.front();
+			const std::size_t id = cameraQueue.front();
 			cameraQueue.pop_front();
 			BACameraInfo& info( cameras[ id ] );
 			
@@ -417,18 +418,18 @@ void BAInfo::evaluateWithJacobian( VT1& result, const VT2& input, MT1& J ) const
 	// initialize jacobian
 	J = ublas::zero_matrix< double >( J.size1(), J.size2() );
 
-	unsigned iMarkersStart = 6 * cameras.size();
-	unsigned iMeasurement = 0;
-	for ( std::size_t iCam = 0; iCam < cameras.size(); iCam++ )
+	const std::size_t iMarkersStart( 6 * cameras.size() );
+	std::size_t iMeasurement = 0;
+	for ( std::size_t iCam( 0 ); iCam < cameras.size(); iCam++ )
 	{
-		unsigned iCamStart = iCam * 6;
+		std::size_t iCamStart( iCam * 6 );
 		
 		// marker measurements
 		for ( BACameraInfo::MarkerMeasMap::const_iterator it = cameras[ iCam ].measMarker.begin(); 
 			it != cameras[ iCam ].measMarker.end(); it++ )
 		{
-			unsigned iMarkerStart = iMarkersStart + 6 * markers.find( it->first )->second.index;
-			for ( unsigned iCorner = 0; iCorner < 4; iCorner++ )
+			std::size_t iMarkerStart( iMarkersStart + 6 * markers.find( it->first )->second.index );
+			for ( std::size_t iCorner( 0 ); iCorner < 4; iCorner++ )
 			{	
 				ublas::vector_range< VT1 > subResult( result, ublas::range( iMeasurement, iMeasurement + 2 ) );
 				ublas::matrix_range< MT1 > subJ( J, ublas::range( iMeasurement, iMeasurement + 2 ), ublas::range( 0, J.size2() ) );
@@ -466,7 +467,7 @@ void BAInfo::evaluateWithJacobian( VT1& result, const VT2& input, MT1& J ) const
 				ublas::vector_range< VT1 > subResult( result, ublas::range( iMeasurement, iMeasurement + 2 ) );
 				ublas::matrix_range< MT1 > subJ( J, ublas::range( iMeasurement, iMeasurement + 2 ), ublas::range( 0, J.size2() ) );
 
-				unsigned iCamStart = 6 * imageToCam.find( itM->image )->second;
+				const std::size_t iCamStart( 6 * imageToCam.find( itM->image )->second );
 
 				( CameraIntrinsicsMultiplication() <<
 					fixedParameterRef< 5 >( intrinsics ) << 
@@ -501,11 +502,11 @@ void BAInfo::evaluateWithJacobian( VT1& result, const VT2& input, MT1& J ) const
 template< class VT >
 void BAInfo::genTargetVector( VT& v )
 {
-	unsigned iMeasurement = 0;
+	std::size_t iMeasurement( 0 );
 	for ( std::size_t iCam = 0; iCam < cameras.size(); iCam++ )
 		for ( BACameraInfo::MarkerMeasMap::iterator it = cameras[ iCam ].measMarker.begin(); 
 			it != cameras[ iCam ].measMarker.end(); it++ )
-			for ( unsigned i = 0; i < 4; i++ )
+			for ( std::size_t i( 0 ); i < 4; i++ )
 			{
 				ublas::vector_range< VT > subMeas( v, ublas::range( iMeasurement, iMeasurement + 2 ) );
 				subMeas = it->second.corners[ i ];
@@ -546,10 +547,10 @@ void BAInfo::genParameterVector( VT& v )
 	}
 	
 	// then markers
-	unsigned iMarkersStart = 6 * cameras.size();
+	const std::size_t iMarkersStart( 6 * cameras.size() );
 	for ( MarkerMap::iterator it = markers.begin(); it != markers.end(); it++ )
 	{
-		unsigned iStart = iMarkersStart + 6 * it->second.index;
+		const std::size_t iStart( iMarkersStart + 6 * it->second.index );
 		ublas::vector_range< VT > subRot( v, ublas::range( iStart, iStart + 3 ) );
 		subRot = it->second.pose.rotation().toLogarithm();
 		ublas::vector_range< VT > subTrans( v, ublas::range( iStart + 3, iStart + 6 ) );
@@ -570,10 +571,10 @@ void BAInfo::updateParameters( VT& v )
 	}
 	
 	// then markers
-	unsigned iMarkersStart = 6 * cameras.size();
+	const std::size_t iMarkersStart( 6 * cameras.size() );
 	for ( MarkerMap::iterator it = markers.begin(); it != markers.end(); it++ )
 	{
-		unsigned iStart = iMarkersStart + 6 * it->second.index;
+		const std::size_t iStart( iMarkersStart + 6 * it->second.index );
 		it->second.pose = Math::Pose( 
 			Math::Quaternion::fromLogarithm( ublas::subrange( v, iStart, iStart + 3 ) ),
 			ublas::subrange( v, iStart + 3, iStart + 6 ) );
@@ -620,14 +621,14 @@ void BAInfo::printResiduals()
 
 	std::cout << "\nIndividual residuals:\n";
 
-	unsigned iMeasurement = 0;
+	std::size_t iMeasurement( 0 );
 	double var = 0;
-	for ( std::size_t iCam = 0; iCam < cameras.size(); iCam++ )
+	for ( std::size_t iCam ( 0 ); iCam < cameras.size(); iCam++ )
 		for ( BACameraInfo::MarkerMeasMap::iterator it = cameras[ iCam ].measMarker.begin(); 
 			it != cameras[ iCam ].measMarker.end(); it++ )
 		{
 			double r = 0;
-			for ( unsigned i = 0; i < 4; i++ )
+			for ( std::size_t i( 0 ); i < 4; i++ )
 			{
 				double dx = measurements( iMeasurement     ) - it->second.corners[ i ]( 0 );
 				double dy = measurements( iMeasurement + 1 ) - it->second.corners[ i ]( 1 );
@@ -670,21 +671,21 @@ void BAInfo::printResiduals()
 
 	std::cout << "Estimated standard deviations (r, t):" << std::endl;
 	// first cameras
-	for ( std::size_t iCam = 0; iCam < cameras.size(); iCam++ )
+	for ( std::size_t iCam( 0 ); iCam < cameras.size(); iCam++ )
 	{
 		std::cout << "camera " << iCam << ": ";
-		for ( unsigned i = 0; i < 6 ; i++ )
+		for ( std::size_t i( 0 ); i < 6 ; i++ )
 			std::cout << sqrt( covariance( iCam*6 + i, iCam*6 + i ) ) << ( i < 5 ? ", " : "" );
 		std::cout << std::endl;
 	}
 	
 	// then markers
-	unsigned iMarkersStart = 6 * cameras.size();
+	std::size_t iMarkersStart( 6 * cameras.size() );
 	for ( MarkerMap::iterator it = markers.begin(); it != markers.end(); it++ )
 	{
-		unsigned iStart = iMarkersStart + 6 * it->second.index;
+		std::size_t iStart( iMarkersStart + 6 * it->second.index );
 		std::cout << "marker " << std::hex << it->first << ": ";
-		for ( unsigned i = 0; i < 6 ; i++ )
+		for ( std::size_t i( 0 ); i < 6 ; i++ )
 			std::cout << sqrt( covariance( iStart + i, iStart + i ) ) << ( i < 5 ? ", " : "" );
 		std::cout << std::endl;
 	}
@@ -769,7 +770,7 @@ void BAInfo::writeUTQL( std::ostream& of )
 
 		std::vector< Math::Vector< 3 > > markerCorners;		
 
-		for ( unsigned i = 0; i < 4; i++ )
+		for ( std::size_t i( 0 ); i < 4; i++ )
 		{
 			Math::Vector< 3 > p = it->second.pose * Math::Vector< 3 >( g_unitCorners[ i ] * it->second.fSize );
 	    	of << "                    <Attribute name=\"staticPosition\" value=\"" << p( 0 ) << " " << p( 1 ) << " " << p( 2 ) << "\"/>\n";
@@ -899,7 +900,7 @@ void BAInfo::writeUTQL_TrackingContest( std::ostream& of )
 
 		std::vector< Math::Vector< 3 > > markerCorners;		
 
-		for ( unsigned i = 0; i < 4; i++ )
+		for ( std::size_t i( 0 ); i < 4; i++ )
 		{
 			Math::Vector< 3 > p = it->second.pose * Math::Vector< 3 >( g_unitCorners[ i ] * it->second.fSize );
 	    	of << "                    <Attribute name=\"staticPosition\" value=\"" << p( 0 ) << " " << p( 1 ) << " " << p( 2 ) << "\"/>\n";
@@ -1047,7 +1048,7 @@ int main( int, char** )
 		BAInfo baInfo( intrinsics, undistorter.getRadialCoeffs() );
 		for ( std::vector< std::string >::iterator itImage = imageNames.begin(); itImage != imageNames.end(); itImage++ )
 		{
-			unsigned camId = baInfo.cameras.size();
+			const std::size_t camId( baInfo.cameras.size() );
 			baInfo.cameras.push_back( BACameraInfo() );
 			baInfo.cameras.back().name = *itImage;
 			baInfo.imageToCam[ *itImage ] = camId;
