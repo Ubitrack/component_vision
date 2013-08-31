@@ -99,7 +99,7 @@ protected:
 	std::string m_suffix;
 	boost::filesystem::path m_imgDir;
 	boost::filesystem::path m_logfile;
-	unsigned int m_counter;
+	std::size_t m_counter;
 
 	// the ports
 	Dataflow::PushConsumer< ImageMeasurement > m_inPort;
@@ -132,10 +132,10 @@ void ImageFileRecorder::start()
 ImageFileRecorder::ImageFileRecorder( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > subgraph )
 	: Dataflow::Component( sName )
 	, m_bStop( false )
-	, m_logfile( "frames.txt" )
 	, m_prefix( "img" )
 	, m_suffix( "png" )
 	, m_imgDir( "" )
+	, m_logfile( "frames.txt" )
 	, m_counter( 0 )
 	, m_inPort( "Input", *this, boost::bind( &ImageFileRecorder::saveImage, this, _1 ) )
 {
@@ -186,7 +186,7 @@ void ImageFileRecorder::saveImage( const ImageMeasurement &img )
 	LOG4CPP_DEBUG( logger, "saveImage(): ");
 
 	std::ostream os( &filebuffer );
-	sprintf ( fileName, "%s%.5u%s", m_prefix.c_str(), m_counter++, m_suffix.c_str() );
+	std::sprintf ( fileName, "%s%.5u%s", m_prefix.c_str(), m_counter++, m_suffix.c_str() );
 	boost::filesystem::path path = m_imgDir;
 	path /= fileName;
 	

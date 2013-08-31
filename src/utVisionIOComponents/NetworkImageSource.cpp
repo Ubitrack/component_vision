@@ -172,12 +172,12 @@ protected:
 				boost::shared_ptr< Image > currentImage(new Image(headerBuffer[0], headerBuffer[1], headerBuffer[2], headerBuffer[3], headerBuffer[4]));
 				
 				Measurement::Timestamp sendtime;
-				size_t len  = boost::asio::read(*m_SendSocket, boost::asio::buffer(&sendtime, sizeof(sendtime)),boost::asio::transfer_all(), error);
+				size_t len_new  = boost::asio::read(*m_SendSocket, boost::asio::buffer(&sendtime, sizeof(sendtime)),boost::asio::transfer_all(), error);
 				
 				//Measurement::Timestamp timeNow = Measurement::now();				
 				//LOG4CPP_INFO(logger, "timestamp:" << sendtime << " : "<< sendtime - timeNow << " : "<< timeNow - sendtime  );
 				
-				len  = boost::asio::read(*m_SendSocket, boost::asio::buffer(currentImage->imageData, currentImage->imageSize),boost::asio::transfer_all(), error);
+				len_new  = boost::asio::read(*m_SendSocket, boost::asio::buffer(currentImage->imageData, currentImage->imageSize),boost::asio::transfer_all(), error);
 				
 		
 				m_outPort.send( Measurement::ImageMeasurement( sendtime, currentImage ) );
@@ -189,7 +189,7 @@ protected:
 					// vectors are guaranteed to be contiguous to construct a string from
 					// the underlying raw string. It's also possible to use a boost::array
 					// instead.
-					//LOG4CPP_INFO(logger, "got data" << len  );
+					//LOG4CPP_INFO(logger, "got data" << len_new  );
 				}
 				
 				}
@@ -207,10 +207,10 @@ protected:
 	boost::asio::io_service m_IoService;
 	boost::shared_ptr< boost::asio::ip::tcp::acceptor > m_acceptor;
 	boost::shared_ptr< boost::asio::ip::tcp::socket > m_SendSocket;	
-	bool m_connected;
-
+	
 	int m_TCPPort;
-
+	
+	bool m_connected;
 };
 
 

@@ -101,10 +101,10 @@ public:
 		: Dataflow::Component( name )
 		, m_inPort( "Input", *this, boost::bind( &ImageNetworkSinkComponent::eventIn, this, _1 ) )
 		, m_IoService()
+		, m_connected( false )
+		, m_headerSend( false )
 		, m_TCPPort( 0x5554 ) // default port is 0x5554 (UT)
 		, m_Destination( "127.0.0.1" )
-		, m_connected(false)
-		, m_headerSend(false)
 	{
 		using boost::asio::ip::tcp;
 
@@ -211,8 +211,8 @@ protected:
 	Dataflow::PushConsumer< ImageMeasurement > m_inPort;
 
 	boost::asio::io_service m_IoService;
-
 	boost::shared_ptr< boost::asio::ip::tcp::socket > m_SendSocket;	
+
 	bool m_connected;
 	bool m_headerSend;
 
