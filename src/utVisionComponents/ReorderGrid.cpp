@@ -299,16 +299,16 @@ public:
 	}
 	
 	/** computes the correspondences*/
-	std::vector< unsigned int > getCorrespondences( std::vector< Math::Vector< 2 > > & from, std::vector< Math::Vector< 2 > > & to )
+	std::vector< std::size_t > getCorrespondences( std::vector< Math::Vector< 2 > > & from, std::vector< Math::Vector< 2 > > & to )
 	{
-		unsigned int fSize = from.size();
-		unsigned int tSize = to.size();
+		std::size_t fSize = from.size();
+		std::size_t tSize = to.size();
 		
 		ublas::matrix< double > matrix( fSize, tSize );
 
-		for( unsigned int row=0; row<fSize; row++ )
+		for( std::size_t row=0; row<fSize; row++ )
 		{
-			for( unsigned int col=0; col<tSize; col++ )
+			for( std::size_t col=0; col<tSize; col++ )
 			{
 				matrix( row, col ) = ublas::norm_2( Math::Vector< 2 >( from.at(row) ) - to.at(col) );
 			}
@@ -337,11 +337,11 @@ public:
 			std::vector< Math::Vector< 2 > > projected = getProjectedPoints( pts, m );
 
 			//to find out, how to sort the new points
-			std::vector< unsigned int > corr = getCorrespondences( projected, objPoints );
+			std::vector< std::size_t > corr = getCorrespondences( projected, objPoints );
 
 			std::vector< Math::Vector< 2 > > pts2;
 
-			for(int i=0; i < m_edges ;i++)
+			for( std::size_t i( 0 ); i < m_edges; ++i )
 			{
 				pts2.push_back( pts.at( corr.at( i ) ) );
 			}
