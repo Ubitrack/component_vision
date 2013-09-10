@@ -157,9 +157,6 @@ HighguiFrameGrabber::HighguiFrameGrabber( const std::string& sName, boost::share
 	, m_cameraIndex( 0 )
 	, m_counter( 0 )
 	, m_divisor( 1 )
-	, m_bStop( true )
-	, m_outPort( "Output", *this )
-	, m_colorPort( "ColorOutput", *this )
 	, m_width(320)
 	, m_height(240)
 	, m_imageFormat(0)
@@ -168,6 +165,10 @@ HighguiFrameGrabber::HighguiFrameGrabber( const std::string& sName, boost::share
 	, m_focus(2)
 	, m_whiteBalance(0)
 	, m_antibanding(2)
+	, m_bStop( true )
+	, m_outPort( "Output", *this )
+	, m_colorPort( "ColorOutput", *this )
+
 {
 	subgraph->m_DataflowAttributes.getAttributeData( "highguiCameraIndex", m_cameraIndex );
 	

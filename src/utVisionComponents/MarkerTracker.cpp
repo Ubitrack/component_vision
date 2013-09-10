@@ -272,8 +272,8 @@ public:
 		, m_outErrorPose( "ErrorPose", *this )
 		, m_debugPort( "DebugImage", *this )
 		, m_bEdgeRefinement( true )
-		, m_lastTime( 0 )
 		, m_info( 0.06f )
+		, m_lastTime( 0 )
 	{
 		// get configuration
 		subgraph->getNode( "Marker" )->getAttributeData( "markerSize", m_info.fSize );
