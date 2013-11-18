@@ -35,8 +35,9 @@
 #include <utDataflow/ComponentFactory.h>
 #include <utMeasurement/Measurement.h>
 #include <utMath/Vector.h>
+#include <utMath/Graph/Munkres.h>
 #include <utCalibration/Homography.h>
-#include <utCalibration/Munkres.h>
+
 #include <fstream>
 #include <sstream>
 #include <boost/scoped_array.hpp>
@@ -314,7 +315,7 @@ public:
 			}
 		}
 
-		Calibration::Munkres< double > m( matrix );
+		Math::Graph::Munkres< double > m( matrix );
 		m.solve();
 
 		//match for constructed chessboard
