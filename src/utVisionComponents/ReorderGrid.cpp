@@ -305,7 +305,7 @@ public:
 		std::size_t fSize = from.size();
 		std::size_t tSize = to.size();
 		
-		ublas::matrix< double > matrix( fSize, tSize );
+		Math::Matrix< 0, 0, double > matrix( fSize, tSize );
 
 		for( std::size_t row=0; row<fSize; row++ )
 		{
