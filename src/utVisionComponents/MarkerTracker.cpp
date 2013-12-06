@@ -500,9 +500,9 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 					<< info.corners[ 0 ] << ", " << info.corners[ 1 ] << ", " << info.corners[ 2 ] << ", " << info.corners[ 3 ] << "]" );
 
 				// convert from float to double
-				boost::shared_ptr< std::vector< Math::Vector< 2 > > > pCorners( new std::vector< Math::Vector< 2 > > );
+				boost::shared_ptr< std::vector< Math::Vector< double, 2 > > > pCorners( new std::vector< Math::Vector< double, 2 > > );
 				for ( unsigned i = 0; i < 4; i++ )
-					pCorners->push_back( Math::Vector< 2 >( info.corners[ i ] ) );
+					pCorners->push_back( Math::Vector< double, 2 >( info.corners[ i ] ) );
 
 				pComp->m_outCorners.send( Measurement::PositionList2( m.time(), pCorners ) );
 			}

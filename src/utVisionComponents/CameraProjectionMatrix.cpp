@@ -85,7 +85,7 @@ public:
 		{
 			Math::Matrix< 3, 3 > K;
 			Math::Matrix< 3, 3 > R;
-			Math::Vector< 3 > t;
+			Math::Vector< double, 3 > t;
 			Calibration::decomposeProjection( K, R, t, mat );
 			LOG4CPP_DEBUG( logger, "K: " << K );
 			LOG4CPP_DEBUG( logger, "R: " << R );

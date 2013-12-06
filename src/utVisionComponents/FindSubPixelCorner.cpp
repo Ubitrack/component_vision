@@ -116,7 +116,7 @@ void CornerDetectionSubPix::pushPositions( const Measurement::Position2D& m )
 		if( imgIn->nChannels != 1 )
 			UBITRACK_THROW( "Expecting Grayscale Image, got color image!");
 		
-		Math::Vector< 2 > position = *m;
+		Math::Vector< double, 2 > position = *m;
 		boost::scoped_array< CvPoint2D32f > corners( new CvPoint2D32f[ 1 ] );
 		corners[ 0 ].x = static_cast< float > ( position( 0 ) );
 		corners[ 0 ].y = static_cast< float > ( position( 1 ) );
@@ -131,7 +131,7 @@ void CornerDetectionSubPix::pushPositions( const Measurement::Position2D& m )
 		}
 		if( f_flipping )
 			corners[ 0 ].y = imgIn->height - corners[ 0 ].y;
-		m_outPortPosition.send( Measurement::Position2D( m.time(), Math::Vector< 2 >( corners[ 0 ].x, corners[ 0 ].y ) ) );
+		m_outPortPosition.send( Measurement::Position2D( m.time(), Math::Vector< double, 2 >( corners[ 0 ].x, corners[ 0 ].y ) ) );
 		
 		
 	}
@@ -148,12 +148,12 @@ void CornerDetectionSubPix::pushImage( const ImageMeasurement& m )
 	
 	// try
 	// {
-		// Math::Vector< 2 > position = *m_inPortPosition.get( m.time() );
+		// Math::Vector< double, 2 > position = *m_inPortPosition.get( m.time() );
 		// boost::scoped_array< CvPoint2D32f > corners( new CvPoint2D32f[ 1 ] );
 		// corners[ 0 ].x = position( 0 );
 		// corners[ 0 ].y = position( 1 );
 		// cvFindCornerSubPix( *m, corners.get(), 1, cvSize( 5, 5 ), cvSize( -1, -1 ), cvTermCriteria( CV_TERMCRIT_ITER, 10, 0.1f ) );
-		// m_outPort.send( Measurement::Position2D( m.time(), Math::Vector< 2 >( corners[ 0 ].x, corners[ 0 ].y ) ) );
+		// m_outPort.send( Measurement::Position2D( m.time(), Math::Vector< double, 2 >( corners[ 0 ].x, corners[ 0 ].y ) ) );
 	// }
 	// catch( Ubitrack::Util::Exception e )
 	// {

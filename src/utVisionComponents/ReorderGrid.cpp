@@ -117,7 +117,7 @@ public:
 
 		for(int i=0; i < m_edges ;i++)
 		{
-			objPoints.push_back( Math::Vector< 2 >( double( i % m_height), double( i / m_height) ) );
+			objPoints.push_back( Math::Vector< double, 2 >( double( i % m_height), double( i / m_height) ) );
 		}
 		
 		if ( m_height < 0 || m_width < 0 )
@@ -125,9 +125,9 @@ public:
     }
 
 	/** computes the angle */ 
-	double theta( const Math::Vector< 2 > & p1, const Math::Vector< 2 > & p2 )
+	double theta( const Math::Vector< double, 2 > & p1, const Math::Vector< double, 2 > & p2 )
 	{
-		Math::Vector< 2 > dist = p2 - p1;
+		Math::Vector< double, 2 > dist = p2 - p1;
 		double ax = abs( dist( 0 ) );
 		double ay = abs( dist( 1 ) );
 		double t = 0.0;
@@ -144,9 +144,9 @@ public:
 	}
 
 	/** computes the convex hull*/
-	unsigned int wrap( std::vector< Math::Vector< 2 > > & pts )
+	unsigned int wrap( std::vector< Math::Vector< double, 2 > > & pts )
 	{
-		Math::Vector< 2 > temp;
+		Math::Vector< double, 2 > temp;
 		unsigned int min = 0;
 		unsigned int m = 0;
 		unsigned int n = pts.size();
@@ -188,7 +188,7 @@ public:
 	}
 
 	/** computes the angle described by three points*/
-	double radiant( const Math::Vector< 2 > & x, const Math::Vector< 2 > & y, const Math::Vector< 2 > & z )
+	double radiant( const Math::Vector< double, 2 > & x, const Math::Vector< double, 2 > & y, const Math::Vector< double, 2 > & z )
 	{
 		double val = ublas::norm_2( z - y );
 		double val2 = ublas::norm_2( x - y );
@@ -204,15 +204,15 @@ public:
 	}
 
 	/** computes the projected points*/ 
-	std::vector< Math::Vector< 2 > > getProjectedPoints( const std::vector< Math::Vector< 2 > > & pts, const unsigned int m )
+	std::vector< Math::Vector< double, 2 > > getProjectedPoints( const std::vector< Math::Vector< double, 2 > > & pts, const unsigned int m )
 	{
 		Math::Matrix< 3, 3 > H;
 
-		std::vector< Math::Vector< 2 > > from;
-		std::vector< Math::Vector< 2 > > to;
-		std::vector< Math::Vector< 2 > > projected;
+		std::vector< Math::Vector< double, 2 > > from;
+		std::vector< Math::Vector< double, 2 > > to;
+		std::vector< Math::Vector< double, 2 > > projected;
 
-		Math::Vector< 2 > temp;
+		Math::Vector< double, 2 > temp;
 
 		temp( 0 ) = 0.0;
 		temp( 1 ) = 0.0;
@@ -291,16 +291,16 @@ public:
 		
 		for( unsigned int i=0; i < pts.size(); i++ )
 		{
-			Math::Vector< 3 > p( pts.at( i )( 0 ), pts.at( i )( 1 ), 1.0 );
+			Math::Vector< double, 3 > p( pts.at( i )( 0 ), pts.at( i )( 1 ), 1.0 );
 			p = ublas::prod( H, p );
-			projected.push_back( Math::Vector< 2 >( p( 0 ) / p ( 2 ), p( 1 ) / p( 2 ) ) );
+			projected.push_back( Math::Vector< double, 2 >( p( 0 ) / p ( 2 ), p( 1 ) / p( 2 ) ) );
 		}
 
 		return projected;
 	}
 	
 	/** computes the correspondences*/
-	std::vector< std::size_t > getCorrespondences( std::vector< Math::Vector< 2 > > & from, std::vector< Math::Vector< 2 > > & to )
+	std::vector< std::size_t > getCorrespondences( std::vector< Math::Vector< double, 2 > > & from, std::vector< Math::Vector< double, 2 > > & to )
 	{
 		std::size_t fSize = from.size();
 		std::size_t tSize = to.size();
@@ -311,7 +311,7 @@ public:
 		{
 			for( std::size_t col=0; col<tSize; col++ )
 			{
-				matrix( row, col ) = ublas::norm_2( Math::Vector< 2 >( from.at(row) ) - to.at(col) );
+				matrix( row, col ) = ublas::norm_2( Math::Vector< double, 2 >( from.at(row) ) - to.at(col) );
 			}
 		}
 
@@ -327,20 +327,20 @@ public:
 	{
 		if( ( *pm ).size() == (unsigned int)m_edges )
 		{
-			std::vector< Math::Vector< 2 > > pts = *pm;
+			std::vector< Math::Vector< double, 2 > > pts = *pm;
 
-			std::vector< Math::Vector< 2 > > lol;
+			std::vector< Math::Vector< double, 2 > > lol;
 
 			//sort in a way, that the hull points are at the beginning
 			unsigned int m = wrap( pts );
 
 			//get the projected points
-			std::vector< Math::Vector< 2 > > projected = getProjectedPoints( pts, m );
+			std::vector< Math::Vector< double, 2 > > projected = getProjectedPoints( pts, m );
 
 			//to find out, how to sort the new points
 			std::vector< std::size_t > corr = getCorrespondences( projected, objPoints );
 
-			std::vector< Math::Vector< 2 > > pts2;
+			std::vector< Math::Vector< double, 2 > > pts2;
 
 			for( std::size_t i( 0 ); i < m_edges; ++i )
 			{
@@ -357,7 +357,7 @@ protected:
 	int m_height;
 	int m_width;
 	int m_edges;
-	std::vector< Math::Vector< 2 > > objPoints;
+	std::vector< Math::Vector< double, 2 > > objPoints;
 	/** Input port of the component. */
 	Dataflow::PushConsumer< Measurement::PositionList2 > m_inPort;
 	/** Output ports of the component. */

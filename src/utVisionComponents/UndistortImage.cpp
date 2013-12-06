@@ -91,7 +91,7 @@ public:
 	}
 
 	
-	void initMap( int width, int height, const Math::Vector< 8 >& coeffs, const Math::Matrix< 3, 3 >& intrinsics )
+	void initMap( int width, int height, const Math::Vector< double, 8 >& coeffs, const Math::Matrix< 3, 3 >& intrinsics )
 	{
 		LOG4CPP_INFO( logger, "Creating undistortion map" );
 		LOG4CPP_DEBUG( logger, "coeffs=" << coeffs );
@@ -149,7 +149,7 @@ public:
 		{
 		
 			// read parameters
-			Math::Vector< 8 > coeffs;
+			Math::Vector< double, 8 > coeffs;
 			Math::Matrix< 3, 3 > intrinsics;
 			
 			try
@@ -179,7 +179,7 @@ public:
 				else //support for old pattern
 				{
 					intrinsics = *m_matrixPort.get( t );
-					Math::Vector< 4 > dist = *m_coeffPort.get( t );
+					Math::Vector< double, 4 > dist = *m_coeffPort.get( t );
 					coeffs( 0 )  = dist( 0 );
 					coeffs( 1 )  = dist( 1 );
 					coeffs( 2 )  = dist( 2 );
