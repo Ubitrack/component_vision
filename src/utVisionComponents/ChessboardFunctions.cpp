@@ -412,7 +412,7 @@ public:
 				try
 				{
 					// compensate for left-handed OpenCV coordinate frame
-					Math::Matrix< 3, 3 > intrinsic =  *m_intrinsicPort.get( img.time() );
+					Math::Matrix< double, 3, 3 > intrinsic =  *m_intrinsicPort.get( img.time() );
 					intrVal[ 0 ] = static_cast< float > ( intrinsic( 0, 0 ) );
 					intrVal[ 1 ] = static_cast< float > ( intrinsic( 0, 1 ) );
 					intrVal[ 2 ] = static_cast< float > ( intrinsic( 0, 2 ) ) * -1.0f ;
@@ -475,7 +475,7 @@ public:
 
 				/** conversion to right-handed coordinate-system */
 				Math::Vector< double, 3 > trans( m_current_translation_vector[0], m_current_translation_vector[1], -m_current_translation_vector[2] );
-				Math::Matrix< 3, 3 > rot( rot_mat );
+				Math::Matrix< double, 3, 3 > rot( rot_mat );
 				
 				rot( 2, 0 ) = - rot( 2, 0 );
 				rot( 2, 1 ) = - rot( 2, 1 );

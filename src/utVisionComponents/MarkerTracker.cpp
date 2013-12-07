@@ -361,7 +361,7 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 	ComponentList components = getAllComponents();
 
 	// get intrinsics matrix from first component
-	Math::Matrix< 3, 3, float > K;
+	Math::Matrix< float, 3, 3 > K;
 	if ( components.front()->isIntrinsics() )
 	{
 		Math::matrix_cast_assign( K, *components.front()->intrinsics( m.time() ) );

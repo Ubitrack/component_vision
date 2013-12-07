@@ -270,7 +270,7 @@ protected:
 	int m_flags;
 
 	/** currently computed intrinsic values. */
-	Math::Matrix< 3, 3, double > intrinsic;
+	Math::Matrix< double, 3, 3 > intrinsic;
 	Math::Vector< double, 4 > distortion;
 
 	/** Input port of the component. */

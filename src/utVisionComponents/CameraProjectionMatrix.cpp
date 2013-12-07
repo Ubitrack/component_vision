@@ -73,18 +73,18 @@ public:
 	/** Method that computes the result. */
 	void compute( Measurement::Timestamp t )
 	{
-		Math::Matrix< 3, 3 > intrinsics = *m_inPortIntrinsics.get();		
+		Math::Matrix< double, 3, 3 > intrinsics = *m_inPortIntrinsics.get();		
 		//intrinsics(1,1) = -intrinsics(1,1);
 		Math::Pose pose = *m_inPortPose.get();
 				
-		Math::Matrix< 3, 4 > extrinsics(pose);			
-		Math::Matrix< 3, 4 > mat = boost::numeric::ublas::prod(intrinsics , extrinsics);
+		Math::Matrix< double, 3, 4 > extrinsics(pose);			
+		Math::Matrix< double, 3, 4 > mat = boost::numeric::ublas::prod(intrinsics , extrinsics);
 
 		// print decomposed matrix to console if logging is enabled
 		if ( logger.isDebugEnabled() )
 		{
-			Math::Matrix< 3, 3 > K;
-			Math::Matrix< 3, 3 > R;
+			Math::Matrix< double, 3, 3 > K;
+			Math::Matrix< double, 3, 3 > R;
 			Math::Vector< double, 3 > t;
 			Calibration::decomposeProjection( K, R, t, mat );
 			LOG4CPP_DEBUG( logger, "K: " << K );

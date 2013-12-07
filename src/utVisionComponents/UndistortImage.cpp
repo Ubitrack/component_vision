@@ -91,7 +91,7 @@ public:
 	}
 
 	
-	void initMap( int width, int height, const Math::Vector< double, 8 >& coeffs, const Math::Matrix< 3, 3 >& intrinsics )
+	void initMap( int width, int height, const Math::Vector< double, 8 >& coeffs, const Math::Matrix< double, 3, 3 >& intrinsics )
 	{
 		LOG4CPP_INFO( logger, "Creating undistortion map" );
 		LOG4CPP_DEBUG( logger, "coeffs=" << coeffs );
@@ -150,7 +150,7 @@ public:
 		
 			// read parameters
 			Math::Vector< double, 8 > coeffs;
-			Math::Matrix< 3, 3 > intrinsics;
+			Math::Matrix< double, 3, 3 > intrinsics;
 			
 			try
 			{
@@ -190,7 +190,7 @@ public:
 			{
 				coeffs( 0 ) = coeffs( 1 ) = coeffs( 2 ) = coeffs( 3 ) = 0;
 				coeffs( 4 ) = coeffs( 5 ) = coeffs( 6 ) = coeffs( 7 ) = 0;
-				intrinsics = Math::Matrix< 3, 3 >::identity();
+				intrinsics = Math::Matrix< double, 3, 3 >::identity();
 				LOG4CPP_WARN( logger, "Setting default values for camera intrinsics." );
 			}
 			

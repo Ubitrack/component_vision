@@ -217,7 +217,7 @@ struct BACameraInfo
 
 struct BAInfo
 {
-	BAInfo( const Math::Matrix< 3, 3, float >& _intrinsics, const Math::Vector< double, 4 >& _radial )
+	BAInfo( const Math::Matrix< float, 3, 3 >& _intrinsics, const Math::Vector< double, 4 >& _radial )
 		: intrinsicMatrix( _intrinsics )
 		, radialCoeffs( _radial )
 	{
@@ -274,7 +274,7 @@ struct BAInfo
 	bool m_bUseRefPoints;
 
 	// intrinsic camera parameters
-	Math::Matrix< 3, 3 > intrinsicMatrix;
+	Math::Matrix< double, 3, 3 > intrinsicMatrix;
 	Math::Vector< double, 4 > radialCoeffs;
 	Math::Vector< double, 5 > intrinsics;
 };
@@ -379,9 +379,9 @@ void BAInfo::initRefPoints()
 			SConfig::RefPoint::Meas& m2( *(it->second.measurements.rbegin()) );
 
 			// triangulate position in camera coordinates
-			Math::Matrix< 3, 4 > P1( cameras[ imageToCam[ m1.image ] ].pose );
+			Math::Matrix< double, 3, 4 > P1( cameras[ imageToCam[ m1.image ] ].pose );
 			P1 = ublas::prod( intrinsicMatrix, P1 );
-			Math::Matrix< 3, 4 > P2( cameras[ imageToCam[ m2.image ] ].pose );
+			Math::Matrix< double, 3, 4 > P2( cameras[ imageToCam[ m2.image ] ].pose );
 			P2 = ublas::prod( intrinsicMatrix, P2 );
 			Math::Vector< double, 3 > p3d = Calibration::get3DPosition( P1, P2, m1.pos, m2.pos );
 
@@ -911,7 +911,7 @@ void BAInfo::writeUTQL_TrackingContest( std::ostream& of )
 		// Output marker corners to Ubitrack calibration files suitable for manual configuration of a marker bundle
 		std::ostringstream cornerFileName(std::ostringstream::out);
 		cornerFileName << "marker" << std::hex << it->first << ".cal";		
-		Math::Matrix<6,6> covar;
+		Math::Matrix< double, 6, 6 > covar;
 		Util::writeCalibFile( cornerFileName.str(), Measurement::ErrorPose( Measurement::now(), Math::ErrorPose(it->second.pose, covar) ) );
 		
 
@@ -1037,7 +1037,7 @@ int main( int, char** )
 		// load intrinsics
 		Vision::Undistortion undistorter( g_config.sMatrixFile, g_config.sDistortionFile );
 
-		Math::Matrix< 3, 3, float > intrinsics;
+		Math::Matrix< float, 3, 3 > intrinsics;
 		Math::matrix_cast_assign( intrinsics, undistorter.getIntrinsics() );
 		
 		// find image files in directories
@@ -1071,7 +1071,7 @@ int main( int, char** )
 			
 			/*
 			 const Image& img, std::map< unsigned long long int, MarkerInfo >& markers, 
-	const Math::Matrix< 3, 3, float >& K, Image* pDebugImg = 0, bool bRefine = false, unsigned int iCodeSize = 4, 
+	const Math::Matrix< float, 3, 3 >& K, Image* pDebugImg = 0, bool bRefine = false, unsigned int iCodeSize = 4, 
 	unsigned int iMarkerSize = 6, unsigned long long int uiMask = 0xFFFF, bool useInnerEdgels = true );
 			*/
 			Markers::detectMarkers( *pImage, markerMap, intrinsics, NULL, false, 8, 12, 0xFFFFFFE7E7FFFFFF, true );

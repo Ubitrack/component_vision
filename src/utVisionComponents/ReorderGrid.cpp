@@ -206,7 +206,7 @@ public:
 	/** computes the projected points*/ 
 	std::vector< Math::Vector< double, 2 > > getProjectedPoints( const std::vector< Math::Vector< double, 2 > > & pts, const unsigned int m )
 	{
-		Math::Matrix< 3, 3 > H;
+		Math::Matrix< double, 3, 3 > H;
 
 		std::vector< Math::Vector< double, 2 > > from;
 		std::vector< Math::Vector< double, 2 > > to;
@@ -305,7 +305,7 @@ public:
 		std::size_t fSize = from.size();
 		std::size_t tSize = to.size();
 		
-		Math::Matrix< 0, 0, double > matrix( fSize, tSize );
+		Math::Matrix< double, 0, 0 > matrix( fSize, tSize );
 
 		for( std::size_t row=0; row<fSize; row++ )
 		{
