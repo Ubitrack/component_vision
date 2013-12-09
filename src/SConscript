@@ -1,15 +1,11 @@
-import glob
+#general script to call all SConscript files in all first level subdirectories
 
-Import( '*' )
-
-if not have_utvision :
-	success = True
-	Return('success')
+Import( 'globSourceFiles' )
 
 # glob all SConscript files in subdirectories
 sconsfiles = globSourceFiles( "*/SConscript" )
 
-# recurse into subdirectories and export driver build environment
+# call all SConscript files
 SConscript( sconsfiles )
 success = True
 Return('success')

@@ -1,26 +1,60 @@
+# HOW TO BUILD (A) LIBRAR-Y/IES FROM A MODULE
+# Building libraries from modules should be consistent for each module.
+# Use the following scheme for each new library created:
+#
+# a) Check for required libraries. If they are not available return False and export flags if needed
+# b) Define the src-subdirectories for which the library should be compiled
+#    and glob all files in there
+# c) Define a [LIBRARY]_options variable for the library containing all dependencies
+#    from other libraries. Create a clone from the master environment and add those options.
+# d) WINDOWS ONLY: Create a header file which implements dll interface functionality
+#    dependent from a [LIBRARY]_DLL define. If the define is set, the dll should be exported,
+#    if not, the dll should be imported. Set the define in the preprocessor options for the environment.
+# e) Build the library!
+# f) Remove all entries for (at least) the LIBS and LIBPATH keys in the options and
+#    add only the newly-compiled library as a dependcy. This will avoid multiple includes
+#    of libraries. Also verify that the import/export-switch define is not set.
+# g) Export the options so that other libraries can base on this library. 
+# h) Optionally setup help and ide projects
+#
+# The use of options and possibility to export them makes hierarchical build environments
+# obsolete. Avoid exporting new environments to the build system.
+
 import sys
 import glob
 import os.path
 
-# import variables from other scons files
 Import( '*' )
-env = masterEnv.Clone()
 
-env.AppendUnique( **mergeOptions( utdataflow_all_options, utvision_all_options, utcomponents_options ) )
-env.AppendUnique( LIBS = boost_libs( [ 'thread' ] ) )
-
-# create component libraries
+# a)
+if not (have_utdataflow and have_utvision):
+	print "utDataflow or utVision module missing -- not building vision components"
+	result = False
+	Return("result")
+	
+# b)
 comp_sources = globSourceFiles( '*.cpp' )
 
-# setup environment
-env.AppendUnique( **mergeOptions( utvision_options, opencv_options, lapack_options ) )
+# c)
+visioniocomponent_options = mergeOptions( utdataflow_all_options, utvision_all_options, utcomponents_options ) 
+
+env = masterEnv.Clone()
+env.AppendUnique( **visioniocomponent_options)
 env.AppendUnique( LIBS = boost_libs( [ 'thread' ] ) )
 env.Replace( no_import_lib = 1 )
 
+# d)
+# nothing to do this time
 
-# compile components as shared libraries
+# e)
+# compile every single source files its own library
+# {buildenvironment, source files, build target}
 setupComponentBuild(env, comp_sources, 'visioncomponents')
 
+# f)
+# nothing to do this time
+
+# g)
 sources = globSourceFiles( '*.cpp' )
 headers = globSourceFiles( '*.h' )
 createVisualStudioProject(env, sources, headers, 'utVisionIO-Components')
