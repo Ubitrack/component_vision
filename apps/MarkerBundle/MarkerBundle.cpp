@@ -70,12 +70,12 @@ using namespace Ubitrack;
 namespace Markers = Ubitrack::Vision::Markers;
 namespace ublas = boost::numeric::ublas;
 
-static const Math::Vector< 3 > g_unitCorners[ 4 ] = 
+static const Math::Vector< double, 3 > g_unitCorners[ 4 ] = 
 {
-	Math::Vector< 3 >( -0.5,  0.5, 0.0 ),
-	Math::Vector< 3 >( -0.5, -0.5, 0.0 ),
-	Math::Vector< 3 >(  0.5, -0.5, 0.0 ),
-	Math::Vector< 3 >(  0.5,  0.5, 0.0 ) 
+	Math::Vector< double, 3 >( -0.5,  0.5, 0.0 ),
+	Math::Vector< double, 3 >( -0.5, -0.5, 0.0 ),
+	Math::Vector< double, 3 >(  0.5, -0.5, 0.0 ),
+	Math::Vector< double, 3 >(  0.5,  0.5, 0.0 ) 
 };
 
 
@@ -93,17 +93,17 @@ struct SConfig
 			: pos( 0, 0, 0 )
 		{}
 
-		Math::Vector< 3 > pos;
+		Math::Vector< double, 3 > pos;
 
 		struct Meas
 		{
-			Meas( const std::string& i, const Math::Vector< 2 >& m )
+			Meas( const std::string& i, const Math::Vector< double, 2 >& m )
 				: image( i )
 				, pos( m )
 			{}
 
 			std::string image;
-			Math::Vector< 2 > pos;
+			Math::Vector< double, 2 > pos;
 		};
 		std::vector< Meas > measurements;
 	};
@@ -169,13 +169,13 @@ void SConfig::init()
 		}
 		else if ( boost::regex_match( buf, match, reRefPointPos ) )
 		{
-			refPoints[ match[ 1 ] ].pos = Math::Vector< 3 >( strtod( match[ 2 ].str().c_str(), &dummy ), 
+			refPoints[ match[ 1 ] ].pos = Math::Vector< double, 3 >( strtod( match[ 2 ].str().c_str(), &dummy ), 
 				strtod( match[ 3 ].str().c_str(), &dummy ), strtod( match[ 4 ].str().c_str(), &dummy ) );
 		}
 		else if ( boost::regex_match( buf, match, reRefPointMeasurement ) )
 		{
 			refPoints[ match[ 1 ] ].measurements.push_back( RefPoint::Meas( match[ 2 ].str(), 
-				Math::Vector< 2 >( strtod( match[ 3 ].str().c_str(), &dummy ), strtod( match[ 4 ].str().c_str(), &dummy ) ) ) );
+				Math::Vector< double, 2 >( strtod( match[ 3 ].str().c_str(), &dummy ), strtod( match[ 4 ].str().c_str(), &dummy ) ) ) );
 		}
 		else
 			std::cerr << "unknown configuration string: " << buf << std::endl;
@@ -217,7 +217,7 @@ struct BACameraInfo
 
 struct BAInfo
 {
-	BAInfo( const Math::Matrix< 3, 3, float >& _intrinsics, const Math::Vector< 4 >& _radial )
+	BAInfo( const Math::Matrix< float, 3, 3 >& _intrinsics, const Math::Vector< double, 4 >& _radial )
 		: intrinsicMatrix( _intrinsics )
 		, radialCoeffs( _radial )
 	{
@@ -274,9 +274,9 @@ struct BAInfo
 	bool m_bUseRefPoints;
 
 	// intrinsic camera parameters
-	Math::Matrix< 3, 3 > intrinsicMatrix;
-	Math::Vector< 4 > radialCoeffs;
-	Math::Vector< 5 > intrinsics;
+	Math::Matrix< double, 3, 3 > intrinsicMatrix;
+	Math::Vector< double, 4 > radialCoeffs;
+	Math::Vector< double, 5 > intrinsics;
 };
 
 
@@ -312,7 +312,7 @@ void BAInfo::initMarkers()
 	std::deque< unsigned long long int> markerQueue;
 	std::deque< std::size_t > cameraQueue;	
 	const unsigned long long int startMarker = markers.begin()->first;	
-	markers[ startMarker ].pose = Math::Pose( Math::Quaternion( 0, 0, 0, 1 ), Math::Vector< 3 >( 0, 0, 0 ) );	
+	markers[ startMarker ].pose = Math::Pose( Math::Quaternion( 0, 0, 0, 1 ), Math::Vector< double, 3 >( 0, 0, 0 ) );	
 	markers[ startMarker ].bPoseComputed = true;
 	markerQueue.push_back( startMarker );
 	// kind of a breadth-first search over markers and cameras 
@@ -369,8 +369,8 @@ void BAInfo::initRefPoints()
 	// find reference points with at least two measurements
 	std::cout << std::endl << "Initializing reference points:" << std::endl;
 
-	std::vector< Math::Vector< 3 > > refPointsCam;
-	std::vector< Math::Vector< 3 > > refPointsRoom;
+	std::vector< Math::Vector< double, 3 > > refPointsCam;
+	std::vector< Math::Vector< double, 3 > > refPointsRoom;
 
 	for ( SConfig::RefPointMap::iterator it = g_config.refPoints.begin(); it != g_config.refPoints.end(); it++ )
 		if ( it->second.measurements.size() >= 2 )
@@ -379,11 +379,11 @@ void BAInfo::initRefPoints()
 			SConfig::RefPoint::Meas& m2( *(it->second.measurements.rbegin()) );
 
 			// triangulate position in camera coordinates
-			Math::Matrix< 3, 4 > P1( cameras[ imageToCam[ m1.image ] ].pose );
+			Math::Matrix< double, 3, 4 > P1( cameras[ imageToCam[ m1.image ] ].pose );
 			P1 = ublas::prod( intrinsicMatrix, P1 );
-			Math::Matrix< 3, 4 > P2( cameras[ imageToCam[ m2.image ] ].pose );
+			Math::Matrix< double, 3, 4 > P2( cameras[ imageToCam[ m2.image ] ].pose );
 			P2 = ublas::prod( intrinsicMatrix, P2 );
-			Math::Vector< 3 > p3d = Calibration::get3DPosition( P1, P2, m1.pos, m2.pos );
+			Math::Vector< double, 3 > p3d = Calibration::get3DPosition( P1, P2, m1.pos, m2.pos );
 
 			refPointsCam.push_back( p3d );
 			refPointsRoom.push_back( it->second.pos );
@@ -768,11 +768,11 @@ void BAInfo::writeUTQL( std::ostream& of )
     	of << "            <Attribute xsi:type=\"utql:ListAttributeType\" name=\"staticPositionList\" >\n";
     	of << "                <Value xsi:type=\"utql:ListOfPrimitiveValueType\">\n";
 
-		std::vector< Math::Vector< 3 > > markerCorners;		
+		std::vector< Math::Vector< double, 3 > > markerCorners;		
 
 		for ( std::size_t i( 0 ); i < 4; i++ )
 		{
-			Math::Vector< 3 > p = it->second.pose * Math::Vector< 3 >( g_unitCorners[ i ] * it->second.fSize );
+			Math::Vector< double, 3 > p = it->second.pose * Math::Vector< double, 3 >( g_unitCorners[ i ] * it->second.fSize );
 	    	of << "                    <Attribute name=\"staticPosition\" value=\"" << p( 0 ) << " " << p( 1 ) << " " << p( 2 ) << "\"/>\n";
 			
 			markerCorners.push_back( p );
@@ -898,11 +898,11 @@ void BAInfo::writeUTQL_TrackingContest( std::ostream& of )
     	of << "            <Attribute xsi:type=\"utql:ListAttributeType\" name=\"staticPositionList\" >\n";
     	of << "                <Value xsi:type=\"utql:ListOfPrimitiveValueType\">\n";
 
-		std::vector< Math::Vector< 3 > > markerCorners;		
+		std::vector< Math::Vector< double, 3 > > markerCorners;		
 
 		for ( std::size_t i( 0 ); i < 4; i++ )
 		{
-			Math::Vector< 3 > p = it->second.pose * Math::Vector< 3 >( g_unitCorners[ i ] * it->second.fSize );
+			Math::Vector< double, 3 > p = it->second.pose * Math::Vector< double, 3 >( g_unitCorners[ i ] * it->second.fSize );
 	    	of << "                    <Attribute name=\"staticPosition\" value=\"" << p( 0 ) << " " << p( 1 ) << " " << p( 2 ) << "\"/>\n";
 			
 			markerCorners.push_back( p );
@@ -911,7 +911,7 @@ void BAInfo::writeUTQL_TrackingContest( std::ostream& of )
 		// Output marker corners to Ubitrack calibration files suitable for manual configuration of a marker bundle
 		std::ostringstream cornerFileName(std::ostringstream::out);
 		cornerFileName << "marker" << std::hex << it->first << ".cal";		
-		Math::Matrix<6,6> covar;
+		Math::Matrix< double, 6, 6 > covar;
 		Util::writeCalibFile( cornerFileName.str(), Measurement::ErrorPose( Measurement::now(), Math::ErrorPose(it->second.pose, covar) ) );
 		
 
@@ -1037,7 +1037,7 @@ int main( int, char** )
 		// load intrinsics
 		Vision::Undistortion undistorter( g_config.sMatrixFile, g_config.sDistortionFile );
 
-		Math::Matrix< 3, 3, float > intrinsics;
+		Math::Matrix< float, 3, 3 > intrinsics;
 		Math::matrix_cast_assign( intrinsics, undistorter.getIntrinsics() );
 		
 		// find image files in directories
@@ -1071,7 +1071,7 @@ int main( int, char** )
 			
 			/*
 			 const Image& img, std::map< unsigned long long int, MarkerInfo >& markers, 
-	const Math::Matrix< 3, 3, float >& K, Image* pDebugImg = 0, bool bRefine = false, unsigned int iCodeSize = 4, 
+	const Math::Matrix< float, 3, 3 >& K, Image* pDebugImg = 0, bool bRefine = false, unsigned int iCodeSize = 4, 
 	unsigned int iMarkerSize = 6, unsigned long long int uiMask = 0xFFFF, bool useInnerEdgels = true );
 			*/
 			//Markers::detectMarkers( *pImage, markerMap, intrinsics, NULL, false, 8, 12, 0xFFFFFFE7E7FFFFFF, true );

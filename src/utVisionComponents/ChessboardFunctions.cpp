@@ -367,25 +367,25 @@ public:
 			
 			if( m_outPoints2DPort.isConnected() )
 			{
-				std::vector< Math::Vector< 2 > > positions;
+				std::vector< Math::Vector< double, 2 > > positions;
 				positions.reserve( m_edges );
 				if( m_normalize )				
 					for( int i = 0; i < m_edges; ++i )
-						positions.push_back( Math::Vector< 2 >( imgPoints[ 2*i ] / (img->width-1), imgPoints[ 2*i+1 ] / (img->height-1) ) );
+						positions.push_back( Math::Vector< double, 2 >( imgPoints[ 2*i ] / (img->width-1), imgPoints[ 2*i+1 ] / (img->height-1) ) );
 				else
 					for( int i = 0; i < m_edges; ++i )
-						positions.push_back( Math::Vector< 2 >( imgPoints[ 2*i ] , imgPoints[ 2*i+1 ] ) );
+						positions.push_back( Math::Vector< double, 2 >( imgPoints[ 2*i ] , imgPoints[ 2*i+1 ] ) );
 							
 				m_outPoints2DPort.send( Measurement::PositionList2( img.time(), positions ) );
 			}
 			
 			if( m_outPoints3DPort.isConnected() )
 			{
-				std::vector< Math::Vector< 3 > > positions;
+				std::vector< Math::Vector< double, 3 > > positions;
 				
 				positions.reserve( m_edges );
 				for( int i = 0; i < m_edges; ++i )
-					positions.push_back( Math::Vector< 3 >( objPoints[ 2*i ], objPoints[ 2*i+1 ], objPoints[ 2*i+2 ] ) );
+					positions.push_back( Math::Vector< double, 3 >( objPoints[ 2*i ], objPoints[ 2*i+1 ], objPoints[ 2*i+2 ] ) );
 
 				m_outPoints3DPort.send( Measurement::PositionList( img.time(), positions ) );
 			}
@@ -396,7 +396,7 @@ public:
 				CvMat distortion_coeffs = cvMat( 4, 1, CV_32FC1, disVal );
 				try
 				{
-					Math::Vector< 4 > distortion = *m_distortionPort.get( img.time() );
+					Math::Vector< double, 4 > distortion = *m_distortionPort.get( img.time() );
 					disVal[ 0 ] = static_cast< float > ( distortion( 0 ) );
 					disVal[ 1 ] = static_cast< float > ( distortion( 1 ) );
 					disVal[ 2 ] = static_cast< float > ( distortion( 2 ) );
@@ -412,7 +412,7 @@ public:
 				try
 				{
 					// compensate for left-handed OpenCV coordinate frame
-					Math::Matrix< 3, 3 > intrinsic =  *m_intrinsicPort.get( img.time() );
+					Math::Matrix< double, 3, 3 > intrinsic =  *m_intrinsicPort.get( img.time() );
 					intrVal[ 0 ] = static_cast< float > ( intrinsic( 0, 0 ) );
 					intrVal[ 1 ] = static_cast< float > ( intrinsic( 0, 1 ) );
 					intrVal[ 2 ] = static_cast< float > ( intrinsic( 0, 2 ) ) * -1.0f ;
@@ -474,8 +474,8 @@ public:
 					rot_mat[ i ] = double( m_current_rotation_matrix[ i ] ); 
 
 				/** conversion to right-handed coordinate-system */
-				Math::Vector< 3 > trans( m_current_translation_vector[0], m_current_translation_vector[1], -m_current_translation_vector[2] );
-				Math::Matrix< 3, 3 > rot( rot_mat );
+				Math::Vector< double, 3 > trans( m_current_translation_vector[0], m_current_translation_vector[1], -m_current_translation_vector[2] );
+				Math::Matrix< double, 3, 3 > rot( rot_mat );
 				
 				rot( 2, 0 ) = - rot( 2, 0 );
 				rot( 2, 1 ) = - rot( 2, 1 );

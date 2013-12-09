@@ -186,7 +186,7 @@ int main( int, char** )
 		std::cout << "starting Corner Finder" << std::endl;
 		// load intrinsics
 		// Vision::Undistortion undistorter( "CamMatrix.calib", "CamCoeffs.calib" );
-		// Math::Matrix< 3, 3, float > intrinsics;
+		// Math::Matrix< float, 3, 3 > intrinsics;
 		// Math::matrix_cast_assign( intrinsics, undistorter.getIntrinsics() );
 		// std::cout << "Undistortion started" << std::endl;
 		// find image files in directories
