@@ -15,10 +15,13 @@
 
 import os
 
+have_utvision = False
+have_lapack = False
+
 Import( '*' )
 
 # a)
-if not have_utvision or not have_lapack:
+if not (have_utvision and have_lapack):
 	print "utVision or lapack missing -- not building vision apps"
 	success = False
 	Return('success')	

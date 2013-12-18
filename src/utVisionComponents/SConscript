@@ -24,6 +24,9 @@ import sys
 import glob
 import os.path
 
+have_utdataflow = False
+have_utvision = False
+
 Import( '*' )
 
 # a)

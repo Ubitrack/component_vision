@@ -14,10 +14,6 @@ else:
 	SConscript ( '#/config/libraryConfig.py' )
 	Import('standardLibFinder', 'standardLibConfig')
 
-	opts.Add( 'GLUT_PATH', 'Path to the glut library (only for VRML viewer component)' )
-	opts.Add( 'GLUT_INCLUDE', 'Path to the glut headers' )
-	opts.Add( 'GLUT_LIBPATH', 'Path to the glut libraries' )
-	opts.Add( 'GLUT_LIBS', 'Glut libraries to link against' )
 
 	libName = "GLUT"
 

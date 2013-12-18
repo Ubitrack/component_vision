@@ -24,11 +24,14 @@ import sys
 import glob
 import os.path
 
+have_utdataflow = False
+have_utvision = False
+
 Import( '*' )
 
 # a)
 if not (have_utdataflow and have_utvision):
-	print "utDataflow or utVision module missing -- not building vision components"
+	print "utDataflow or utVision module missing -- not building vision io components"
 	result = False
 	Return("result")
 	
