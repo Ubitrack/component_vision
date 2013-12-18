@@ -731,9 +731,9 @@ void BAInfo::writeUTQL( std::ostream& of )
 		of << "<Pattern name=\"MarkerTracker\" id=\"Marker" << std::hex << it->first << "\">\n";
 		of << "    <Input>\n";
 		of << " 		<Node name=\"Camera\" id=\"CameraNode\"> \n";
-        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerIdMask\" value=\"0xFFFFFFE7E7FFFFFF\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
-		of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerBitSize\" value=\"12\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
-        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"codeBitSize\" value=\"8\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
+        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerIdMask\" value=\"0xFFFF\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
+		of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerBitSize\" value=\"6\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
+        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"codeBitSize\" value=\"4\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
         of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"enableInnerEdgels\" value=\"true\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
         of << "        </Node> \n";
 		of << "        <Node name=\"ImagePlane\" id=\"node_2\"/>\n";
@@ -857,9 +857,9 @@ void BAInfo::writeUTQL_TrackingContest( std::ostream& of )
 		of << "<Pattern name=\"MarkerTracker\" id=\"Marker" << std::hex << it->first << "\">\n";
 		of << "    <Input>\n";
 		of << " 		<Node name=\"Camera\" id=\"CameraNode\"> \n";
-        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerIdMask\" value=\"0xFFFFFFE7E7FFFFFF\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
-		of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerBitSize\" value=\"12\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
-        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"codeBitSize\" value=\"8\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
+        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerIdMask\" value=\"0xFFFF\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
+		of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerBitSize\" value=\"6\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
+        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"codeBitSize\" value=\"4\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
         of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"enableInnerEdgels\" value=\"true\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
         of << "        </Node> \n";
 		of << "        <Node name=\"ImagePlane\" id=\"ImageNode\"/>\n";
@@ -1074,8 +1074,8 @@ int main( int, char** )
 	const Math::Matrix< float, 3, 3 >& K, Image* pDebugImg = 0, bool bRefine = false, unsigned int iCodeSize = 4, 
 	unsigned int iMarkerSize = 6, unsigned long long int uiMask = 0xFFFF, bool useInnerEdgels = true );
 			*/
-			Markers::detectMarkers( *pImage, markerMap, intrinsics, NULL, false, 8, 12, 0xFFFFFFE7E7FFFFFF, true );
-			//Markers::detectMarkers( *pImage, markerMap, intrinsics, NULL, false, 4, 6, 0xFFFF, true );
+			//Markers::detectMarkers( *pImage, markerMap, intrinsics, NULL, false, 8, 12, 0xFFFFFFE7E7FFFFFF, true );
+			Markers::detectMarkers( *pImage, markerMap, intrinsics, NULL, false, 4, 6, 0xFFFF, true );
 			
 			
 			// erase not-seen markers from map

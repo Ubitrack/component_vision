@@ -1,32 +1,44 @@
+# HOW TO BUILD (A) APPLICATION FROM A MODULE
+# Building libraries from modules should be consistent for each module.
+# Use the following scheme for each new library created:
+#
+# a) Check for required libraries. If they are not available return False and export flags if needed
+# b) Define the src-subdirectories for which the library should be compiled
+#    and glob all files in there
+# c) Define a [LIBRARY]_options variable for the library containing all dependencies
+#    from other libraries. Create a clone from the master environment and add those options.
+# d) Build the application!
+# e) Optionally setup help and ide projects
+#
+# The use of options and possibility to export them makes hierarchical build environments
+# obsolete. Avoid exporting new environments to the build system.
+
 import os
 
-# import variables from other scons files
+have_utvision = False
+have_lapack = False
+
 Import( '*' )
 
-
-if not have_utvision or not have_lapack:
+# a)
+if not (have_utvision and have_lapack):
 	print "utVision or lapack missing -- not building vision apps"
 	success = False
 	Return('success')	
 
+# b)
+sources = globSourceFiles( '*.cpp' )
+
+# c)
+markerbundle_options = mergeOptions( utcore_all_options, utfacade_all_options, utvision_all_options )
 env = masterEnv.Clone()
-
-# setup compiler and linker flags
-env.AppendUnique( **utcore_all_options )
-env.AppendUnique( **utfacade_all_options )
-if have_utvision:
-	env.AppendUnique( **utvision_all_options )
-	env.AppendUnique( **opencv_options )
-
-
-
+env.AppendUnique( **markerbundle_options )
 #env.AppendUnique( LIBS = boost_libs( [ "serialization", "program_options", "system", "filesystem", "regex" ] ) )
 
-
-allUtilSources = []
-
-# find all subdirectories
-sources = globSourceFiles( '*.cpp' )
+# d)
+# build the application
+# {buildenvironment, source files, name of the application, build target}
 setupAppBuild( env, sources, "MarkerBundle", 'utApps')	
 
-
+# e)
+createVisualStudioProject(env, sources, [], 'MarkerBundle')
