@@ -62,7 +62,7 @@
 #include <log4cpp/Category.hh>
 //#define OPTIMIZATION_LOGGING
 //static log4cpp::Category& optLogger( log4cpp::Category::getInstance( "MarkerBundle" ) );
-#include <utMath/LevenbergMarquardt.h>
+#include <utMath/Optimization/LevenbergMarquardt.h>
 
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "MarkerBundle" ) );
 
@@ -593,7 +593,7 @@ void BAInfo::bundleAdjustment( bool bUseRefPoints )
 	genParameterVector( parameters );
 
 	LOG4CPP_DEBUG( logger, "original parameters: " << parameters );
-	Math::levenbergMarquardt( *this, parameters, measurements, Math::OptTerminate( 200, 1e-6 ), Math::OptNoNormalize() );
+	Math::Optimization::levenbergMarquardt( *this, parameters, measurements, Math::Optimization::OptTerminate( 200, 1e-6 ), Math::Optimization::OptNoNormalize() );
 	LOG4CPP_DEBUG( logger, "improved parameters: " << parameters );
 
 	updateParameters( parameters );
