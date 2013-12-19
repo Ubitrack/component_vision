@@ -46,10 +46,10 @@
 #include <opencv/highgui.h>
 #include <opencv/cv.h>
 
-#include <utMath/NewFunction/Function.h>
-#include <utMath/NewFunction/Addition.h>
-#include <utMath/NewFunction/Dehomogenization.h>
-#include <utMath/NewFunction/LieRotation.h>
+#include <utMath/Optimization/NewFunction/Function.h>
+#include <utMath/Optimization/NewFunction/Addition.h>
+#include <utMath/Optimization/NewFunction/Dehomogenization.h>
+#include <utMath/Optimization/NewFunction/LieRotation.h>
 #include <utMath/BackwardPropagation.h>
 #include <utCalibration/NewFunction/CameraIntrinsicsMultiplication.h>
 #include <utCalibration/AbsoluteOrientation.h>
