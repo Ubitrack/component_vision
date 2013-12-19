@@ -48,7 +48,7 @@
 #include <utMath/Optimization/NewFunction/Addition.h>
 #include <utMath/Optimization/NewFunction/Dehomogenization.h>
 #include <utMath/Optimization/NewFunction/LieRotation.h>
-#include <utMath/BackwardPropagation.h>
+#include <utMath/Stochastic/BackwardPropagation.h>
 #include <utCalibration/NewFunction/CameraIntrinsicsMultiplication.h>
 #include <utCalibration/AbsoluteOrientation.h>
 #include <utCalibration/3DPointReconstruction.h>
@@ -662,11 +662,11 @@ void BAInfo::printResiduals()
 	// unclear if this makes sense!
 	ublas::matrix< double, ublas::column_major > covariance( parameterSize(), parameterSize() );
 	if ( m_bUseRefPoints )
-		Math::backwardPropagationIdentity( covariance, var, J );
+		Math::Stochastic::backwardPropagationIdentity( covariance, var, J );
 	else
 	{
 		ublas::matrix_range< ublas::matrix< double, ublas::column_major > > subJ( J, ublas::range( 0, J.size1() - 6 ), ublas::range( 0, J.size2() ) );
-		Math::backwardPropagationIdentity( covariance, var, subJ );
+		Math::Stochastic::backwardPropagationIdentity( covariance, var, subJ );
 	}
 
 	std::cout << "Estimated standard deviations (r, t):" << std::endl;

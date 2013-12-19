@@ -50,7 +50,7 @@
 #include <utMath/Optimization/NewFunction/Addition.h>
 #include <utMath/Optimization/NewFunction/Dehomogenization.h>
 #include <utMath/Optimization/NewFunction/LieRotation.h>
-#include <utMath/BackwardPropagation.h>
+#include <utMath/Stochastic/BackwardPropagation.h>
 #include <utCalibration/NewFunction/CameraIntrinsicsMultiplication.h>
 #include <utCalibration/AbsoluteOrientation.h>
 #include <utCalibration/3DPointReconstruction.h>
