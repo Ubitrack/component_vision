@@ -46,11 +46,11 @@
 #include <opencv/highgui.h>
 #include <opencv/cv.h>
 
-#include <utMath/NewFunction/Function.h>
-#include <utMath/NewFunction/Addition.h>
-#include <utMath/NewFunction/Dehomogenization.h>
-#include <utMath/NewFunction/LieRotation.h>
-#include <utMath/BackwardPropagation.h>
+#include <utMath/Optimization/NewFunction/Function.h>
+#include <utMath/Optimization/NewFunction/Addition.h>
+#include <utMath/Optimization/NewFunction/Dehomogenization.h>
+#include <utMath/Optimization/NewFunction/LieRotation.h>
+#include <utMath/Stochastic/BackwardPropagation.h>
 #include <utCalibration/NewFunction/CameraIntrinsicsMultiplication.h>
 #include <utCalibration/AbsoluteOrientation.h>
 #include <utCalibration/3DPointReconstruction.h>
@@ -186,7 +186,7 @@ int main( int, char** )
 		std::cout << "starting Corner Finder" << std::endl;
 		// load intrinsics
 		// Vision::Undistortion undistorter( "CamMatrix.calib", "CamCoeffs.calib" );
-		// Math::Matrix< 3, 3, float > intrinsics;
+		// Math::Matrix< float, 3, 3 > intrinsics;
 		// Math::matrix_cast_assign( intrinsics, undistorter.getIntrinsics() );
 		// std::cout << "Undistortion started" << std::endl;
 		// find image files in directories

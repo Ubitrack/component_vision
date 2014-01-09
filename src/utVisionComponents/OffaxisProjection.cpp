@@ -48,14 +48,14 @@ class OffaxisProjectionComponent
 	: public Dataflow::TriggerComponent
 {
 	/** Convert string into vector. For reading the XML attributes. */
-	Math::Vector<3> stringToVector(const std::string& s) {
+	Math::Vector< double, 3 > stringToVector(const std::string& s) {
 		double p[3];
 		std::istringstream vecString( s );
 		for (int i=0; i < 3; ++i)
 		{
 			vecString >> p[i];
 		}
-		Math::Vector<3> trans( p );
+		Math::Vector< double, 3 > trans( p );
 		return trans;
 	} 
 
@@ -89,11 +89,11 @@ public:
 	/** Method that computes the result. */
 	void compute( Measurement::Timestamp t ) {
 
-		Math::Vector<3> eye_pos = *(m_inPortEyePos.get());
+		Math::Vector< double, 3 > eye_pos = *(m_inPortEyePos.get());
 
 		LOG4CPP_TRACE(logger, "Computing projection matrix for view at " << eye_pos << " to screen" );
 
-		Math::Matrix<4, 4> projMatrix = Calibration::offAxisProjectionMatrix( eye_pos, m_screen_ll, m_screen_ul, m_screen_lr, m_near, m_far, m_screen_width, m_screen_height );
+		Math::Matrix< double, 4, 4 > projMatrix = Calibration::offAxisProjectionMatrix( eye_pos, m_screen_ll, m_screen_ul, m_screen_lr, m_near, m_far, m_screen_width, m_screen_height );
 		m_outPort.send( Measurement::Matrix4x4(t, projMatrix) );
 	}
 
@@ -105,9 +105,9 @@ protected:
 	Dataflow::TriggerOutPort< Measurement::Matrix4x4 >	m_outPort;
 
 	/** Offset of 3 screen corners in screen coordinates */
-	Math::Vector<3>						m_screen_ll;
-	Math::Vector<3>						m_screen_lr;
-	Math::Vector<3>						m_screen_ul;
+	Math::Vector< double, 3 >						m_screen_ll;
+	Math::Vector< double, 3 >						m_screen_lr;
+	Math::Vector< double, 3 >						m_screen_ul;
 
 	/** Width and height of the screen */
 	double							m_screen_width;
