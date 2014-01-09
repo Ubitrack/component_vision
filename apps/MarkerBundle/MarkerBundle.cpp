@@ -81,7 +81,7 @@ unsigned int uiCodeMask = 0;
 
 
 
-static const Math::Vector< 3 > g_unitCorners[ 4 ] = 
+static const Math::Vector< double, 3 > g_unitCorners[ 4 ] = 
 {
 	Math::Vector< double, 3 >( -0.5,  0.5, 0.0 ),
 	Math::Vector< double, 3 >( -0.5, -0.5, 0.0 ),
