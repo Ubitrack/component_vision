@@ -87,7 +87,7 @@
 					<EnumValue name="circularasymmetric"  displayName="Asymmetric grid of circular markers"/>
                 </Attribute>
             </Node>
-            <Edge name="Corners2D" source="ImagePlane" destination="ChessBoard" displayName="Chessboard Corners" >
+            <Edge name="Corners" source="ImagePlane" destination="ChessBoard" displayName="Chessboard Corners" >
             	<Description><h:p>A list of 2D-Coordinates that contain the locations of the chessboard
             	corners in the image. The list is sorted by the coordinates on the chesboard.</h:p></Description>
                 <Attribute name="type" value="2DPositionList" xsi:type="EnumAttributeReferenceType"/>
