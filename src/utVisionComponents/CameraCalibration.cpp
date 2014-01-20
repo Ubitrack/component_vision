@@ -87,9 +87,6 @@ protected:
 
 	/** Output port of the component providing the camera intrinsic parameters. */
 	Dataflow::TriggerOutPort< Measurement::CameraIntrinsics > m_intrPort;
-
-	Dataflow::TriggerOutPort< Measurement::Matrix3x3 > m_intrMatPort;
-	Dataflow::TriggerOutPort< Measurement::Vector4D > m_distPort;
 	
 	/** signs if the thread is running. */
 	boost::mutex m_mutexThread;
@@ -110,8 +107,6 @@ public:
 		, m_inPort2D( "Points2D", *this )
 		, m_inPort3D( "Points3D", *this )
 		, m_intrPort( "CameraIntrinsics", *this )
-		, m_intrMatPort( "CameraIntrinsicsMatrix", *this )
-		, m_distPort( "CameraDistortions", *this )
 		, m_mutexThread( )
     {
 		
@@ -228,20 +223,6 @@ public:
 		float intrVal[9];
 		CvMat intrinsic_matrix = cvMat ( 3, 3, CV_32FC1, intrVal );
 
-		// compute cheap camera matrix if none given
-		float fTx = static_cast< float >( 640 / 2 );
-		float fTy = static_cast< float >( 480 / 2 );
-		float f = 1.25f * 640;
-		cvmSet(&intrinsic_matrix, 0, 0, f);
-		cvmSet(&intrinsic_matrix, 0, 1, 0.0f);
-		cvmSet(&intrinsic_matrix, 0, 2, fTx);
-		cvmSet(&intrinsic_matrix, 1, 0, 0.0f);
-		cvmSet(&intrinsic_matrix, 1, 1, f);
-		cvmSet(&intrinsic_matrix, 1, 2, fTy);
-		cvmSet(&intrinsic_matrix, 2, 0, 0.0f);
-		cvmSet(&intrinsic_matrix, 2, 1, 0.0f);
-		cvmSet(&intrinsic_matrix, 2, 2, 1.0f);
-
 		float disVal[8];
 		CvMat distortion_coeffs = cvMat( 8, 1, CV_32FC1, disVal );
 
@@ -252,13 +233,12 @@ public:
 						&object_points,
 						&image_points,
 						&point_counts,
-						cvSize(640, 480),
-						//cvSize( 2, 2 ), //OpenCV modifies centers to (cvSize -1) * 0.5
+						cvSize( 2, 2 ), //OpenCV modifies centers to (cvSize -1) * 0.5
 						&intrinsic_matrix,
 						&distortion_coeffs,
 						NULL ,		//	NULL for no output
 						NULL ,	//	NULL for no output
-						m_flags | CV_CALIB_USE_INTRINSIC_GUESS );
+						m_flags );
 		}
 		catch( const std::exception & e )
 		{
@@ -287,18 +267,8 @@ public:
 		intrinsic( 2, 1 ) = 0.0;
 		intrinsic( 2, 2 ) = -1.0;
 
-		Math::Vector4 distortion;
-		distortion( 0 ) = static_cast< double >( disVal[0] );
-		distortion( 1 ) = static_cast< double >( disVal[1] );
-		distortion( 2 ) = static_cast< double >( disVal[2] );
-		distortion( 3 ) = static_cast< double >( disVal[3] );
-
 		m_camIntrinsics = Math::CameraIntrinsics< double > ( intrinsic, radial, tangential );
-		Measurement::Timestamp time = Measurement::now();
-		m_intrPort.send( Measurement::CameraIntrinsics ( time, m_camIntrinsics ) );		
-		m_intrMatPort.send( Measurement::Matrix3x3(time, intrinsic) );
-		m_distPort.send( Measurement::Vector4D(time, distortion) );
-
+		m_intrPort.send( Measurement::CameraIntrinsics ( Measurement::now(), m_camIntrinsics ) );		
 		LOG4CPP_INFO( logger, "Finished camera calibration using " << m_values << " views." );
     }
 };

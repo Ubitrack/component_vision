@@ -29,18 +29,8 @@
 		
         <Output>
             <Node name="Camera" displayName="Camera" />
-            <Edge name="CameraIntrinsics" source="Camera" destination="ImagePlane" displayName="Camera Intrinsics">
+            <Edge name="CameraIntrinsics" source="Camera" destination="ImagePlane" displayName="Intrinsic Matrix">
                 <Attribute name="type" value="3x3Matrix" xsi:type="EnumAttributeReferenceType"/>
-                <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
-                <Attribute name="static" value="true" xsi:type="EnumAttributeReferenceType"/>
-            </Edge>
-            <Edge name="CameraIntrinsicsMatrix" source="Camera" destination="ImagePlane" displayName="Intrinsic Matrix">
-                <Attribute name="type" value="3x3Matrix" xsi:type="EnumAttributeReferenceType"/>
-                <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
-                <Attribute name="static" value="true" xsi:type="EnumAttributeReferenceType"/>
-            </Edge>
-            <Edge name="CameraDistortions" source="Camera" destination="ImagePlane" displayName="Distortion Vector">
-                <Attribute name="type" value="4DVector" xsi:type="EnumAttributeReferenceType"/>
                 <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
                 <Attribute name="static" value="true" xsi:type="EnumAttributeReferenceType"/>
             </Edge>
@@ -51,8 +41,6 @@
                 <Edge edge-ref="Points2D"/>
                 <Edge edge-ref="Points3D"/>
 				<Edge edge-ref="CameraIntrinsics"/>
-				<Edge edge-ref="CameraIntrinsicsMatrix" />
-				<Edge edge-ref="CameraDistortions" />
             </TriggerGroup>
         </Constraints>
 		
