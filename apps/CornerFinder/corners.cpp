@@ -187,7 +187,7 @@ int main( int, char** )
 		// load intrinsics
 		// Vision::Undistortion undistorter( "CamMatrix.calib", "CamCoeffs.calib" );
 		// Math::Matrix< float, 3, 3 > intrinsics;
-		// Math::matrix_cast_assign( intrinsics, undistorter.getIntrinsics() );
+		// Math::Util::matrix_cast_assign( intrinsics, undistorter.getIntrinsics() );
 		// std::cout << "Undistortion started" << std::endl;
 		// find image files in directories
 		std::vector< std::string > imageNames;

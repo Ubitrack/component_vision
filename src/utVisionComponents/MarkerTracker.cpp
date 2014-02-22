@@ -44,7 +44,7 @@
 #include <utDataflow/ComponentFactory.h>
 #include <utMeasurement/Measurement.h>
 #include <utMath/Scalar.h>
-#include <utMath/cast_assign.h>
+#include <utMath/Util/cast_assign.h>
 
 #include <utVision/Image.h>
 #include <utVision/MarkerDetection.h>
@@ -364,7 +364,7 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 	Math::Matrix< float, 3, 3 > K;
 	if ( components.front()->isIntrinsics() )
 	{
-		Math::matrix_cast_assign( K, *components.front()->intrinsics( m.time() ) );
+		Math::Util::matrix_cast_assign( K, *components.front()->intrinsics( m.time() ) );
 	}
 	else
 	{

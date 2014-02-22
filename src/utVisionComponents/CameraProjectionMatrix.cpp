@@ -42,7 +42,7 @@
 #include <utMath/MatrixOperations.h>
 
 #include <boost/numeric/ublas/matrix_proxy.hpp>
-#include <utMath/cast_assign.h>
+#include <utMath/Util/cast_assign.h>
 
 
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.CameraProjectionMatrix" ) );

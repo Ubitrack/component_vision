@@ -1101,7 +1101,7 @@ int main( int ac, char** av )
 		Vision::Undistortion undistorter( g_config.sMatrixFile, g_config.sDistortionFile );
 
 		Math::Matrix< float, 3, 3 > intrinsics;
-		Math::matrix_cast_assign( intrinsics, undistorter.getIntrinsics() );
+		Math::Util::matrix_cast_assign( intrinsics, undistorter.getIntrinsics() );
 		
 		// find image files in directories
 		std::vector< std::string > imageNames;
