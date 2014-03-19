@@ -150,8 +150,10 @@ public:
 			pCbNode->getAttributeData( "chessBoardHeight", m_height );
 			pCbNode->getAttributeData( "chessBoardWidth", m_width );
 		
+			if ( m_height <= 0 || m_width <= 0  )
+				UBITRACK_THROW( "Could not perform calibration grid detection, specify the number of features to detect using the chessBoardHeight, chessBoardWidth parameters." );
 		
-			if ( pCbNode->hasAttribute( "gridtype" ) ) // chosse the type of the calibration grid
+			if ( pCbNode->hasAttribute( "gridtype" ) ) // choose the type of the calibration grid
 			{
 				if( pCbNode->getAttributeString( "gridtype" ) == "chessboard" ) //also the default value
 					m_grid_type = 0;
@@ -159,10 +161,45 @@ public:
 					m_grid_type = 1;
 				if( pCbNode->getAttributeString( "gridtype" ) == "circularasymmetric" )
 					m_grid_type = 2;
-			}
+			}else
+				LOG4CPP_WARN( logger, "Setting gridType property to type \"chessboard\" (default), no calibration grid type provided( \"chessboard\"/\"circularsymmetric\"/\"circularasymmetric\") " );
 			
-			//stuff of the old calibration pattern
+			
+			if ( pCbNode->hasAttribute( "scaleFactor" ) ) // scalefactor for smaller images
+				pCbNode->getAttributeData( "scaleFactor", m_scaleFactor );
+			
+		}
+		
+		// very new pattern, uses no own chessboard size
+		// scaling was thrown away, this should be handled somewhere else
+		if ( pCfg->hasNode( "CalibrationGridPoints" ) )
+		{
+			Graph::UTQLSubgraph::NodePtr pCbNode = pCfg->getNode( "CalibrationGridPoints" );
+			pCbNode->getAttributeData( "gridPointsX", m_width );
+			pCbNode->getAttributeData( "gridPointsY", m_height );
+			
+		
+			// grid type is set to circular as default:)
+			m_grid_type = 1;
+			if( !pCbNode->hasAttribute( "gridType" ) )
+				LOG4CPP_WARN( logger, "Setting \"gridType\" property to type \"chessboard\" (default), supported grid types are: \"chessboard\"/\"circular\"/\"asymmetric\"" )
+			else
 			{
+				if( pCbNode->getAttributeString( "boardType" ) == "chessboard" )
+					m_grid_type = 0;
+					
+				if( pCbNode->getAttributeString( "gridType" ) == "asymmetric" )
+					m_grid_type = 2;
+				LOG4CPP_INFO( logger, "Setting \"gridType\" property to type \"" << pCbNode->getAttributeString( "boardType" ) << "\", other possible grid type supported are: \"chessboard\"/\"circular\"/\"asymmetric\"" );
+			}
+		}
+		
+		if( m_outPoints3DPort.isConnected() )
+		{
+		
+			if( pCfg->hasNode( "ChessBoard" ) ) //old style pattern
+			{
+				Graph::UTQLSubgraph::NodePtr pCbNode = pCfg->getNode( "ChessBoard" );
 				if ( pCbNode->hasAttribute( "xAxisLength" ) ) // overall size of xAxis
 					pCbNode->getAttributeData( "xAxisLength", m_sizeX );
 				m_sizeX /= ( m_width - 1 );
@@ -171,75 +208,47 @@ public:
 					pCbNode->getAttributeData( "yAxisLength", m_sizeY );
 				m_sizeY /= ( m_height - 1 );
 				
-				if ( pCbNode->hasAttribute( "scaleFactor" ) ) // scalefactor for smaller images
-					pCbNode->getAttributeData( "scaleFactor", m_scaleFactor );
-			}
-
-			//stuff of the very old (deprecated) pattern
-			{
-				if ( pCbNode->hasAttribute( "chessBoardSize" ) ) // old parameters override new ones
-				{
-					pCbNode->getAttributeData( "chessBoardSize", m_sizeX );
-					pCbNode->getAttributeData( "chessBoardSize", m_sizeY );
+				
+				{	//stuff of the very old (deprecated) pattern
+					if ( pCbNode->hasAttribute( "chessBoardSize" ) ) // old parameters override new ones
+					{
+						pCbNode->getAttributeData( "chessBoardSize", m_sizeX );
+						pCbNode->getAttributeData( "chessBoardSize", m_sizeY );
+					}
 				}
 			}
-
 			
+			if ( pCfg->hasNode( "CalibrationGridPoints" ) ) // new style pattern
+			{
+				Graph::UTQLSubgraph::NodePtr pCbNode = pCfg->getNode( "CalibrationGridPoints" );
+				// value_type m_sizeX, m_sizeY, lastDim = 0;
+				pCbNode->getAttributeData( "gridAxisLengthX", m_sizeX );
+				pCbNode->getAttributeData( "gridAxisLengthY", m_sizeY );
+				// pCbNode->getAttributeData( "gridThirdDimension", lastDim );
 				
+				Graph::UTQLSubgraph::EdgePtr edge = pCfg->getEdge( "Corners" );
+				if ( edge->hasAttribute( "normalize" ) )
+					if( edge->getAttributeString( "normalize" ) == "true" )
+						m_normalize = true;
+			}
+		
+			
+			if ( !( m_sizeY > 0 && m_sizeX > 0 ) )
+				UBITRACK_THROW( "Could not perform calibration grid detection, calibration grid axis size was not specified correctly, use the chessBoardSize, yAxisLength or xAxisLength attribute." );
+			
+			// prepare the object points, that always stay fix
+			m_edges = m_height * m_width;
 
-		}
-		
-		// very new pattern, uses no own chessboard size
-		// scaling was thrown away, this should be handled somewhere else
-		if ( pCfg->hasNode( "CalibrationGridPoints" ) )
-		{
-			Graph::UTQLSubgraph::NodePtr pCbNode = pCfg->getNode( "CalibrationGridPoints" );
-			std::size_t width, height = 0;
-			pCbNode->getAttributeData( "gridPointsX", m_width );
-			pCbNode->getAttributeData( "gridPointsY", m_height );
-			
-			// value_type m_sizeX, m_sizeY, lastDim = 0;
-			pCbNode->getAttributeData( "gridAxisLengthX", m_sizeX );
-			pCbNode->getAttributeData( "gridAxisLengthY", m_sizeY );
-			// pCbNode->getAttributeData( "gridThirdDimension", lastDim );
-			
-			// grid type is set to circular as default:)
-			m_grid_type = 1;
-			if ( pCbNode->hasAttribute( "gridType" ) )
-				if( pCbNode->getAttributeString( "gridType" ) == "asymmetric" )
-					m_grid_type = 2;
-					
-			if ( pCbNode->hasAttribute( "boardType" ) )
-				if( pCbNode->getAttributeString( "boardType" ) == "chessboard" )
-					m_grid_type = 0;
-			
-			
-			Graph::UTQLSubgraph::EdgePtr edge = pCfg->getEdge( "Corners" );
-			if ( edge->hasAttribute( "normalize" ) )
-				if( edge->getAttributeString( "normalize" ) == "true" )
-					m_normalize = true;
-				
-		}
-		
-		if ( m_height <= 0 || m_width <= 0  )
-			UBITRACK_THROW( "Could not perform calibration grid detection, specify the number of features to detect using the chessBoardHeight, chessBoardWidth parameters." );
-		
-		if ( !( m_sizeY > 0 && m_sizeX > 0 ) )
-			UBITRACK_THROW( "Could not perform calibration grid detection, calibration grid axis size was not spezified correctly, use the chessBoardSize, yAxisLength or xAxisLength attribute." );
-		
-		
-		// prepare the object points, that always stay fix
-		m_edges = m_height * m_width;
-
-		objPoints.reset( new float[ 3 * m_edges ] );
-		const float offset = ( m_grid_type == 2 ) ? m_sizeX * 0.5 : 0;
-		for( int i = 0; i < m_edges ; ++i )
-		{
-			objPoints[ 3 * i + 0 ] = static_cast< float >( i % m_width ) * m_sizeX;
-			if( ( ( i / m_width ) % 2 ) == 1 )
-				objPoints[ 3 * i + 0 ] += offset;
-			objPoints[ 3 * i + 1 ] = static_cast< float >( i / m_width ) * m_sizeY;
-			objPoints[ 3 * i + 2 ] = 0.0;
+			objPoints.reset( new float[ 3 * m_edges ] );
+			const float offset = ( m_grid_type == 2 ) ? m_sizeX / 2 : 0;
+			for( int i = 0; i < m_edges ; ++i )
+			{
+				objPoints[ 3 * i + 0 ] = static_cast< float >( i % m_width ) * m_sizeX;
+				if( ( ( i / m_width ) % 2 ) == 1 )
+					objPoints[ 3 * i + 0 ] += offset;
+				objPoints[ 3 * i + 1 ] = static_cast< float >( i / m_width ) * m_sizeY;
+				objPoints[ 3 * i + 2 ] = 0.0;
+			}
 		}
     }
 
