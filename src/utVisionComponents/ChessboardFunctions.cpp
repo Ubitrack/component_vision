@@ -31,6 +31,15 @@
  * @author Christian Waechter <christian.waechter@in.tum.de>
  */
 
+#include <utDataflow/Component.h>
+#include <utDataflow/PushConsumer.h>
+#include <utDataflow/PullConsumer.h>
+#include <utDataflow/PushSupplier.h>
+#include <utDataflow/ComponentFactory.h>
+#include <utMeasurement/Measurement.h>
+#include <utMath/Vector.h>
+#include <utUtil/Exception.h>
+
 // std
 #include <fstream>
 #include <sstream>
@@ -41,15 +50,6 @@
  
 // boost
 #include <boost/scoped_array.hpp>
- 
-#include <utDataflow/Component.h>
-#include <utDataflow/PushConsumer.h>
-#include <utDataflow/PullConsumer.h>
-#include <utDataflow/PushSupplier.h>
-#include <utDataflow/ComponentFactory.h>
-#include <utMeasurement/Measurement.h>
-#include <utMath/Vector.h>
-#include <utUtil/Exception.h>
 
 //Log4Ccpp
 #include <log4cpp/Category.hh>
@@ -128,7 +128,7 @@ public:
 		, m_intrinsicPort( "Intrinsic", *this )
 		, m_distortionPort( "Distortion", *this )
 		// the old files ChessBoardDetection and ChessBoardTracking used the same name "Output" for their different Output Ports
-		// thats why here is a distinction for the name
+		// that's why here is a distinction for the name
 		, m_outPosePort( ( 0 == pCfg->m_DataflowClass.compare( 0, 18, "ChessBoardTracking" )  ) ? "Output" : "Pose", *this )
 		, m_outPoints2DPort( ( 0 == pCfg->m_DataflowClass.compare( 0, 19, "ChessBoardDetection" )  ) ? "Output" : "Corners", *this )
 		, m_outPoints3DPort(  "Corners3D", *this )
@@ -181,18 +181,23 @@ public:
 		
 			// grid type is set to circular as default:)
 			m_grid_type = 1;
-			if( !pCbNode->hasAttribute( "gridType" ) )
-				LOG4CPP_WARN( logger, "Setting \"gridType\" property to type \"chessboard\" (default), supported grid types are: \"chessboard\"/\"circular\"/\"asymmetric\"" )
+			if( !pCbNode->hasAttribute( "boardType" ) )
+				LOG4CPP_WARN( logger, "Setting \"boardType\" property to \"circular\" (default), supported \"boardType\"s are: \"chessboard\"/\"circular\"" )
 			else
 			{
+				if( pCbNode->getAttributeString( "gridType" ) == "asymmetric" )
+					m_grid_type = 2;
 				if( pCbNode->getAttributeString( "boardType" ) == "chessboard" )
 					m_grid_type = 0;
 					
-				if( pCbNode->getAttributeString( "gridType" ) == "asymmetric" )
-					m_grid_type = 2;
-				LOG4CPP_INFO( logger, "Setting \"gridType\" property to type \"" << pCbNode->getAttributeString( "boardType" ) << "\", other possible grid type supported are: \"chessboard\"/\"circular\"/\"asymmetric\"" );
+				LOG4CPP_INFO( logger, "Setting \"boardType\" property to \"" << pCbNode->getAttributeString( "boardType" ) << "\", supported \"boardType\"s are: \"chessboard\" and \"circular\"" );
+				if( m_grid_type != 0 )
+					LOG4CPP_INFO( logger, "Setting \"gridType\" property to \"" << pCbNode->getAttributeString( "gridType" ) << "\", supported \"gridTypes\"s are: \"symmetric\" and \"asymmetric\"" );
 			}
 		}
+		
+		// determine the amount of corners of the calibration grid
+		m_edges = m_height * m_width;
 		
 		if( m_outPoints3DPort.isConnected() )
 		{
@@ -237,7 +242,6 @@ public:
 				UBITRACK_THROW( "Could not perform calibration grid detection, calibration grid axis size was not specified correctly, use the chessBoardSize, yAxisLength or xAxisLength attribute." );
 			
 			// prepare the object points, that always stay fix
-			m_edges = m_height * m_width;
 
 			objPoints.reset( new float[ 3 * m_edges ] );
 			const float offset = ( m_grid_type == 2 ) ? m_sizeX / 2 : 0;
@@ -303,7 +307,7 @@ public:
 			default:
 				LOG4CPP_ERROR( logger, "Cannot perform calibration grid detection, the type of the calibration grid is not specified correctly." );
 			}
-			//assgin the values to the other array again -> will get better with c++11
+			//assign the values to the other array again -> will get better with c++11
 			if( pattern_was_found )
 			{
 				found = m_edges;
