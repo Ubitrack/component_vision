@@ -38,7 +38,7 @@
 #include <utDataflow/TriggerOutPort.h>
 #include <utDataflow/ComponentFactory.h>
 #include <utMeasurement/Measurement.h>
-#include <utCalibration/Projection.h>
+#include <utAlgorithm/Projection.h>
 #include <utMath/MatrixOperations.h>
 
 #include <boost/numeric/ublas/matrix_proxy.hpp>
@@ -86,7 +86,7 @@ public:
 			Math::Matrix< double, 3, 3 > K;
 			Math::Matrix< double, 3, 3 > R;
 			Math::Vector< double, 3 > t;
-			Calibration::decomposeProjection( K, R, t, mat );
+			Algorithm::decomposeProjection( K, R, t, mat );
 			LOG4CPP_DEBUG( logger, "K: " << K );
 			LOG4CPP_DEBUG( logger, "R: " << R );
 			LOG4CPP_DEBUG( logger, "t: " << t );

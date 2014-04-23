@@ -36,7 +36,7 @@
 #include <utMeasurement/Measurement.h>
 #include <utMath/Vector.h>
 #include <utMath/Graph/Munkres.h>
-#include <utCalibration/Homography.h>
+#include <utAlgorithm/Homography.h>
 
 #include <fstream>
 #include <sstream>
@@ -287,7 +287,7 @@ public:
 			}	
 		}			
 
-		H = Calibration::homographyDLT( from, to );
+		H = Algorithm::homographyDLT( from, to );
 		
 		for( unsigned int i=0; i < pts.size(); i++ )
 		{

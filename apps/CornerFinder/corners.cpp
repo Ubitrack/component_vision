@@ -51,10 +51,10 @@
 #include <utMath/Optimization/NewFunction/Dehomogenization.h>
 #include <utMath/Optimization/NewFunction/LieRotation.h>
 #include <utMath/Stochastic/BackwardPropagation.h>
-#include <utCalibration/NewFunction/CameraIntrinsicsMultiplication.h>
-#include <utCalibration/AbsoluteOrientation.h>
-#include <utCalibration/3DPointReconstruction.h>
- #include <utCalibration/LensDistortion.h>
+#include <utAlgorithm/NewFunction/CameraIntrinsicsMultiplication.h>
+#include <utAlgorithm/AbsoluteOrientation.h>
+#include <utAlgorithm/3DPointReconstruction.h>
+ #include <utAlgorithm/LensDistortion.h>
 
 #include <utVision/Undistortion.h>
 

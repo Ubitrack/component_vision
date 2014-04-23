@@ -51,10 +51,10 @@
 #include <utMath/Optimization/NewFunction/Dehomogenization.h>
 #include <utMath/Optimization/NewFunction/LieRotation.h>
 #include <utMath/Stochastic/BackwardPropagation.h>
-#include <utCalibration/NewFunction/CameraIntrinsicsMultiplication.h>
-#include <utCalibration/AbsoluteOrientation.h>
-#include <utCalibration/3DPointReconstruction.h>
-#include <utCalibration/LensDistortion.h>
+#include <utAlgorithm/NewFunction/CameraIntrinsicsMultiplication.h>
+#include <utAlgorithm/AbsoluteOrientation.h>
+#include <utAlgorithm/3DPointReconstruction.h>
+#include <utAlgorithm/LensDistortion.h>
 
 #include <utVision/MarkerDetection.h>
 #include <utVision/Undistortion.h>
@@ -375,7 +375,7 @@ void BAInfo::initRefPoints()
 	for ( SConfig::RefPointMap::iterator it = g_config.refPoints.begin(); it != g_config.refPoints.end(); it++ )
 		for ( std::vector< SConfig::RefPoint::Meas >::iterator itM = it->second.measurements.begin();
 			itM != it->second.measurements.end(); itM++ )
-			itM->pos = Calibration::lensUnDistort( itM->pos, radialCoeffs, intrinsicMatrix );
+			itM->pos = Algorithm::lensUnDistort( itM->pos, radialCoeffs, intrinsicMatrix );
 
 	// find reference points with at least two measurements
 	std::cout << std::endl << "Initializing reference points:" << std::endl;
@@ -394,7 +394,7 @@ void BAInfo::initRefPoints()
 			P1 = ublas::prod( intrinsicMatrix, P1 );
 			Math::Matrix< double, 3, 4 > P2( cameras[ imageToCam[ m2.image ] ].pose );
 			P2 = ublas::prod( intrinsicMatrix, P2 );
-			Math::Vector< double, 3 > p3d = Calibration::get3DPosition( P1, P2, m1.pos, m2.pos );
+			Math::Vector< double, 3 > p3d = Algorithm::get3DPosition( P1, P2, m1.pos, m2.pos );
 
 			refPointsCam.push_back( p3d );
 			refPointsRoom.push_back( it->second.pos );
@@ -407,7 +407,7 @@ void BAInfo::initRefPoints()
 		throw std::runtime_error( "You need at least three reference points which are seen by at least two cameras" );
 	else
 	{
-		Math::Pose t = Calibration::calculateAbsoluteOrientation( refPointsCam, refPointsRoom );
+		Math::Pose t = Algorithm::calculateAbsoluteOrientation( refPointsCam, refPointsRoom );
 		std::cout << "Room transformation " << t << " / " << ~t << std::endl;
 
 		// multiply the t to all poses
@@ -424,7 +424,7 @@ template< class VT1, class VT2, class MT1 >
 void BAInfo::evaluateWithJacobian( VT1& result, const VT2& input, MT1& J ) const
 {
 	using namespace Math::Optimization::Function;
-	using namespace Calibration::Function;
+	using namespace Algorithm::Function;
 
 	// initialize jacobian
 	J = ublas::zero_matrix< double >( J.size1(), J.size2() );

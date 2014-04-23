@@ -35,7 +35,7 @@
 #include <utDataflow/ComponentFactory.h>
 #include <utMath/Matrix.h>
 #include <utMeasurement/Measurement.h>
-#include <utCalibration/Projection.h>
+#include <utAlgorithm/Projection.h>
 
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Drivers.OffaxisProjection" ) );
 
@@ -93,7 +93,7 @@ public:
 
 		LOG4CPP_TRACE(logger, "Computing projection matrix for view at " << eye_pos << " to screen" );
 
-		Math::Matrix< double, 4, 4 > projMatrix = Calibration::offAxisProjectionMatrix( eye_pos, m_screen_ll, m_screen_ul, m_screen_lr, m_near, m_far, m_screen_width, m_screen_height );
+		Math::Matrix< double, 4, 4 > projMatrix = Algorithm::offAxisProjectionMatrix( eye_pos, m_screen_ll, m_screen_ul, m_screen_lr, m_near, m_far, m_screen_width, m_screen_height );
 		m_outPort.send( Measurement::Matrix4x4(t, projMatrix) );
 	}
 
