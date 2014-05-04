@@ -43,8 +43,12 @@
 #ifdef _WIN32
 	#include "GL/freeglut.h"	
 #elif __APPLE__
+  #ifdef HAVE_FREEGLUT
+        #include "GL/freeglut.h"
+  #else
 	#include <OpenGL/OpenGL.h>
 	#include <GLUT/glut.h>
+  #endif
 #elif ANDROID
 #include <GLES2/gl2.h>
 #else
@@ -104,7 +108,7 @@ namespace Ubitrack { namespace Components {
 
 
 		if( textureID == 0 && currentImage.get() != NULL){
-			Measurement::Position result(textureID, Math::Vector<3>(currentImage->width,currentImage->height,currentImage->nChannels));
+			Measurement::Position result(textureID, Math::Vector< double, 3 >(currentImage->width,currentImage->height,currentImage->nChannels));
 			return result;
 		}
 
@@ -115,7 +119,7 @@ namespace Ubitrack { namespace Components {
 			boost::mutex::scoped_lock l( m_mutex );
 			if(currentImage.get() == NULL){
 				LOG4CPP_WARN(m_logger, "receiveUpdateTexture: return, no new data");
-				return Measurement::Position(0, Math::Vector<3>(0,0,0));
+				return Measurement::Position(0, Math::Vector< double, 3 >(0,0,0));
 			}
 
 			LOG4CPP_DEBUG(m_logger, "receiveUpdateTextureASDF:"<<currentImage.get());
@@ -147,7 +151,7 @@ namespace Ubitrack { namespace Components {
 		glBindTexture( GL_TEXTURE_2D, (GLuint) textureID );
 		glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, sourceImage->width, sourceImage->height, 
 			GL_RGBA, GL_UNSIGNED_BYTE, sourceImage->imageData );		
-		return Measurement::Position(textureID, Math::Vector<3>(0,0,0));;
+		return Measurement::Position(textureID, Math::Vector< double, 3 >(0,0,0));;
 
     }
 

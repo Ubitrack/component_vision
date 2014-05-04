@@ -270,11 +270,11 @@ protected:
 	int m_flags;
 
 	/** currently computed intrinsic values. */
-	Math::Matrix< 3, 3, double > intrinsic;
-	Math::Vector< 4, double > distortion;
+	Math::Matrix< double, 3, 3 > intrinsic;
+	Math::Vector< double, 4 > distortion;
 
 	/** Input port of the component. */
-	Dataflow::ExpansionInPort< std::vector < Math::Vector< 2 > > > m_inPort;
+	Dataflow::ExpansionInPort< std::vector < Math::Vector< double, 2 > > > m_inPort;
 
 	/** Output ports of the component. */
 	Dataflow::TriggerOutPort< Measurement::Matrix3x3 > m_intrPort;

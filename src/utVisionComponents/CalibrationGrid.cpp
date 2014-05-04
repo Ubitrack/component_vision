@@ -52,7 +52,7 @@ protected:
 	typedef double value_type;
 	
 	/** the object points describing the grid in a 3-dimensional Euclidean space */
-	std::vector< Math::Vector< 3 > > m_objPoints;
+	std::vector< Math::Vector< double, 3 > > m_objPoints;
 	
 	/** Output ports of the component. */
 	Dataflow::PullSupplier< Measurement::PositionList > m_outPort;
@@ -111,9 +111,9 @@ public:
 			const T x = static_cast< T >( i % width ) * size_x;
 			const T y  = static_cast< T >( i / width ) * size_y;
 			if( ( ( i / width ) % 2 ) == 0 )
-				m_objPoints.push_back( Math::Vector< 3 > ( x, y, z ) );
+				m_objPoints.push_back( Math::Vector< double, 3 > ( x, y, z ) );
 			else
-				m_objPoints.push_back( Math::Vector< 3 > ( asymm_offset_x + x, y, z ) );
+				m_objPoints.push_back( Math::Vector< double, 3 > ( asymm_offset_x + x, y, z ) );
 			
 		}		
 	}

@@ -31,6 +31,15 @@
  * @author Christian Waechter <christian.waechter@in.tum.de>
  */
 
+#include <utDataflow/Component.h>
+#include <utDataflow/PushConsumer.h>
+#include <utDataflow/PullConsumer.h>
+#include <utDataflow/PushSupplier.h>
+#include <utDataflow/ComponentFactory.h>
+#include <utMeasurement/Measurement.h>
+#include <utMath/Vector.h>
+#include <utUtil/Exception.h>
+
 // std
 #include <fstream>
 #include <sstream>
@@ -41,15 +50,6 @@
  
 // boost
 #include <boost/scoped_array.hpp>
- 
-#include <utDataflow/Component.h>
-#include <utDataflow/PushConsumer.h>
-#include <utDataflow/PullConsumer.h>
-#include <utDataflow/PushSupplier.h>
-#include <utDataflow/ComponentFactory.h>
-#include <utMeasurement/Measurement.h>
-#include <utMath/Vector.h>
-#include <utUtil/Exception.h>
 
 //Log4Ccpp
 #include <log4cpp/Category.hh>
@@ -128,7 +128,7 @@ public:
 		, m_intrinsicPort( "Intrinsic", *this )
 		, m_distortionPort( "Distortion", *this )
 		// the old files ChessBoardDetection and ChessBoardTracking used the same name "Output" for their different Output Ports
-		// thats why here is a distinction for the name
+		// that's why here is a distinction for the name
 		, m_outPosePort( ( 0 == pCfg->m_DataflowClass.compare( 0, 18, "ChessBoardTracking" )  ) ? "Output" : "Pose", *this )
 		, m_outPoints2DPort( ( 0 == pCfg->m_DataflowClass.compare( 0, 19, "ChessBoardDetection" )  ) ? "Output" : "Corners", *this )
 		, m_outPoints3DPort(  "Corners3D", *this )
@@ -150,8 +150,10 @@ public:
 			pCbNode->getAttributeData( "chessBoardHeight", m_height );
 			pCbNode->getAttributeData( "chessBoardWidth", m_width );
 		
+			if ( m_height <= 0 || m_width <= 0  )
+				UBITRACK_THROW( "Could not perform calibration grid detection, specify the number of features to detect using the chessBoardHeight, chessBoardWidth parameters." );
 		
-			if ( pCbNode->hasAttribute( "gridtype" ) ) // chosse the type of the calibration grid
+			if ( pCbNode->hasAttribute( "gridtype" ) ) // choose the type of the calibration grid
 			{
 				if( pCbNode->getAttributeString( "gridtype" ) == "chessboard" ) //also the default value
 					m_grid_type = 0;
@@ -159,10 +161,50 @@ public:
 					m_grid_type = 1;
 				if( pCbNode->getAttributeString( "gridtype" ) == "circularasymmetric" )
 					m_grid_type = 2;
-			}
+			}else
+				LOG4CPP_WARN( logger, "Setting gridType property to type \"chessboard\" (default), no calibration grid type provided( \"chessboard\"/\"circularsymmetric\"/\"circularasymmetric\") " );
 			
-			//stuff of the old calibration pattern
+			
+			if ( pCbNode->hasAttribute( "scaleFactor" ) ) // scalefactor for smaller images
+				pCbNode->getAttributeData( "scaleFactor", m_scaleFactor );
+			
+		}
+		
+		// very new pattern, uses no own chessboard size
+		// scaling was thrown away, this should be handled somewhere else
+		if ( pCfg->hasNode( "CalibrationGridPoints" ) )
+		{
+			Graph::UTQLSubgraph::NodePtr pCbNode = pCfg->getNode( "CalibrationGridPoints" );
+			pCbNode->getAttributeData( "gridPointsX", m_width );
+			pCbNode->getAttributeData( "gridPointsY", m_height );
+			
+		
+			// grid type is set to circular as default:)
+			m_grid_type = 1;
+			if( !pCbNode->hasAttribute( "boardType" ) )
+				LOG4CPP_WARN( logger, "Setting \"boardType\" property to \"circular\" (default), supported \"boardType\"s are: \"chessboard\"/\"circular\"" )
+			else
 			{
+				if( pCbNode->getAttributeString( "gridType" ) == "asymmetric" )
+					m_grid_type = 2;
+				if( pCbNode->getAttributeString( "boardType" ) == "chessboard" )
+					m_grid_type = 0;
+					
+				LOG4CPP_INFO( logger, "Setting \"boardType\" property to \"" << pCbNode->getAttributeString( "boardType" ) << "\", supported \"boardType\"s are: \"chessboard\" and \"circular\"" );
+				if( m_grid_type != 0 )
+					LOG4CPP_INFO( logger, "Setting \"gridType\" property to \"" << pCbNode->getAttributeString( "gridType" ) << "\", supported \"gridTypes\"s are: \"symmetric\" and \"asymmetric\"" );
+			}
+		}
+		
+		// determine the amount of corners of the calibration grid
+		m_edges = m_height * m_width;
+		
+		if( m_outPoints3DPort.isConnected() )
+		{
+		
+			if( pCfg->hasNode( "ChessBoard" ) ) //old style pattern
+			{
+				Graph::UTQLSubgraph::NodePtr pCbNode = pCfg->getNode( "ChessBoard" );
 				if ( pCbNode->hasAttribute( "xAxisLength" ) ) // overall size of xAxis
 					pCbNode->getAttributeData( "xAxisLength", m_sizeX );
 				m_sizeX /= ( m_width - 1 );
@@ -171,75 +213,46 @@ public:
 					pCbNode->getAttributeData( "yAxisLength", m_sizeY );
 				m_sizeY /= ( m_height - 1 );
 				
-				if ( pCbNode->hasAttribute( "scaleFactor" ) ) // scalefactor for smaller images
-					pCbNode->getAttributeData( "scaleFactor", m_scaleFactor );
-			}
-
-			//stuff of the very old (deprecated) pattern
-			{
-				if ( pCbNode->hasAttribute( "chessBoardSize" ) ) // old parameters override new ones
-				{
-					pCbNode->getAttributeData( "chessBoardSize", m_sizeX );
-					pCbNode->getAttributeData( "chessBoardSize", m_sizeY );
+				
+				{	//stuff of the very old (deprecated) pattern
+					if ( pCbNode->hasAttribute( "chessBoardSize" ) ) // old parameters override new ones
+					{
+						pCbNode->getAttributeData( "chessBoardSize", m_sizeX );
+						pCbNode->getAttributeData( "chessBoardSize", m_sizeY );
+					}
 				}
 			}
-
 			
+			if ( pCfg->hasNode( "CalibrationGridPoints" ) ) // new style pattern
+			{
+				Graph::UTQLSubgraph::NodePtr pCbNode = pCfg->getNode( "CalibrationGridPoints" );
+				// value_type m_sizeX, m_sizeY, lastDim = 0;
+				pCbNode->getAttributeData( "gridAxisLengthX", m_sizeX );
+				pCbNode->getAttributeData( "gridAxisLengthY", m_sizeY );
+				// pCbNode->getAttributeData( "gridThirdDimension", lastDim );
 				
+				Graph::UTQLSubgraph::EdgePtr edge = pCfg->getEdge( "Corners" );
+				if ( edge->hasAttribute( "normalize" ) )
+					if( edge->getAttributeString( "normalize" ) == "true" )
+						m_normalize = true;
+			}
+		
+			
+			if ( !( m_sizeY > 0 && m_sizeX > 0 ) )
+				UBITRACK_THROW( "Could not perform calibration grid detection, calibration grid axis size was not specified correctly, use the chessBoardSize, yAxisLength or xAxisLength attribute." );
+			
+			// prepare the object points, that always stay fix
 
-		}
-		
-		// very new pattern, uses no own chessboard size
-		// scaling was thrown away, this should be handled somewhere else
-		if ( pCfg->hasNode( "CalibrationGridPoints" ) )
-		{
-			Graph::UTQLSubgraph::NodePtr pCbNode = pCfg->getNode( "CalibrationGridPoints" );
-			std::size_t width, height = 0;
-			pCbNode->getAttributeData( "gridPointsX", m_width );
-			pCbNode->getAttributeData( "gridPointsY", m_height );
-			
-			// value_type m_sizeX, m_sizeY, lastDim = 0;
-			pCbNode->getAttributeData( "gridAxisLengthX", m_sizeX );
-			pCbNode->getAttributeData( "gridAxisLengthY", m_sizeY );
-			// pCbNode->getAttributeData( "gridThirdDimension", lastDim );
-			
-			// grid type is set to circular as default:)
-			m_grid_type = 1;
-			if ( pCbNode->hasAttribute( "gridType" ) )
-				if( pCbNode->getAttributeString( "gridType" ) == "asymmetric" )
-					m_grid_type = 2;
-					
-			if ( pCbNode->hasAttribute( "boardType" ) )
-				if( pCbNode->getAttributeString( "boardType" ) == "chessboard" )
-					m_grid_type = 0;
-			
-			
-			Graph::UTQLSubgraph::EdgePtr edge = pCfg->getEdge( "Corners" );
-			if ( edge->hasAttribute( "normalize" ) )
-				if( edge->getAttributeString( "normalize" ) == "true" )
-					m_normalize = true;
-				
-		}
-		
-		if ( m_height <= 0 || m_width <= 0  )
-			UBITRACK_THROW( "Could not perform calibration grid detection, specify the number of features to detect using the chessBoardHeight, chessBoardWidth parameters." );
-		
-		if ( !( m_sizeY > 0 && m_sizeX > 0 ) )
-			UBITRACK_THROW( "Could not perform calibration grid detection, calibration grid axis size was not spezified correctly, use the chessBoardSize, yAxisLength or xAxisLength attribute." );
-		
-		
-		// prepare the object points, that always stay fix
-		m_edges = m_height * m_width;
-
-		objPoints.reset( new float[ 3 * m_edges ] );
-		const float offset = ( m_grid_type == 2 ) ? m_sizeX * 0.5 : 0;
-		for( int i = 0; i < m_edges ; ++i )
-		{
-			objPoints[ 3 * i + 0 ] = static_cast< float >( i % m_width ) * m_sizeX;
-			if( ( ( i / m_width ) % 2 ) == 1 )
-				objPoints[ 3 * i + 0 ] += offset;
-			objPoints[ 3 * i + 1 ] = static_cast< float >( i / m_width ) * m_sizeY;
-			objPoints[ 3 * i + 2 ] = 0.0;
+			objPoints.reset( new float[ 3 * m_edges ] );
+			const float offset = ( m_grid_type == 2 ) ? m_sizeX / 2 : 0;
+			for( int i = 0; i < m_edges ; ++i )
+			{
+				objPoints[ 3 * i + 0 ] = static_cast< float >( i % m_width ) * m_sizeX;
+				if( ( ( i / m_width ) % 2 ) == 1 )
+					objPoints[ 3 * i + 0 ] += offset;
+				objPoints[ 3 * i + 1 ] = static_cast< float >( i / m_width ) * m_sizeY;
+				objPoints[ 3 * i + 2 ] = 0.0;
+			}
 		}
     }
 
@@ -294,7 +307,7 @@ public:
 			default:
 				LOG4CPP_ERROR( logger, "Cannot perform calibration grid detection, the type of the calibration grid is not specified correctly." );
 			}
-			//assgin the values to the other array again -> will get better with c++11
+			//assign the values to the other array again -> will get better with c++11
 			if( pattern_was_found )
 			{
 				found = m_edges;
@@ -367,25 +380,25 @@ public:
 			
 			if( m_outPoints2DPort.isConnected() )
 			{
-				std::vector< Math::Vector< 2 > > positions;
+				std::vector< Math::Vector< double, 2 > > positions;
 				positions.reserve( m_edges );
 				if( m_normalize )				
 					for( int i = 0; i < m_edges; ++i )
-						positions.push_back( Math::Vector< 2 >( imgPoints[ 2*i ] / (img->width-1), imgPoints[ 2*i+1 ] / (img->height-1) ) );
+						positions.push_back( Math::Vector< double, 2 >( imgPoints[ 2*i ] / (img->width-1), imgPoints[ 2*i+1 ] / (img->height-1) ) );
 				else
 					for( int i = 0; i < m_edges; ++i )
-						positions.push_back( Math::Vector< 2 >( imgPoints[ 2*i ] , imgPoints[ 2*i+1 ] ) );
+						positions.push_back( Math::Vector< double, 2 >( imgPoints[ 2*i ] , imgPoints[ 2*i+1 ] ) );
 							
 				m_outPoints2DPort.send( Measurement::PositionList2( img.time(), positions ) );
 			}
 			
 			if( m_outPoints3DPort.isConnected() )
 			{
-				std::vector< Math::Vector< 3 > > positions;
+				std::vector< Math::Vector< double, 3 > > positions;
 				
 				positions.reserve( m_edges );
 				for( int i = 0; i < m_edges; ++i )
-					positions.push_back( Math::Vector< 3 >( objPoints[ 2*i ], objPoints[ 2*i+1 ], objPoints[ 2*i+2 ] ) );
+					positions.push_back( Math::Vector< double, 3 >( objPoints[ 2*i ], objPoints[ 2*i+1 ], objPoints[ 2*i+2 ] ) );
 
 				m_outPoints3DPort.send( Measurement::PositionList( img.time(), positions ) );
 			}
@@ -396,7 +409,7 @@ public:
 				CvMat distortion_coeffs = cvMat( 4, 1, CV_32FC1, disVal );
 				try
 				{
-					Math::Vector< 4 > distortion = *m_distortionPort.get( img.time() );
+					Math::Vector< double, 4 > distortion = *m_distortionPort.get( img.time() );
 					disVal[ 0 ] = static_cast< float > ( distortion( 0 ) );
 					disVal[ 1 ] = static_cast< float > ( distortion( 1 ) );
 					disVal[ 2 ] = static_cast< float > ( distortion( 2 ) );
@@ -412,7 +425,7 @@ public:
 				try
 				{
 					// compensate for left-handed OpenCV coordinate frame
-					Math::Matrix< 3, 3 > intrinsic =  *m_intrinsicPort.get( img.time() );
+					Math::Matrix< double, 3, 3 > intrinsic =  *m_intrinsicPort.get( img.time() );
 					intrVal[ 0 ] = static_cast< float > ( intrinsic( 0, 0 ) );
 					intrVal[ 1 ] = static_cast< float > ( intrinsic( 0, 1 ) );
 					intrVal[ 2 ] = static_cast< float > ( intrinsic( 0, 2 ) ) * -1.0f ;
@@ -474,8 +487,8 @@ public:
 					rot_mat[ i ] = double( m_current_rotation_matrix[ i ] ); 
 
 				/** conversion to right-handed coordinate-system */
-				Math::Vector< 3 > trans( m_current_translation_vector[0], m_current_translation_vector[1], -m_current_translation_vector[2] );
-				Math::Matrix< 3, 3 > rot( rot_mat );
+				Math::Vector< double, 3 > trans( m_current_translation_vector[0], m_current_translation_vector[1], -m_current_translation_vector[2] );
+				Math::Matrix< double, 3, 3 > rot( rot_mat );
 				
 				rot( 2, 0 ) = - rot( 2, 0 );
 				rot( 2, 1 ) = - rot( 2, 1 );

@@ -38,11 +38,11 @@
 #include <utDataflow/TriggerOutPort.h>
 #include <utDataflow/ComponentFactory.h>
 #include <utMeasurement/Measurement.h>
-#include <utCalibration/Projection.h>
+#include <utAlgorithm/Projection.h>
 #include <utMath/MatrixOperations.h>
 
 #include <boost/numeric/ublas/matrix_proxy.hpp>
-#include <utMath/cast_assign.h>
+#include <utMath/Util/cast_assign.h>
 
 
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.CameraProjectionMatrix" ) );
@@ -73,20 +73,20 @@ public:
 	/** Method that computes the result. */
 	void compute( Measurement::Timestamp t )
 	{
-		Math::Matrix< 3, 3 > intrinsics = *m_inPortIntrinsics.get();		
+		Math::Matrix< double, 3, 3 > intrinsics = *m_inPortIntrinsics.get();		
 		//intrinsics(1,1) = -intrinsics(1,1);
 		Math::Pose pose = *m_inPortPose.get();
 				
-		Math::Matrix< 3, 4 > extrinsics(pose);			
-		Math::Matrix< 3, 4 > mat = boost::numeric::ublas::prod(intrinsics , extrinsics);
+		Math::Matrix< double, 3, 4 > extrinsics(pose);			
+		Math::Matrix< double, 3, 4 > mat = boost::numeric::ublas::prod(intrinsics , extrinsics);
 
 		// print decomposed matrix to console if logging is enabled
 		if ( logger.isDebugEnabled() )
 		{
-			Math::Matrix< 3, 3 > K;
-			Math::Matrix< 3, 3 > R;
-			Math::Vector< 3 > t;
-			Calibration::decomposeProjection( K, R, t, mat );
+			Math::Matrix< double, 3, 3 > K;
+			Math::Matrix< double, 3, 3 > R;
+			Math::Vector< double, 3 > t;
+			Algorithm::decomposeProjection( K, R, t, mat );
 			LOG4CPP_DEBUG( logger, "K: " << K );
 			LOG4CPP_DEBUG( logger, "R: " << R );
 			LOG4CPP_DEBUG( logger, "t: " << t );

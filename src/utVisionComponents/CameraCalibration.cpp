@@ -67,10 +67,10 @@ class CameraCalibration
 protected:
 	
 	///shortcut for the type of 2d measurements
-	typedef std::vector < Math::Vector< 2 > > vector_2d_type;
+	typedef std::vector < Math::Vector< double, 2 > > vector_2d_type;
 	
 	///shortcut for the type of 3d measurements
-	typedef std::vector < Math::Vector< 3 > > vector_3d_type;
+	typedef std::vector < Math::Vector< double, 3 > > vector_3d_type;
 	
 	/** the intrinsic parameters, estimated so far */
 	Math::CameraIntrinsics< double > m_camIntrinsics;
@@ -247,8 +247,8 @@ public:
 		}
 
 		///@todo check if the paramrers should not be flipped, as it is done at some other places.
-		const Math::Vector< 2, double > tangential( disVal[ 2 ], disVal[ 3 ] );
-		Math::Vector< 6, double > radial;
+		const Math::Vector< double, 2 > tangential( disVal[ 2 ], disVal[ 3 ] );
+		Math::Vector< double, 6 > radial;
 		radial( 0 ) = disVal[ 0 ];
 		radial( 1 ) = disVal[ 1 ];
 		radial( 2 ) = disVal[ 4 ];
@@ -256,7 +256,7 @@ public:
 		radial( 4 ) = disVal[ 6 ];
 		radial( 5 ) = disVal[ 7 ];
 		
-		Math::Matrix< 3, 3, double > intrinsic;
+		Math::Matrix< double, 3, 3 > intrinsic;
 		intrinsic( 0, 0 ) = static_cast< double >( intrVal[0] );
 		intrinsic( 0, 1 ) = static_cast< double >( intrVal[1] );
 		intrinsic( 0, 2 ) = -static_cast< double >( intrVal[2] );

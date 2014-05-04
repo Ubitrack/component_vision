@@ -7,7 +7,7 @@
                       xsi:schemaLocation='http://ar.in.tum.de/ubitrack/utql ../../schema/utql_templates.xsd'>
 
 					  
-	<Pattern name="CameraCalibration" displayName="Camera Calibration">
+	<Pattern name="CameraCalibration" displayName="Experimental: Camera Calibration (please use old one (==deprecated))">
         <Description>
 			<p xmlns="http://www.w3.org/1999/xhtml">
 			Computes (normalized) intrinsic camera parameters consisting of a 3x3 matrix and (radial+tangential) distortion parameters.

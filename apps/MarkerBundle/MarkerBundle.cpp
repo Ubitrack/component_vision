@@ -34,9 +34,11 @@
 #include <string>
 #include <set>
 #include <fstream>
+#include <sstream>
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <boost/program_options.hpp>
 
 // highgui includes windows.h with the wrong parameters
 #ifdef _WIN32
@@ -44,15 +46,15 @@
 #endif
 #include <opencv/highgui.h>
 
-#include <utMath/NewFunction/Function.h>
-#include <utMath/NewFunction/Addition.h>
-#include <utMath/NewFunction/Dehomogenization.h>
-#include <utMath/NewFunction/LieRotation.h>
-#include <utMath/BackwardPropagation.h>
-#include <utCalibration/NewFunction/CameraIntrinsicsMultiplication.h>
-#include <utCalibration/AbsoluteOrientation.h>
-#include <utCalibration/3DPointReconstruction.h>
-#include <utCalibration/LensDistortion.h>
+#include <utMath/Optimization/NewFunction/Function.h>
+#include <utMath/Optimization/NewFunction/Addition.h>
+#include <utMath/Optimization/NewFunction/Dehomogenization.h>
+#include <utMath/Optimization/NewFunction/LieRotation.h>
+#include <utMath/Stochastic/BackwardPropagation.h>
+#include <utAlgorithm/NewFunction/CameraIntrinsicsMultiplication.h>
+#include <utAlgorithm/AbsoluteOrientation.h>
+#include <utAlgorithm/3DPointReconstruction.h>
+#include <utAlgorithm/LensDistortion.h>
 
 #include <utVision/MarkerDetection.h>
 #include <utVision/Undistortion.h>
@@ -62,7 +64,7 @@
 #include <log4cpp/Category.hh>
 //#define OPTIMIZATION_LOGGING
 //static log4cpp::Category& optLogger( log4cpp::Category::getInstance( "MarkerBundle" ) );
-#include <utMath/LevenbergMarquardt.h>
+#include <utMath/Optimization/LevenbergMarquardt.h>
 
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "MarkerBundle" ) );
 
@@ -70,12 +72,21 @@ using namespace Ubitrack;
 namespace Markers = Ubitrack::Vision::Markers;
 namespace ublas = boost::numeric::ublas;
 
-static const Math::Vector< 3 > g_unitCorners[ 4 ] = 
+// command line options
+int iCodeSize = 8;
+int iMarkerSize = 12;
+std::string sCodeMask = "FFFFFFE7E7FFFFFF";
+unsigned int uiCodeMask = 0;
+
+
+
+
+static const Math::Vector< double, 3 > g_unitCorners[ 4 ] = 
 {
-	Math::Vector< 3 >( -0.5,  0.5, 0.0 ),
-	Math::Vector< 3 >( -0.5, -0.5, 0.0 ),
-	Math::Vector< 3 >(  0.5, -0.5, 0.0 ),
-	Math::Vector< 3 >(  0.5,  0.5, 0.0 ) 
+	Math::Vector< double, 3 >( -0.5,  0.5, 0.0 ),
+	Math::Vector< double, 3 >( -0.5, -0.5, 0.0 ),
+	Math::Vector< double, 3 >(  0.5, -0.5, 0.0 ),
+	Math::Vector< double, 3 >(  0.5,  0.5, 0.0 ) 
 };
 
 
@@ -93,17 +104,17 @@ struct SConfig
 			: pos( 0, 0, 0 )
 		{}
 
-		Math::Vector< 3 > pos;
+		Math::Vector< double, 3 > pos;
 
 		struct Meas
 		{
-			Meas( const std::string& i, const Math::Vector< 2 >& m )
+			Meas( const std::string& i, const Math::Vector< double, 2 >& m )
 				: image( i )
 				, pos( m )
 			{}
 
 			std::string image;
-			Math::Vector< 2 > pos;
+			Math::Vector< double, 2 > pos;
 		};
 		std::vector< Meas > measurements;
 	};
@@ -169,13 +180,13 @@ void SConfig::init()
 		}
 		else if ( boost::regex_match( buf, match, reRefPointPos ) )
 		{
-			refPoints[ match[ 1 ] ].pos = Math::Vector< 3 >( strtod( match[ 2 ].str().c_str(), &dummy ), 
+			refPoints[ match[ 1 ] ].pos = Math::Vector< double, 3 >( strtod( match[ 2 ].str().c_str(), &dummy ), 
 				strtod( match[ 3 ].str().c_str(), &dummy ), strtod( match[ 4 ].str().c_str(), &dummy ) );
 		}
 		else if ( boost::regex_match( buf, match, reRefPointMeasurement ) )
 		{
 			refPoints[ match[ 1 ] ].measurements.push_back( RefPoint::Meas( match[ 2 ].str(), 
-				Math::Vector< 2 >( strtod( match[ 3 ].str().c_str(), &dummy ), strtod( match[ 4 ].str().c_str(), &dummy ) ) ) );
+				Math::Vector< double, 2 >( strtod( match[ 3 ].str().c_str(), &dummy ), strtod( match[ 4 ].str().c_str(), &dummy ) ) ) );
 		}
 		else
 			std::cerr << "unknown configuration string: " << buf << std::endl;
@@ -217,7 +228,7 @@ struct BACameraInfo
 
 struct BAInfo
 {
-	BAInfo( const Math::Matrix< 3, 3, float >& _intrinsics, const Math::Vector< 4 >& _radial )
+	BAInfo( const Math::Matrix< float, 3, 3 >& _intrinsics, const Math::Vector< double, 4 >& _radial )
 		: intrinsicMatrix( _intrinsics )
 		, radialCoeffs( _radial )
 	{
@@ -274,9 +285,9 @@ struct BAInfo
 	bool m_bUseRefPoints;
 
 	// intrinsic camera parameters
-	Math::Matrix< 3, 3 > intrinsicMatrix;
-	Math::Vector< 4 > radialCoeffs;
-	Math::Vector< 5 > intrinsics;
+	Math::Matrix< double, 3, 3 > intrinsicMatrix;
+	Math::Vector< double, 4 > radialCoeffs;
+	Math::Vector< double, 5 > intrinsics;
 };
 
 
@@ -312,7 +323,7 @@ void BAInfo::initMarkers()
 	std::deque< unsigned long long int> markerQueue;
 	std::deque< std::size_t > cameraQueue;	
 	const unsigned long long int startMarker = markers.begin()->first;	
-	markers[ startMarker ].pose = Math::Pose( Math::Quaternion( 0, 0, 0, 1 ), Math::Vector< 3 >( 0, 0, 0 ) );	
+	markers[ startMarker ].pose = Math::Pose( Math::Quaternion( 0, 0, 0, 1 ), Math::Vector< double, 3 >( 0, 0, 0 ) );	
 	markers[ startMarker ].bPoseComputed = true;
 	markerQueue.push_back( startMarker );
 	// kind of a breadth-first search over markers and cameras 
@@ -364,13 +375,13 @@ void BAInfo::initRefPoints()
 	for ( SConfig::RefPointMap::iterator it = g_config.refPoints.begin(); it != g_config.refPoints.end(); it++ )
 		for ( std::vector< SConfig::RefPoint::Meas >::iterator itM = it->second.measurements.begin();
 			itM != it->second.measurements.end(); itM++ )
-			itM->pos = Calibration::lensUnDistort( itM->pos, radialCoeffs, intrinsicMatrix );
+			itM->pos = Algorithm::lensUnDistort( itM->pos, radialCoeffs, intrinsicMatrix );
 
 	// find reference points with at least two measurements
 	std::cout << std::endl << "Initializing reference points:" << std::endl;
 
-	std::vector< Math::Vector< 3 > > refPointsCam;
-	std::vector< Math::Vector< 3 > > refPointsRoom;
+	std::vector< Math::Vector< double, 3 > > refPointsCam;
+	std::vector< Math::Vector< double, 3 > > refPointsRoom;
 
 	for ( SConfig::RefPointMap::iterator it = g_config.refPoints.begin(); it != g_config.refPoints.end(); it++ )
 		if ( it->second.measurements.size() >= 2 )
@@ -379,11 +390,11 @@ void BAInfo::initRefPoints()
 			SConfig::RefPoint::Meas& m2( *(it->second.measurements.rbegin()) );
 
 			// triangulate position in camera coordinates
-			Math::Matrix< 3, 4 > P1( cameras[ imageToCam[ m1.image ] ].pose );
+			Math::Matrix< double, 3, 4 > P1( cameras[ imageToCam[ m1.image ] ].pose );
 			P1 = ublas::prod( intrinsicMatrix, P1 );
-			Math::Matrix< 3, 4 > P2( cameras[ imageToCam[ m2.image ] ].pose );
+			Math::Matrix< double, 3, 4 > P2( cameras[ imageToCam[ m2.image ] ].pose );
 			P2 = ublas::prod( intrinsicMatrix, P2 );
-			Math::Vector< 3 > p3d = Calibration::get3DPosition( P1, P2, m1.pos, m2.pos );
+			Math::Vector< double, 3 > p3d = Algorithm::get3DPosition( P1, P2, m1.pos, m2.pos );
 
 			refPointsCam.push_back( p3d );
 			refPointsRoom.push_back( it->second.pos );
@@ -396,7 +407,7 @@ void BAInfo::initRefPoints()
 		throw std::runtime_error( "You need at least three reference points which are seen by at least two cameras" );
 	else
 	{
-		Math::Pose t = Calibration::calculateAbsoluteOrientation( refPointsCam, refPointsRoom );
+		Math::Pose t = Algorithm::calculateAbsoluteOrientation( refPointsCam, refPointsRoom );
 		std::cout << "Room transformation " << t << " / " << ~t << std::endl;
 
 		// multiply the t to all poses
@@ -412,8 +423,8 @@ void BAInfo::initRefPoints()
 template< class VT1, class VT2, class MT1 > 
 void BAInfo::evaluateWithJacobian( VT1& result, const VT2& input, MT1& J ) const
 {
-	using namespace Math::Function;
-	using namespace Calibration::Function;
+	using namespace Math::Optimization::Function;
+	using namespace Algorithm::Function;
 
 	// initialize jacobian
 	J = ublas::zero_matrix< double >( J.size1(), J.size2() );
@@ -593,7 +604,7 @@ void BAInfo::bundleAdjustment( bool bUseRefPoints )
 	genParameterVector( parameters );
 
 	LOG4CPP_DEBUG( logger, "original parameters: " << parameters );
-	Math::levenbergMarquardt( *this, parameters, measurements, Math::OptTerminate( 200, 1e-6 ), Math::OptNoNormalize() );
+	Math::Optimization::levenbergMarquardt( *this, parameters, measurements, Math::Optimization::OptTerminate( 200, 1e-6 ), Math::Optimization::OptNoNormalize() );
 	LOG4CPP_DEBUG( logger, "improved parameters: " << parameters );
 
 	updateParameters( parameters );
@@ -662,11 +673,11 @@ void BAInfo::printResiduals()
 	// unclear if this makes sense!
 	ublas::matrix< double, ublas::column_major > covariance( parameterSize(), parameterSize() );
 	if ( m_bUseRefPoints )
-		Math::backwardPropagationIdentity( covariance, var, J );
+		Math::Stochastic::backwardPropagationIdentity( covariance, var, J );
 	else
 	{
 		ublas::matrix_range< ublas::matrix< double, ublas::column_major > > subJ( J, ublas::range( 0, J.size1() - 6 ), ublas::range( 0, J.size2() ) );
-		Math::backwardPropagationIdentity( covariance, var, subJ );
+		Math::Stochastic::backwardPropagationIdentity( covariance, var, subJ );
 	}
 
 	std::cout << "Estimated standard deviations (r, t):" << std::endl;
@@ -716,9 +727,9 @@ void BAInfo::writeUTQL( std::ostream& of )
     of << "        <UbitrackLib class=\"DirectShowFrameGrabber\"/>\n";
     of << "        <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"imageWidth\" value=\"320\"/>\n";
     of << "        <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"timeOffset\" value=\"0\"/>\n";
-    of << "        <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"intrinsicMatrixFile\" value=\"CamMatrix.calib\" />\n";
+	of << "        <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"intrinsicMatrixFile\" value=\""<< g_config.sMatrixFile << "\" />\n";
     of << "        <!--Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"cameraName\" value=\"\" /-->\n";
-    of << "        <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"distortionFile\" value=\"CamCoeffs.calib\" />\n";
+	of << "        <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"distortionFile\" value=\""<< g_config.sDistortionFile << "\" />\n";
     of << "        <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"divisor\" value=\"1\" />\n";
     of << "        <Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"imageHeight\" value=\"240\" />\n";
     of << "    </DataflowConfiguration>\n";
@@ -731,9 +742,9 @@ void BAInfo::writeUTQL( std::ostream& of )
 		of << "<Pattern name=\"MarkerTracker\" id=\"Marker" << std::hex << it->first << "\">\n";
 		of << "    <Input>\n";
 		of << " 		<Node name=\"Camera\" id=\"CameraNode\"> \n";
-        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerIdMask\" value=\"0xFFFFFFE7E7FFFFFF\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
-		of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerBitSize\" value=\"12\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
-        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"codeBitSize\" value=\"8\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
+        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerIdMask\" value=\"0x" << sCodeMask << "\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
+		of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"markerBitSize\" value=\"" << iMarkerSize << "\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
+        of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"codeBitSize\" value=\"" << iCodeSize << "\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
         of << "         	<Attribute xsi:type=\"utql:PrimitiveAttributeType\" name=\"enableInnerEdgels\" value=\"true\" xmlns:utql=\"http://ar.in.tum.de/ubitrack/utql\"/> \n";
         of << "        </Node> \n";
 		of << "        <Node name=\"ImagePlane\" id=\"node_2\"/>\n";
@@ -768,11 +779,11 @@ void BAInfo::writeUTQL( std::ostream& of )
     	of << "            <Attribute xsi:type=\"utql:ListAttributeType\" name=\"staticPositionList\" >\n";
     	of << "                <Value xsi:type=\"utql:ListOfPrimitiveValueType\">\n";
 
-		std::vector< Math::Vector< 3 > > markerCorners;		
+		std::vector< Math::Vector< double, 3 > > markerCorners;		
 
 		for ( std::size_t i( 0 ); i < 4; i++ )
 		{
-			Math::Vector< 3 > p = it->second.pose * Math::Vector< 3 >( g_unitCorners[ i ] * it->second.fSize );
+			Math::Vector< double, 3 > p = it->second.pose * Math::Vector< double, 3 >( g_unitCorners[ i ] * it->second.fSize );
 	    	of << "                    <Attribute name=\"staticPosition\" value=\"" << p( 0 ) << " " << p( 1 ) << " " << p( 2 ) << "\"/>\n";
 			
 			markerCorners.push_back( p );
@@ -898,11 +909,11 @@ void BAInfo::writeUTQL_TrackingContest( std::ostream& of )
     	of << "            <Attribute xsi:type=\"utql:ListAttributeType\" name=\"staticPositionList\" >\n";
     	of << "                <Value xsi:type=\"utql:ListOfPrimitiveValueType\">\n";
 
-		std::vector< Math::Vector< 3 > > markerCorners;		
+		std::vector< Math::Vector< double, 3 > > markerCorners;		
 
 		for ( std::size_t i( 0 ); i < 4; i++ )
 		{
-			Math::Vector< 3 > p = it->second.pose * Math::Vector< 3 >( g_unitCorners[ i ] * it->second.fSize );
+			Math::Vector< double, 3 > p = it->second.pose * Math::Vector< double, 3 >( g_unitCorners[ i ] * it->second.fSize );
 	    	of << "                    <Attribute name=\"staticPosition\" value=\"" << p( 0 ) << " " << p( 1 ) << " " << p( 2 ) << "\"/>\n";
 			
 			markerCorners.push_back( p );
@@ -911,7 +922,7 @@ void BAInfo::writeUTQL_TrackingContest( std::ostream& of )
 		// Output marker corners to Ubitrack calibration files suitable for manual configuration of a marker bundle
 		std::ostringstream cornerFileName(std::ostringstream::out);
 		cornerFileName << "marker" << std::hex << it->first << ".cal";		
-		Math::Matrix<6,6> covar;
+		Math::Matrix< double, 6, 6 > covar;
 		Util::writeCalibFile( cornerFileName.str(), Measurement::ErrorPose( Measurement::now(), Math::ErrorPose(it->second.pose, covar) ) );
 		
 
@@ -1026,19 +1037,71 @@ void createImageList( std::vector< std::string >& l )
 }
 
 
-int main( int, char** )
+int main( int ac, char** av )
 {
+
+
+
 	try
 	{
+		// initialize logging
 		Util::initLogging();
+
+		// describe program options
+		namespace po = boost::program_options;
+		po::options_description poDesc( "Allowed options", 80 );
+		poDesc.add_options()
+			( "help", "print this help message" )
+			( "codesize,c", po::value< int >( &iCodeSize ), "code size of the marker (default=8)" )
+			( "markersize,s", po::value< int >( &iMarkerSize ), "marker size of the marker (default=12)" )
+			( "codemask,m", po::value< std::string >( &sCodeMask ), "code mask of the marker (default=0xFFFFFFE7E7FFFFFF)" )
+		;
+
+		// specify default options
+		//po::positional_options_description inputOptions;
+		//inputOptions.add( "config", 1 );
+
+		// parse options from command line and environment
+		po::variables_map poOptions;
+		//po::store( po::command_line_parser( ac, av ).options( poDesc ).positional( inputOptions ).run(), poOptions );
+		po::store( po::command_line_parser( ac, av ).options( poDesc ).run(), poOptions );
+		//po::store( po::parse_environment( poDesc, "UBITRACK_" ), poOptions );
+		po::notify( poOptions );
+
+
+		// convert mask from hex string
+		std::stringstream ss;
+		ss << std::hex << sCodeMask;
+		ss >> uiCodeMask;
+
+		// print help message if nothing specified
+		if ( poOptions.count( "help" ) )
+		{
+			std::cout << "Syntax: MarkerBundle [options]" << std::endl << std::endl;
+			std::cout << poDesc << std::endl;
+			return 1;
+		}
+
+
+	}
+	catch( std::exception& e )
+	{
+		std::cerr << "Error parsing command line parameters : " << e.what() << std::endl;
+		std::cerr << "Try MarkerBundle --help for help" << std::endl;
+		return 1;
+	}
+
+
+	try
+	{
 
 		g_config.init();
 
 		// load intrinsics
 		Vision::Undistortion undistorter( g_config.sMatrixFile, g_config.sDistortionFile );
 
-		Math::Matrix< 3, 3, float > intrinsics;
-		Math::matrix_cast_assign( intrinsics, undistorter.getIntrinsics() );
+		Math::Matrix< float, 3, 3 > intrinsics;
+		Math::Util::matrix_cast_assign( intrinsics, undistorter.getIntrinsics() );
 		
 		// find image files in directories
 		std::vector< std::string > imageNames;
@@ -1071,12 +1134,13 @@ int main( int, char** )
 			
 			/*
 			 const Image& img, std::map< unsigned long long int, MarkerInfo >& markers, 
-	const Math::Matrix< 3, 3, float >& K, Image* pDebugImg = 0, bool bRefine = false, unsigned int iCodeSize = 4, 
+	const Math::Matrix< float, 3, 3 >& K, Image* pDebugImg = 0, bool bRefine = false, unsigned int iCodeSize = 4, 
 	unsigned int iMarkerSize = 6, unsigned long long int uiMask = 0xFFFF, bool useInnerEdgels = true );
 			*/
-			Markers::detectMarkers( *pImage, markerMap, intrinsics, NULL, false, 8, 12, 0xFFFFFFE7E7FFFFFF, true );
+			//Markers::detectMarkers( *pImage, markerMap, intrinsics, NULL, false, 8, 12, 0xFFFFFFE7E7FFFFFF, true );
 			//Markers::detectMarkers( *pImage, markerMap, intrinsics, NULL, false, 4, 6, 0xFFFF, true );
-			
+			Markers::detectMarkers( *pImage, markerMap, intrinsics, NULL, false, iCodeSize, iMarkerSize, uiCodeMask, true );
+
 			
 			// erase not-seen markers from map
 			for( std::map< unsigned long long int, Markers::MarkerInfo >::iterator itMarker = markerMap.begin(); itMarker != markerMap.end();  )
