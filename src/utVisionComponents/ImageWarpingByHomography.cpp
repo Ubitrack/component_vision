@@ -89,7 +89,7 @@ public:
 	{
 
 		// Pull a 3x3 homography matrix
-		const Ubitrack::Math::Matrix3x3  &H0 = m_inHomographyPort.get(img.time())->content();
+		const Ubitrack::Math::Matrix3x3d  &H0 = m_inHomographyPort.get(img.time())->content();
 		cv::Matx33d H( H0(0,0),H0(1,0),H0(2,0),
 			H0(0,1),H0(1,1),H0(2,1),
 			H0(0,2),H0(1,2),H0(2,2)

@@ -106,16 +106,16 @@ public:
 		LOG4CPP_DEBUG( logger, "Estimate Homography" );
 
 		// Intrinsic matrices
-		const Ubitrack::Math::Matrix3x3  &Ka = m_inIntrinsicSrcPort.get(pose.time())->content();
-		const Ubitrack::Math::Matrix3x3  &Kb = m_inIntrinsicDstPort.get(pose.time())->content();
+		const Ubitrack::Math::Matrix3x3d  &Ka = m_inIntrinsicSrcPort.get(pose.time())->content();
+		const Ubitrack::Math::Matrix3x3d  &Kb = m_inIntrinsicDstPort.get(pose.time())->content();
 		// 6DoF pose to the plane in the source coordinate system
-		Ubitrack::Math::Matrix3x3  Rp;
+		Ubitrack::Math::Matrix3x3d  Rp;
 		pose->rotation().toMatrix(Rp); /// This operation accumrates numerical error about 0.5 %
-		const Ubitrack::Math::Vector<3, double> &tp = pose->translation();
+		const Ubitrack::Math::Vector3d &tp = pose->translation();
 		// 6DoF pose from the source view camera to the target 
-		Ubitrack::Math::Matrix3x3  R;
+		Ubitrack::Math::Matrix3x3d  R;
 		m_inRelativePosePort.get(pose.time())->rotation().toMatrix(R); /// This operation accumrates numerical error about 0.5 %
-		const Ubitrack::Math::Vector<3, double> &t = m_inRelativePosePort.get(pose.time())->translation();
+		const Ubitrack::Math::Vector3d &t = m_inRelativePosePort.get(pose.time())->translation();
 		
 		// Plane normal vector ([R_MW(:,3);-R_MW(:,3)'*t_MW]')
 		cv::Matx14d plane( Rp(2,0),Rp(2,1),Rp(2,2), -(Rp(2,0)*tp[0]+Rp(2,1)*tp[1]+Rp(2,2)*tp[2]) );
@@ -136,7 +136,7 @@ public:
 			Kb(0,2), Kb(1,2),Kb(2,2)
 			);
 		R = boost::numeric::ublas::trans(R);
-		const Ubitrack::Math::Vector<3, double> t2 = -boost::numeric::ublas::prod(R,t);
+		const Ubitrack::Math::Vector3d t2 = -boost::numeric::ublas::prod(R,t);
 		R = boost::numeric::ublas::trans(R); /// This makes the result correct, but Why????
 		/// Note the conversion of the data row/column major
 		const cv::Matx34d P( 
@@ -150,7 +150,7 @@ public:
 		/// P1, P2, and plane are defined in the same coordinate system--that of the source
 		cv::Matx33d H;
 		computeHomographyFrom2PAndPlane( P1, P2, plane, H);
-		Ubitrack::Math::Matrix3x3 H0;
+		Ubitrack::Math::Matrix3x3d H0;
 		for( int i=0;i<3;i++)
 			for( int j=0;j<3;j++)
 				H0(i,j)=H(j,i);// row major --> column major
