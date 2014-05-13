@@ -52,7 +52,6 @@
 #include <utMath/Optimization/NewFunction/LieRotation.h>
 #include <utMath/Stochastic/BackwardPropagation.h>
 #include <utAlgorithm/NewFunction/CameraIntrinsicsMultiplication.h>
-#include <utAlgorithm/AbsoluteOrientation.h>
 #include <utAlgorithm/3DPointReconstruction.h>
  #include <utAlgorithm/LensDistortion.h>
 
