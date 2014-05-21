@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<UTQLPatternTemplates xmlns='http://ar.in.tum.de/ubitrack/utql'
+                      xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+                      xmlns:xi='http://www.w3.org/2001/XInclude'
+                      xmlns:h="http://www.w3.org/1999/xhtml"
+                      xsi:schemaLocation='http://ar.in.tum.de/ubitrack/utql ../../schema/utql_templates.xsd'>
+    
+    <Pattern name="HomographyEstimation" displayName="Homography (2 Projection + Plane normal)">
+    	<Description><h:p>This component performs a planer image warping based on homography. 
+    	</h:p></Description>
+
+        <Input>
+            <Node name="A"           displayName="A"/>
+            <Node name="B"           displayName="B"/>
+            <Node name="Plane"       displayName="Plane"/>
+            <Node name="ImagePlaneA" displayName="ImagePlaneA"/>
+            <Node name="ImagePlaneB" displayName="ImagePlaneB"/>
+            <Edge name="InputIntrinsicSrc" source="A" destination="ImagePlaneA" displayName="Intrinsic A">
+            	<Description><h:p>The intrinsic matrix</h:p></Description>
+                <Predicate>type=='3x3Matrix'&amp;&amp;mode=='pull'</Predicate>
+            </Edge>
+            <Edge name="InputIntrinsicDst" source="B" destination="ImagePlaneB" displayName="Intrinsic B">
+            	<Description><h:p>The intrinsic matrix</h:p></Description>
+                <Predicate>type=='3x3Matrix'&amp;&amp;mode=='pull'</Predicate>
+            </Edge>
+            <Edge name="InputPlanePose" source="A" destination="Plane" displayName="Plane Pose">
+            	<Description><h:p>The 6DoF pose of the reference plane. Its normal vector is computed based on the pose, thus x/y rotation axes will not be used.</h:p></Description>
+                <Predicate>type=='6D'&amp;&amp;mode=='push'</Predicate>
+            </Edge>
+            <Edge name="InputRelative" source="A" destination="B" displayName="Pose AB">
+            	<Description><h:p>The 6DoF pose from A to B.</h:p></Description>
+                <Predicate>type=='6D'&amp;&amp;mode=='pull'</Predicate>
+            </Edge>
+        </Input>
+
+        <Output>
+            <Edge name="OutputHomography" source="ImagePlaneA" destination="ImagePlaneB" displayName="Homography">
+            	<Description><h:p>The homography matrix</h:p></Description>
+                <Attribute name="type" value="3x3Matrix" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="mode" value="push"      xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+        </Output>
+
+        <DataflowConfiguration>
+            <UbitrackLib class="HomographyEstimator"/>
+        </DataflowConfiguration>
+    </Pattern>
+
+
+    <!-- Attribute declarations -->
+    <GlobalNodeAttributeDeclarations>
+        <xi:include href="../GlobalAttrSpec.xml" xpointer="element(/1/1/1)"/>
+    </GlobalNodeAttributeDeclarations>
+    
+    <GlobalEdgeAttributeDeclarations>
+        <xi:include href="../GlobalAttrSpec.xml" xpointer="element(/1/2/1)"/>
+        <xi:include href="../GlobalAttrSpec.xml" xpointer="element(/1/2/2)"/>
+        <xi:include href="../GlobalAttrSpec.xml" xpointer="element(/1/2/3)"/>
+    </GlobalEdgeAttributeDeclarations>
+    
+    <GlobalDataflowAttributeDeclarations>
+        <xi:include href="../GlobalAttrSpec.xml" xpointer="element(/1/3/1)"/>
+    </GlobalDataflowAttributeDeclarations>
+ 
+    
+</UTQLPatternTemplates>
