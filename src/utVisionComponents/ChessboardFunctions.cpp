@@ -358,8 +358,13 @@ public:
 					result in a different pose for the chessboard depending on the image orientation.
 					If you want to have the chessboard-origin always at the same chessboard corner uncomment the following code:
 					*/
-					
-					/*
+					/* Yuta Itoh on 19th May 2014
+                    In case of the image origin is flipped, I had to switch the 2D marker points as 
+                    in the following CHESSBOARD_FLIP section. For keeping a consistent corner images,
+					the second CHESSBOARD_FLIP section is also needed.
+					*/
+#define CHESSBOARD_FLIP			
+#ifdef CHESSBOARD_FLIP
 					int index = ( m_height - 1 ) * m_width - i + ( ( i % m_width ) << 1 );
 					//equivalent to:
 					// int index = ( m_height - ( i / m_width ) - 1 ) * m_width + ( i % m_width );
@@ -369,13 +374,23 @@ public:
 				
 					imgPoints[ 2 * index     ] = corners[ i ].x;
 					imgPoints[ 2 * index + 1 ] = ( img->height - 1 - corners[ i ].y );
-					*/
-					
+#else				
 					imgPoints[ 2 * i     ] = corners[ i ].x;
 					imgPoints[ 2 * i + 1 ] = img->height - 1 - corners[ i ].y;
-					
+#endif
 					LOG4CPP_TRACE( logger, "point: " << corners[i].x << ", " << corners[i].y );
 				}
+
+				// for showing consistent corner images
+#ifdef CHESSBOARD_FLIP
+				for( int i = 0; i < m_edges ; ++i )
+				{
+					corners[ i ].x = imgPoints[ 2 * i     ];
+					corners[ i ].y = img->height - 1 - imgPoints[ 2 * i +1  ];
+				}
+#else
+				// do the same?
+#endif
 			}
 			
 			if( m_outPoints2DPort.isConnected() )
