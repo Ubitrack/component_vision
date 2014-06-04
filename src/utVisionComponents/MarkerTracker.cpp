@@ -76,22 +76,60 @@ namespace Ubitrack { namespace Drivers {
 
 /** the component key -- reads the marker ID */
 class IdKey
-	: public Math::Scalar< unsigned long long int >
+	// : public Math::Scalar< unsigned long long int >
+	: public std::string
 {
+
 public:
+	const bool isMarker;
+	unsigned long long int nCode;
+	
 	/** extract id from configuration */
 	IdKey( boost::shared_ptr< Graph::UTQLSubgraph > subgraph )
+		: isMarker( subgraph->hasNode( "Marker" ) )
+		, nCode( 0 )
 	{
-		std::string sId = subgraph->getNode( "Marker" )->getAttributeString( "markerId" );
-		if ( sId.empty() )
-			UBITRACK_THROW( "Missing markerId attribute on node Marker" );
-		std::istringstream idStream( sId );
-		idStream >> std::hex >> m_value;
+		
+		if( isMarker )
+		{
+			this->assign( subgraph->getNode( "Marker" )->getAttributeString( "markerId" ) );
+			
+			if ( this->empty() )
+				UBITRACK_THROW( "Missing markerId attribute on node Marker" );
+			
+			std::istringstream idStream( *this );
+			idStream >> std::hex >> nCode;
+			return;
+		}
+		if( subgraph->hasEdge( "Image" ) )
+		{
+			this->assign( "Image" );
+			return;
+		}
+		if( subgraph->hasEdge( "DebugImage" ) )
+		{
+			this->assign( "DebugImage" );
+			return;
+		}
+		if( subgraph->hasEdge( "CameraIntrinsics" ) )
+		{
+			this->assign( "CameraIntrinsics" );
+			return;
+		}
+		
+		UBITRACK_THROW( "Could not assign a valid marker module component key." );
 	}
 
-	// create from unsignend long long int
-	IdKey( unsigned long long int v )
-	{ m_value = v; }
+	// create from unsigned long long int
+	IdKey( unsigned long long int value )
+		: isMarker( true )
+		, nCode( value )
+	{
+		std::string id;
+		std::ostringstream idStream( id );
+		idStream << "0x" << std::hex << value;
+		this->assign( idStream.str() );
+	}
 };
 
 /** camera key just takes the node id */
@@ -123,9 +161,17 @@ public:
 		, m_detectMarkersTimerRefine( "detectMarkersRefine", "Ubitrack.Timing" )
 #endif
 	{
+		// check if correct node is available
+		if( !subgraph->hasNode( "Camera" ) )
+		{
+			LOG4CPP_ERROR( logger, "Cannot start marker tracker module, \"Camera\"-node is missing in dfg." );
+			UBITRACK_THROW( "Cannot start marker tracker module, \"Camera\"-node is missing in dfg." );
+		}
+		
 		// get configuration
 		std::string sMask = subgraph->getNode( "Camera" )->getAttributeString( "markerIdMask" );
-		if ( ! sMask.empty() ) {
+		if ( ! sMask.empty() )
+		{
 			std::istringstream idStream( sMask );
 			idStream >> std::hex >> m_codeMask;
 		}
@@ -134,10 +180,6 @@ public:
 		m_useInnerEdgels = subgraph->getNode( "Camera" )->getAttributeString( "enableInnerEdgels" ) == "true";
 
 		LOG4CPP_DEBUG( logger, "Marker tracker configuration: marker bit size: " << m_markerSize << ", code bit size: " << m_codeSize << ", ID mask: " << m_codeMask << ", use inner edgelets: " << m_useInnerEdgels );
-
-		bRefine = false;
-		bPrevPoseVal = false;
-		nframecounter = 0;
 	}
 
 	/** find markers in the image and send results to the components */
@@ -150,13 +192,6 @@ protected:
 
 	// timestamp of the last time the image was analysed fully 
 	//Measurement::Timestamp m_fullAnalizeTimestep;
-
-	// a flag that desides whether analize full image or just refine
-	bool bRefine;
-
-	bool bPrevPoseVal;
-	//std::map< unsigned, MarkerInfo > m_markerMap;
-	int nframecounter;
 
 	/** Size of marker including its border, counted in bits */
 	unsigned int m_markerSize;
@@ -276,7 +311,15 @@ public:
 		, m_lastTime( 0 )
 	{
 		// get configuration
-		subgraph->getNode( "Marker" )->getAttributeData( "markerSize", m_info.fSize );
+		if( subgraph->hasNode( "Marker" ) )
+			subgraph->getNode( "Marker" )->getAttributeData( "markerSize", m_info.fSize );
+		else
+		{
+			//LOG4CPP_ERROR( logger, "Cannot start component as a marker tracker, since there is no \"Marker\"-node in the dfg." );
+			LOG4CPP_DEBUG( logger, "This is a \"" << getKey() << "\" component and no marker tracker, still no problem if it is the only one." );
+		}
+		
+		
 
 		if ( subgraph->m_DataflowAttributes.hasAttribute( "edgeRefinement" ) ) // enable Edge Refinement
 			m_bEdgeRefinement = subgraph->m_DataflowAttributes.getAttributeString( "edgeRefinement" ) == "true";
@@ -287,7 +330,7 @@ public:
 		if ( subgraph->m_DataflowAttributes.hasAttribute( "enablePixelFlow" ) ) // enable Pixel Flow
 			m_info.bEnablePixelFlow = subgraph->m_DataflowAttributes.getAttributeString( "enablePixelFlow" ) == "true";
 		
-		if ( subgraph->m_DataflowAttributes.hasAttribute( "enableFlipCheck" ) ) // enable Flip chaeck 
+		if ( subgraph->m_DataflowAttributes.hasAttribute( "enableFlipCheck" ) ) // enable Flip check 
 			m_info.bEnableFlipCheck = subgraph->m_DataflowAttributes.getAttributeString( "enableFlipCheck" ) == "true";
 		
 		if ( subgraph->m_DataflowAttributes.hasAttribute( "enableFastTracking" ) ) // enable Fast Tracking
@@ -336,39 +379,47 @@ protected:
 
 void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 {
-	// check if image was already analyzed
+	// check if image was already analysed
 	if ( m.time() == m_lastTimestamp )
 		return;
 	m_lastTimestamp = m.time();
 
-	//declearation of iterator, will be used several times later on
-	std::map<unsigned,MarkerInfo>::iterator iter;
+	// get all components, needed quite often
+	ComponentList components = getAllComponents();
 	
 	// debug image (if anybody is interested )
 	boost::shared_ptr< Image > pDebugImg;
 	{
 		// check if debug image needs to be created
-		ComponentList allComponents( getAllComponents() );
-		for ( ComponentList::iterator it = allComponents.begin(); it != allComponents.end(); it++ )
+		for ( ComponentList::iterator it = components.begin(); it != components.end(); it++ )
 			if ( (*it)->debug() )
 			{
 				pDebugImg = m->CvtColor( CV_GRAY2RGB, 3 );
 				break;
 			}
 	}
+	
 
-	// get all components
-	ComponentList components = getAllComponents();
-
-	// get intrinsics matrix from first component
+	// fetch the intrinsic matrix from one of the components 
 	Math::Matrix< float, 3, 3 > K;
-	if ( components.front()->isIntrinsics() )
+	
+	// Since all components are stored as shared_ptr the following loop does not work :(
+	// ComponentList::iterator it = std::find_if ( components.begin(), components.end() , std::mem_fun( &MarkerTracker::isIntrinsics ) );
+	
+	
+	ComponentList::const_iterator it = components.begin();
+	for( ; it != components.end(); ++it )
 	{
-		Math::Util::matrix_cast_assign( K, *components.front()->intrinsics( m.time() ) );
+		if( (*it)->isIntrinsics() )
+		{
+			Math::Util::matrix_cast_assign( K, *(*it)->intrinsics( m.time() ) );
+			break;
+		}
 	}
-	else
+
+	if( it == components.end() )
 	{
-		LOG4CPP_DEBUG( logger, "No intrinsics matrix given" );
+		LOG4CPP_WARN( logger, "Guessing an own 3-by-3 intrinsic matrix, since no matrix is provided." );
 		
 		// compute cheap camera matrix if none given
 		float fTx = static_cast< float >( m->width / 2 );
@@ -382,14 +433,19 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 		K( 2, 2 ) = -1.0f;
 		K( 1, 0 ) = K( 2, 0 ) = K( 2, 1 ) = 0.0f;
 	}
+	LOG4CPP_TRACE( logger, "Applying the following 3-by-3 intrinsic matrix to the marker tracker module:\n" << K );
+	
 	
 	// create marker map
 	MarkerInfoMap markerMap;
 	MarkerInfoMap refineMarkerMap;
 	
-	// copy all nesesary information to a marker map
+	// copy all necessary information to a marker map
 	BOOST_FOREACH( ComponentList::value_type pComp, components )
 	{
+		if( !pComp->getKey().isMarker )
+			continue;
+
 		pComp->m_info.found = MarkerInfo::ENotFound;
 		
 		if ( pComp->m_info.nPrevPoseValidator < 3 || !pComp->m_info.bEnableTracking || !pComp->m_info.bEnableFastTracking )
@@ -409,13 +465,13 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 			pComp->m_info.bCalculateCovariance = pComp->m_outErrorPose.isConnected();
 			
 			// copy to full scan marker map
-			markerMap[ pComp->getKey() ] = pComp->m_info;
+			markerMap[ pComp->getKey().nCode ] = pComp->m_info;
 		}
 		else
 			// copy to refinement map
-			refineMarkerMap[ pComp->getKey() ] = pComp->m_info;
+			refineMarkerMap[ pComp->getKey().nCode ] = pComp->m_info;
 	}
-
+	
 	// try to refine markers with fast tracking enabled
 	if ( !refineMarkerMap.empty() )
 	{
@@ -430,7 +486,7 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 		BOOST_FOREACH( MarkerInfoMap::value_type& mapEl, refineMarkerMap )
 		{
 			// update found markers
-			if ( mapEl.second.found != MarkerInfo::ENotFound )
+			if ( mapEl.second.found != MarkerInfo::ENotFound )//&& hasComponent( mapEl.first ) )
 				getComponent( mapEl.first )->m_info = mapEl.second;
 
 			// if not or only found by pixel flow, add to full scan list
@@ -440,6 +496,7 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 		
 		refineMarkerMap.clear();
 	}
+	
 	// run marker tracker with full analysis on other and not-found markers
 	if ( !markerMap.empty() )
 	{
@@ -452,12 +509,13 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 
 		// update information of found markers and move not-found not-fast-tracking markers to refinement
 		BOOST_FOREACH( MarkerInfoMap::value_type& mapEl, markerMap )
-			if ( mapEl.second.found == MarkerInfo::EFullScanFound )
+			if ( mapEl.second.found == MarkerInfo::EFullScanFound && hasComponent( mapEl.first ) )
 				getComponent( mapEl.first )->m_info = mapEl.second;
 			else if ( mapEl.second.bEnableTracking && !mapEl.second.bEnableFastTracking && 
 				mapEl.second.nPrevPoseValidator >= 3 )
 				refineMarkerMap[ mapEl.first ] = mapEl.second;
 	}
+	
 	// try to refine not-fast-tracking markers not found by full scan 
 	if ( !refineMarkerMap.empty() )
 	{
@@ -471,13 +529,16 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 		// update found markers
 		BOOST_FOREACH( MarkerInfoMap::value_type& mapEl, refineMarkerMap )
 			// update found markers
-			if ( mapEl.second.found != MarkerInfo::ENotFound )
+			if ( mapEl.second.found != MarkerInfo::ENotFound && hasComponent( mapEl.first) )
 				getComponent( mapEl.first )->m_info = mapEl.second;
 	}
 
 	// check which markers were found
 	BOOST_FOREACH( ComponentList::value_type pComp, components )
 	{
+		if( !pComp->getKey().isMarker )
+			continue;
+			
 		MarkerInfo& info( pComp->m_info );
 		
 		// timeout pixelflow after 5 seconds. TODO: make configureable
@@ -490,9 +551,11 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 		// update lastTime only when found by refinement or full scan
 		if ( info.found >= MarkerInfo::ERefinementFound )
 			pComp->m_lastTime = m.time();
-		
+			
 		if ( info.found >= MarkerInfo::ERefinementFound || ( info.found == MarkerInfo::EPixelFlowFound && info.bEnablePixelFlow ) )
 		{
+		
+			LOG4CPP_DEBUG( logger, "Marker " << std::hex << pComp->getKey() << " sending stuff ");
 			// send corners
 			if ( pComp->m_outCorners.isConnected() )
 			{
@@ -525,10 +588,8 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 	// push debug image
 	if ( pDebugImg )
 	{
-		ComponentList components = getAllComponents();
-		for ( ComponentList::iterator it = components.begin(); it != components.end(); it++ ) {
+		for ( it = components.begin(); it != components.end(); it++ )
 			(*it)->m_debugPort.send( Measurement::ImageMeasurement( m.time(), pDebugImg ) );
-		}
 	}
 }
 

@@ -85,7 +85,7 @@
             </Edge>
             <Edge name="DebugImage" source="Camera" destination="ImagePlane" displayName="Debug Image">
                 <Description>
-                    <h:p>Debug Image to visulaize marker tracker.</h:p>
+                    <h:p>Debug Image to visualize marker tracker.</h:p>
                 </Description>
                 <Attribute name="type" value="Image" xsi:type="EnumAttributeReferenceType"/>
                 <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
@@ -143,9 +143,9 @@
         </DataflowConfiguration>
     </Pattern>
     
-    <Pattern name="MarkerTrackerCalibrated" displayName="Optical Square-Marker Tracker (Calibrated)">
+    <Pattern name="MarkerTrackerCalibrated" displayName="Deprecated: Optical Square-Marker Tracker (Calibrated)">
         <Description>
-            <h:p>Detects a marker in a grey-scale image and computes the pose.
+            <h:p>Please use the new pattern with the 3x3 intrinsic matrix pointing into the other direction. Detects a marker in a grey-scale image and computes the pose.
 			Intrinsic camera calibration is used. 
             </h:p>
         </Description>
@@ -187,7 +187,109 @@
             </Edge>
             <Edge name="DebugImage" source="Camera" destination="ImagePlane" displayName="Debug Image">
                 <Description>
-                    <h:p>Debug Image to visulaize marker tracker.</h:p>
+                    <h:p>Debug Image to visualize marker tracker.</h:p>
+                </Description>
+                <Attribute name="type" value="Image" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+        </Output>
+        
+        <DataflowConfiguration>
+            <UbitrackLib class="MarkerTracker"/>
+			
+            <Attribute name="enableTracking" displayName="Enable tracking" default="true" xsi:type="EnumAttributeDeclarationType">
+                <Description>
+                    <h:p>
+					Enables incremental tracking of the marker which can handle some amount of occlusion.
+                    </h:p>
+                </Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true"  displayName="True"/>
+            </Attribute>
+            <Attribute name="enablePixelFlow" displayName="Enable pixel flow" default="false" xsi:type="EnumAttributeDeclarationType">
+                <Description>
+                    <h:p>
+					Enables pixel flow for pose prediction. Can handle faster motions and even more occlusion, but 
+					will not track orientation.
+                    </h:p>
+                </Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true"  displayName="True"/>
+            </Attribute>
+            <Attribute name="enableFlipCheck" displayName="Enable flip check" default="true" xsi:type="EnumAttributeDeclarationType">
+                <Description>
+                    <h:p>
+					Checks whether the flipped pose of the marker is better. Requires more processing time, but is often more robust.
+                    </h:p>
+                </Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true"  displayName="True"/>
+            </Attribute>
+            <Attribute name="enableFastTracking" displayName="Enable fast tracking" default="false" xsi:type="EnumAttributeDeclarationType">
+                <Description>
+                    <h:p>
+					This option is only valid when tracking is enabled!
+                        <h:br/>
+                        <h:b>True:</h:b>
+					Tries to find the marker first by incremental tracking and only performs a full scan when
+					the marker is not found. Requires less processing time, but has problems with flipped poses.
+                        <h:br/>
+                        <h:b>False:</h:b>
+					First does a full scan and only uses incremental tracking for markers that have been occluded.
+                    </h:p>
+                </Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true"  displayName="True"/>
+            </Attribute>
+		   
+        </DataflowConfiguration>
+    </Pattern>
+	
+	<Pattern name="CalibratedMarkerTracker" displayName="Optical Square-Marker Tracker (Calibrated)">
+        <Description>
+            <h:p>Detects a marker in a grey-scale image and computes the pose.
+			Intrinsic camera calibration is used. 
+            </h:p>
+        </Description>
+        <Input>
+            <Node name="Camera" displayName="Camera"/>
+            <Node name="ImagePlane" displayName="Image Plane"/>
+            <Edge name="Image" displayName="Image" source="Camera" destination="ImagePlane" >
+                <Description>
+                    <h:p>Greyscale input image.</h:p>
+                </Description>
+                <Predicate>type=='Image'&amp;&amp;mode=='push'</Predicate>
+            </Edge>
+            <Edge name="CameraIntrinsics" displayName="Intrinsics" source="ImagePlane" destination="Camera" >
+                <Description>
+                    <h:p>Camera intrinsic matrix.</h:p>
+                </Description>
+                <Predicate>type=='3x3Matrix'&amp;&amp;mode=='pull'</Predicate>
+            </Edge>
+        </Input>
+        <Output>
+            <Node name="Marker" displayName="Marker">
+                <Attribute name="markerId" displayName="Marker ID" default="0x272" xsi:type="StringAttributeDeclarationType">
+                    <Description>
+                        <h:p>Marker ID in Hex, e.g. 0x272. Attention: This ID is used as the module key for the marker tracker algorithm. It must be unique, otherwise deceptive error messages will occur.</h:p>
+                    </Description>
+                </Attribute>
+                <Attribute name="markerSize" displayName="Marker Size" default="0.06" xsi:type="DoubleAttributeDeclarationType">
+                    <Description>
+                        <h:p>Marker size in m, e.g. 0.06.</h:p>
+                    </Description>
+                </Attribute>
+            </Node>
+            <Edge name="Output" source="Camera" destination="Marker" displayName="Marker Pose">
+                <Description>
+                    <h:p>Pose of marker with respect to camera.</h:p>
+                </Description>
+                <Attribute name="type" value="6D" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+            <Edge name="DebugImage" source="Camera" destination="ImagePlane" displayName="Debug Image">
+                <Description>
+                    <h:p>Debug Image to visualize marker tracker.</h:p>
                 </Description>
                 <Attribute name="type" value="Image" xsi:type="EnumAttributeReferenceType"/>
                 <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
@@ -245,9 +347,9 @@
         </DataflowConfiguration>
     </Pattern>
     
-    <Pattern name="MarkerTrackerError" displayName="Optical Square-Marker Tracker (with Error Estimation)">
+    <Pattern name="MarkerTrackerError" displayName="Deprecated: Optical Square-Marker Tracker (with Error Estimation)">
         <Description>
-            <h:p>Detects a marker in a grey-scale image and computes the pose.
+            <h:p>Please use the new pattern with the 3x3 intrinsic matrix pointing into the other direction. Detects a marker in a grey-scale image and computes the pose.
 			Additionally, the 6DOF-covariance is computed using error propagation. 
             </h:p>
         </Description>
@@ -289,7 +391,109 @@
             </Edge>
             <Edge name="DebugImage" source="Camera" destination="ImagePlane" displayName="Debug Image">
                 <Description>
-                    <h:p>Debug Image to visulaize marker tracker.</h:p>
+                    <h:p>Debug Image to visualize marker tracker.</h:p>
+                </Description>
+                <Attribute name="type" value="Image" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+        </Output>
+        
+        <DataflowConfiguration>
+            <UbitrackLib class="MarkerTracker"/>
+			
+            <Attribute name="enableTracking" displayName="Enable tracking" default="false" xsi:type="EnumAttributeDeclarationType">
+                <Description>
+                    <h:p>
+					Enables incremental tracking of the marker which can handle some amount of occlusion.
+                    </h:p>
+                </Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true"  displayName="True"/>
+            </Attribute>
+            <Attribute name="enablePixelFlow" displayName="Enable pixel flow" default="false" xsi:type="EnumAttributeDeclarationType">
+                <Description>
+                    <h:p>
+					Enables pixel flow for pose prediction. Can handle faster motions and even more occlusion, but 
+					will not track orientation.
+                    </h:p>
+                </Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true"  displayName="True"/>
+            </Attribute>
+            <Attribute name="enableFlipCheck" displayName="Enable flip check" default="false" xsi:type="EnumAttributeDeclarationType">
+                <Description>
+                    <h:p>
+					Checks whether the flipped pose of the marker is better. Requires more processing time, but is often more robust.
+                    </h:p>
+                </Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true"  displayName="True"/>
+            </Attribute>
+            <Attribute name="enableFastTracking" displayName="Enable fast tracking" default="false" xsi:type="EnumAttributeDeclarationType">
+                <Description>
+                    <h:p>
+					This option is only valid when tracking is enabled!
+                        <h:br/>
+                        <h:b>True:</h:b>
+					Tries to find the marker first by incremental tracking and only performs a full scan when
+					the marker is not found. Requires less processing time, but has problems with flipped poses.
+                        <h:br/>
+                        <h:b>False:</h:b>
+					First does a full scan and only uses incremental tracking for markers that have been occluded.
+                    </h:p>
+                </Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true"  displayName="True"/>
+            </Attribute>
+			
+        </DataflowConfiguration>
+    </Pattern>
+	
+	<Pattern name="ErrorMarkerTracker" displayName="Optical Square-Marker Tracker (with Error Estimation)">
+        <Description>
+            <h:p>Detects a marker in a grey-scale image and computes the pose.
+			Additionally, the 6DOF-covariance is computed using error propagation. 
+            </h:p>
+        </Description>
+        <Input>
+            <Node name="Camera" displayName="Camera"/>
+            <Node name="ImagePlane" displayName="Image Plane"/>
+            <Edge name="Image" displayName="Image" source="Camera" destination="ImagePlane" >
+                <Description>
+                    <h:p>Greyscale input image.</h:p>
+                </Description>
+                <Predicate>type=='Image'&amp;&amp;mode=='push'</Predicate>
+            </Edge>
+            <Edge name="CameraIntrinsics" displayName="Intrinsics" source="ImagePlane" destination="Camera" >
+                <Description>
+                    <h:p>Camera intrinsic matrix.</h:p>
+                </Description>
+                <Predicate>type=='3x3Matrix'&amp;&amp;mode=='pull'</Predicate>
+            </Edge>
+        </Input>
+        <Output>
+            <Node name="Marker" displayName="Marker">
+                <Attribute name="markerId" displayName="Marker ID" default="0x272" xsi:type="StringAttributeDeclarationType">
+                    <Description>
+                        <h:p>Marker ID in Hex, e.g. 0x272. Attention: This ID is used as the module key for the marker tracker algorithm. It must be unique, otherwise deceptive error messages will occur.</h:p>
+                    </Description>
+                </Attribute>
+                <Attribute name="markerSize" displayName="Marker Size" default="0.06" xsi:type="DoubleAttributeDeclarationType">
+                    <Description>
+                        <h:p>Marker size in m, e.g. 0.06.</h:p>
+                    </Description>
+                </Attribute>
+            </Node>
+            <Edge name="ErrorPose" source="Camera" destination="Marker" displayName="Marker Pose+Error">
+                <Description>
+                    <h:p>Pose of marker with respect to camera.</h:p>
+                </Description>
+                <Attribute name="type" value="6DError" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+            <Edge name="DebugImage" source="Camera" destination="ImagePlane" displayName="Debug Image">
+                <Description>
+                    <h:p>Debug Image to visualize marker tracker.</h:p>
                 </Description>
                 <Attribute name="type" value="Image" xsi:type="EnumAttributeReferenceType"/>
                 <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
@@ -383,7 +587,7 @@
             </Edge>
             <Edge name="DebugImage" source="Camera" destination="ImagePlane" displayName="Debug Image">
                 <Description>
-                    <h:p>Debug Image to visulaize marker tracker.</h:p>
+                    <h:p>Debug Image to visualize marker tracker.</h:p>
                 </Description>
                 <Attribute name="type" value="Image" xsi:type="EnumAttributeReferenceType"/>
                 <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
@@ -440,6 +644,192 @@
 			
         </DataflowConfiguration>
     </Pattern>
+	
+	
+	<!-- new (experimental) patterns start here -->
+	
+	<Pattern name="MarkerTrackerCorner" displayName="Experimental: Optical Square-Marker Tracker (2D Corners)">
+        <Description>
+            <h:p>Detects markers and computes the 2D-position of the four corners in the image.</h:p>
+        </Description>
+        <Output>
+			<Node name="ImagePlane" displayName="Image Plane"/>
+            <Node name="Marker" displayName="Marker">
+                <Attribute name="markerId" displayName="Marker ID" default="0x272" xsi:type="StringAttributeDeclarationType">
+                    <Description>
+                        <h:p>Marker ID in Hex, e.g. 0x272. Attention: This ID is used as the module key for the marker tracker algorithm. It must be unique, otherwise deceptive error messages will occur.</h:p>
+                    </Description>
+                </Attribute>
+                <Attribute name="markerSize" displayName="Marker Size" default="0.06" xsi:type="DoubleAttributeDeclarationType">
+                    <Description>
+                        <h:p>Marker size, expected as meter, e.g. 0.06.</h:p>
+                    </Description>
+                </Attribute>
+            </Node>
+            <Edge name="Corners" source="ImagePlane" destination="Marker" displayName="Marker Corners">
+                <Description>
+                    <h:p>Image coordinates of marker corners. Order of the corners is clockwise, starting in the left lower corner of the marker.</h:p>
+                </Description>
+                <Attribute name="type" value="2DPositionList" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+        </Output>
+        <DataflowConfiguration>
+            <UbitrackLib class="MarkerTracker"/>
+        </DataflowConfiguration>
+    </Pattern>
+	
+	<Pattern name="MarkerTrackerPose" displayName="Experimental: Optical Square-Marker Tracker">
+        <Description>
+            <h:p>Detects a marker in a provided image and computes the pose.
+			No camera calibration is used. However, the default settings will provide a somewhat 
+			correct-looking result when used with the renderer default-settings, even if the numbers
+			are wrong.
+            </h:p>
+        </Description>
+        <Output>
+			<Node name="Camera" displayName="Camera"/>
+            <Node name="Marker" displayName="Marker">
+                <Attribute name="markerId" displayName="Marker ID" default="0x272" xsi:type="StringAttributeDeclarationType">
+                    <Description>
+                        <h:p>Marker ID in Hex, e.g. 0x272. Attention: This ID is used as the module key for the marker tracker algorithm. It must be unique, otherwise deceptive error messages will occur.</h:p>
+                    </Description>
+                </Attribute>
+                <Attribute name="markerSize" displayName="Marker Size" default="0.06" xsi:type="DoubleAttributeDeclarationType">
+                    <Description>
+                        <h:p>Marker size, expected as meter, e.g. 0.06.</h:p>
+                    </Description>
+                </Attribute>
+            </Node>
+            <Edge name="Output" source="Camera" destination="Marker" displayName="Marker Pose">
+                <Description>
+                    <h:p>Pose of marker with respect to camera.</h:p>
+                </Description>
+                <Attribute name="type" value="6D" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+        </Output>
+        <DataflowConfiguration>
+            <UbitrackLib class="MarkerTracker"/>
+        </DataflowConfiguration>
+    </Pattern>
+	
+	<Pattern name="MarkerTrackerErrorPose" displayName="Experimental: Optical Square-Marker Tracker (with Error Estimation)">
+        <Description>
+            <h:p>Detects a marker in a grey-scale image and computes the pose.
+			Additionally, the 6DOF-covariance is computed using error propagation. 
+            </h:p>
+        </Description>
+        <Output>
+			<Node name="Camera" displayName="Camera"/>
+            <Node name="Marker" displayName="Marker">
+                <Attribute name="markerId" displayName="Marker ID" default="0x272" xsi:type="StringAttributeDeclarationType">
+                    <Description>
+                        <h:p>Marker ID in Hex, e.g. 0x272. Attention: This ID is used as the module key for the marker tracker algorithm. It must be unique, otherwise deceptive error messages will occur.</h:p>
+                    </Description>
+                </Attribute>
+                <Attribute name="markerSize" displayName="Marker Size" default="0.06" xsi:type="DoubleAttributeDeclarationType">
+                    <Description>
+                        <h:p>Marker size, expected as meter, e.g. 0.06.</h:p>
+                    </Description>
+                </Attribute>
+            </Node>
+            <Edge name="ErrorPose" source="Camera" destination="Marker" displayName="Marker Pose+Error">
+                <Description>
+                    <h:p>Pose of marker with respect to camera.</h:p>
+                </Description>
+                <Attribute name="type" value="6DError" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+        </Output>
+        <DataflowConfiguration>
+            <UbitrackLib class="MarkerTracker"/>
+        </DataflowConfiguration>
+    </Pattern>
+	
+	<Pattern name="MarkerTrackerImage" displayName="Experimental: Optical Square-Marker Tracker Input Image">
+        <Description>
+            <h:p>This edge can be used to specify the image to which the marker tracker should be applied to.</h:p>
+        </Description>
+        <Input>
+            <Node name="Camera" displayName="Camera"/>
+            <Node name="ImagePlane" displayName="Image Plane"/>
+            <Edge name="Image" displayName="Input Image" source="Camera" destination="ImagePlane" >
+                <Description>
+                    <h:p>Greyscale input image of the corresponding marker tracker module.</h:p>
+                </Description>
+                <Predicate>type=='Image'&amp;&amp;mode=='push'</Predicate>
+            </Edge>
+        </Input>
+		<DataflowConfiguration>
+            <UbitrackLib class="MarkerTracker"/>
+        </DataflowConfiguration>
+    </Pattern>
+	
+	<Pattern name="MarkerTrackerDebug" displayName="Experimental: Optical Square-Marker Tracker Debug Image">
+        <Description>
+            <h:p>This edge provides the debug image of the corresponding marker tracker module, when attached to a marker tracker camera node.</h:p>
+        </Description>
+        <Output>
+            <Node name="Camera" displayName="Camera"/>
+            <Node name="ImagePlane" displayName="Image Plane"/>
+            <Edge name="DebugImage" displayName="Debug Image" source="Camera" destination="ImagePlane" >
+                <Description>
+                    <h:p>Debug image of the corresponding marker tracker module.</h:p>
+                </Description>
+                <Attribute name="type" value="Image" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+        </Output>
+		<DataflowConfiguration>
+            <UbitrackLib class="MarkerTracker"/>
+        </DataflowConfiguration>
+    </Pattern>
+    
+	<Pattern name="MarkerTrackerMatrix" displayName="Experimental: Optical Square-Marker Tracker Intrinsic Matrix">
+        <Description>
+            <h:p>Specifies the camera's 3x3 intrinsic matrix that should be applied to the marker tracker module.
+			This intrinsic matrix is valid for all attached markers connected to the same camera node.
+            </h:p>
+        </Description>
+        <Input>
+            <Node name="Camera" displayName="Camera"/>
+            <Node name="ImagePlane" displayName="Image Plane"/>
+            <Edge name="CameraIntrinsics" displayName="3x3 Matrix" source="ImagePlane" destination="Camera" >
+                <Description>
+                    <h:p>Camera 3x3 intrinsic matrix.</h:p>
+                </Description>
+                <Predicate>type=='3x3Matrix'&amp;&amp;mode=='pull'</Predicate>
+            </Edge>
+        </Input>
+		<DataflowConfiguration>
+            <UbitrackLib class="MarkerTracker"/>
+        </DataflowConfiguration>
+    </Pattern>
+	
+	<!-- pattern should be added soon, stay tuned:
+	Pattern name="MarkerTrackerCameraIntrinsics" displayName="Experimental: Optical Square-Marker Tracker Camera Intrinsic Parameters">
+        <Description>
+            <h:p>Specifies the intrinsics camera parameters that should be applied to the marker tracker module.
+			These intrinsic parameters are valid for all attached markers connected to the same camera node.
+            </h:p>
+        </Description>
+        <Input>
+            <Node name="Camera" displayName="Camera"/>
+            <Node name="ImagePlane" displayName="Image Plane"/>
+            <Edge name="CameraIntrinsics" displayName="Camera Intrinsics" source="ImagePlane" destination="Camera" >
+                <Description>
+                    <h:p>Camera intrinsic parameters.</h:p>
+                </Description>
+                <Predicate>type=='3x3Matrix'&amp;&amp;mode=='pull'</Predicate>
+            </Edge>
+        </Input>
+		<DataflowConfiguration>
+            <UbitrackLib class="MarkerTracker"/>
+        </DataflowConfiguration>
+    </Pattern-->
+	
+	<!-- new (experimental) patterns end here -->
     
     <!-- Attribute declarations -->
 	
