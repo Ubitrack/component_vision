@@ -7,21 +7,23 @@
                       xsi:schemaLocation='http://ar.in.tum.de/ubitrack/utql ../../../schema/utql_templates.xsd'>
     
 	<Pattern name="ImageUndistortion" displayName="Experimental: Image Undistortion">
-    	<Description><h:p>Removes radial and tangential distortion from images.</h:p></Description>
-    	
+    	<Description><h:p>Removes radial and tangential distortion from images suing given camera intrinsic parameters.</h:p></Description>
+  		
         <Input>
-            <Node name="Camera" displayName="Camera"/>
-            <Node name="ImagePlane" displayName="Image Plane"/>
-            <Edge displayName="Camera Intrinsics" name="CameraIntrinsics" source="Camera" destination="ImagePlane">
+            <Node name="ImagePlaneA" displayName="Undistorted Image Plane"/>
+            <Node name="ImagePlaneB" displayName="Distorted Image Plane"/>
+			<Node name="Camera" displayName="Camera"/>
+			
+            <Edge displayName="Camera Intrinsics" name="CameraIntrinsics" source="ImagePlaneA" destination="ImagePlaneB">
                 <Predicate>type=='3x3Matrix'&amp;&amp;mode=='pull'</Predicate>
             </Edge>
-            <Edge displayName="Distorted Image" name="Input" source="Camera" destination="ImagePlane">
+            <Edge displayName="Distorted Image" name="Input" source="Camera" destination="ImagePlaneB">
                 <Predicate>type=='Image'</Predicate>
             </Edge>
         </Input>
         
         <Output>
-            <Edge displayName="Undistorted Image" name="Output" source="Camera" destination="ImagePlane">
+            <Edge displayName="Undistorted Image" name="Output" source="Camera" destination="ImagePlaneA">
                 <Attribute name="type" value="Image" xsi:type="EnumAttributeReferenceType"/>
             </Edge>
         </Output>
