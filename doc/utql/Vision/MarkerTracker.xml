@@ -139,7 +139,26 @@
                 <EnumValue name="false" displayName="False"/>
                 <EnumValue name="true"  displayName="True"/>
             </Attribute>
-		   
+		   <Attribute name="enableAdaptiveThreshold" displayName="Enable adaptive Thresholding" default="true" xsi:type="EnumAttributeDeclarationType">
+					<Description>
+						<h:p>
+						For tracking on mobile devices, using adaptive thresholding slows down the application
+							<h:br/>
+							<h:b>True:</h:b>
+						Adaptive Thresholding is used for Thresholding the Image
+							<h:br/>
+							<h:b>False:</h:b>
+						Binary Threshold with the specified binaryThresholdValue is used for Thresholding the Image
+						</h:p>
+					</Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true"  displayName="True"/>
+		</Attribute>
+		<Attribute name="ThresholdValue" min="0" max = "255" default="120" xsi:type="IntAttributeDeclarationType" displayName="ThresholdValue">
+				<Description>
+					<h:p>If adaptive Thresholding is disabled, binary Thresholding is used with the specified threshold. This value is ignored, if adaptive Thresholding is enabled.</h:p>
+				</Description>
+	    </Attribute>
         </DataflowConfiguration>
     </Pattern>
     
@@ -241,7 +260,26 @@
                 <EnumValue name="false" displayName="False"/>
                 <EnumValue name="true"  displayName="True"/>
             </Attribute>
-		   
+		   <Attribute name="enableAdaptiveThreshold" displayName="Enable adaptive Thresholding" default="true" xsi:type="EnumAttributeDeclarationType">
+					<Description>
+						<h:p>
+						For tracking on mobile devices, using adaptive thresholding slows down the application
+							<h:br/>
+							<h:b>True:</h:b>
+						Adaptive Thresholding is used for Thresholding the Image
+							<h:br/>
+							<h:b>False:</h:b>
+						Binary Threshold with the specified binaryThresholdValue is used for Thresholding the Image
+						</h:p>
+					</Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true"  displayName="True"/>
+				</Attribute>
+				<Attribute name="ThresholdValue" min="0" max = "255" default="120" xsi:type="IntAttributeDeclarationType" displayName="ThresholdValue">
+				<Description>
+					<h:p>If adaptive Thresholding is disabled, binary Thresholding is used with the specified threshold. This value is ignored, if adaptive Thresholding is enabled.</h:p>
+				</Description>
+	    </Attribute>
         </DataflowConfiguration>
     </Pattern>
     
@@ -343,7 +381,26 @@
                 <EnumValue name="false" displayName="False"/>
                 <EnumValue name="true"  displayName="True"/>
             </Attribute>
-			
+			<Attribute name="enableAdaptiveThreshold" displayName="Enable adaptive Thresholding" default="true" xsi:type="EnumAttributeDeclarationType">
+					<Description>
+						<h:p>
+						For tracking on mobile devices, using adaptive thresholding slows down the application
+							<h:br/>
+							<h:b>True:</h:b>
+						Adaptive Thresholding is used for Thresholding the Image
+							<h:br/>
+							<h:b>False:</h:b>
+						Binary Threshold with the specified binaryThresholdValue is used for Thresholding the Image
+						</h:p>
+					</Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true"  displayName="True"/>
+				</Attribute>
+				<Attribute name="ThresholdValue" min="0" max = "255" default="120" xsi:type="IntAttributeDeclarationType" displayName="ThresholdValue">
+				<Description>
+					<h:p>If adaptive Thresholding is disabled, binary Thresholding is used with the specified threshold. This value is ignored, if adaptive Thresholding is enabled.</h:p>
+				</Description>
+	    </Attribute>
         </DataflowConfiguration>
     </Pattern>
     
@@ -437,7 +494,26 @@
                 <EnumValue name="false" displayName="False"/>
                 <EnumValue name="true"  displayName="True"/>
             </Attribute>
-			
+			<Attribute name="enableAdaptiveThreshold" displayName="Enable adaptive Thresholding" default="true" xsi:type="EnumAttributeDeclarationType">
+					<Description>
+						<h:p>
+						For tracking on mobile devices, using adaptive thresholding slows down the application
+							<h:br/>
+							<h:b>True:</h:b>
+						Adaptive Thresholding is used for Thresholding the Image
+							<h:br/>
+							<h:b>False:</h:b>
+						Binary Threshold with the specified binaryThresholdValue is used for Thresholding the Image
+						</h:p>
+					</Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true"  displayName="True"/>
+				</Attribute>
+				<Attribute name="ThresholdValue" min="0" max = "255" default="120" xsi:type="IntAttributeDeclarationType" displayName="ThresholdValue">
+				<Description>
+					<h:p>If adaptive Thresholding is disabled, binary Thresholding is used with the specified threshold. This value is ignored, if adaptive Thresholding is enabled.</h:p>
+				</Description>
+	    </Attribute>
         </DataflowConfiguration>
     </Pattern>
     

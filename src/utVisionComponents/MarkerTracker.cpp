@@ -118,6 +118,8 @@ public:
 		, m_codeSize( 4 )
 		, m_codeMask( 0xFFFF )
 		, m_useInnerEdgels( true )
+		, m_binaryThresholdValue( 120 )
+		, m_enableAdaptiveThreshold ( true )
 #ifdef DO_TIMING
 		, m_detectMarkersTimer( "detectMarkers", "Ubitrack.Timing" )
 		, m_detectMarkersTimerRefine( "detectMarkersRefine", "Ubitrack.Timing" )
@@ -133,7 +135,13 @@ public:
 		subgraph->getNode( "Camera" )->getAttributeData( "codeBitSize", m_codeSize );
 		m_useInnerEdgels = subgraph->getNode( "Camera" )->getAttributeString( "enableInnerEdgels" ) == "true";
 
-		LOG4CPP_DEBUG( logger, "Marker tracker configuration: marker bit size: " << m_markerSize << ", code bit size: " << m_codeSize << ", ID mask: " << m_codeMask << ", use inner edgelets: " << m_useInnerEdgels );
+		m_enableAdaptiveThreshold = false;
+		m_binaryThresholdValue = 120;
+		
+		subgraph->m_DataflowAttributes.getAttributeData( "enableAdaptiveThreshold", m_enableAdaptiveThreshold );
+		subgraph->m_DataflowAttributes.getAttributeData( "ThresholdValue", m_binaryThresholdValue );
+				
+		LOG4CPP_DEBUG( logger, "Marker tracker configuration: marker bit size: " << m_markerSize << ", code bit size: " << m_codeSize << ", ID mask: " << m_codeMask << ", use inner edgelets: " << m_useInnerEdgels << " enableAdaptiveThreshold " << m_enableAdaptiveThreshold << " binaryThresholdValue " << m_binaryThresholdValue);
 
 		bRefine = false;
 		bPrevPoseVal = false;
@@ -169,6 +177,13 @@ protected:
 	
 	/** Incorporate inner edgelets in pose refinement, may be unstable! */
 	bool m_useInnerEdgels;
+	
+	/** using adaptive thresholding for thresholding the image*/
+	bool m_enableAdaptiveThreshold;
+
+	/** if m_enableAdaptiveThreshold not enabled, binary thresholding with m_binaryThresholdValue is used*/
+	int m_binaryThresholdValue;
+	
 
 	#ifdef DO_TIMING
 	Ubitrack::Util::BlockTimer m_detectMarkersTimer;
@@ -292,6 +307,7 @@ public:
 		
 		if ( subgraph->m_DataflowAttributes.hasAttribute( "enableFastTracking" ) ) // enable Fast Tracking
 			m_info.bEnableFastTracking = subgraph->m_DataflowAttributes.getAttributeString( "enableFastTracking" ) == "true";		
+		LOG4CPP_INFO( logger, "MarkerTracker configuration: edgebased refinement: " << m_bEdgeRefinement << " enableTracking: " << m_info.bEnableTracking << " enablePixelFlow: " << m_info.bEnablePixelFlow << " enableFlipCheck " << m_info.bEnableFlipCheck << " bEnableFastTracking " << m_info.bEnableFastTracking );
 	}
 
 	/** is the debug port connected? */
@@ -423,7 +439,7 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 			#ifdef DO_TIMING
 			UBITRACK_TIME( m_detectMarkersTimerRefine );
 			#endif
-			detectMarkers( *m, refineMarkerMap, K, pDebugImg.get(), true, m_codeSize, m_markerSize, m_codeMask, m_useInnerEdgels );
+			detectMarkers( *m, refineMarkerMap, K, pDebugImg.get(), true, m_codeSize, m_markerSize, m_codeMask, m_useInnerEdgels, m_enableAdaptiveThreshold, m_binaryThresholdValue );
 		}
 	
 		// copy not-found markers to marker map and update others
@@ -447,7 +463,8 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 			#ifdef DO_TIMING
 			UBITRACK_TIME( m_detectMarkersTimer );
 			#endif
-			detectMarkers( *m, markerMap, K, pDebugImg.get(), false, m_codeSize, m_markerSize, m_codeMask, m_useInnerEdgels );
+			detectMarkers( *m, markerMap, K, pDebugImg.get(), false, m_codeSize, m_markerSize, m_codeMask, m_useInnerEdgels,
+			 m_enableAdaptiveThreshold, m_binaryThresholdValue );
 		}
 
 		// update information of found markers and move not-found not-fast-tracking markers to refinement
@@ -465,7 +482,7 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 			#ifdef DO_TIMING
 			UBITRACK_TIME( m_detectMarkersTimerRefine );
 			#endif
-			detectMarkers( *m, refineMarkerMap, K, pDebugImg.get(), true, m_codeSize, m_markerSize, m_codeMask, m_useInnerEdgels );
+			detectMarkers( *m, refineMarkerMap, K, pDebugImg.get(), true, m_codeSize, m_markerSize, m_codeMask, m_useInnerEdgels, m_enableAdaptiveThreshold, m_binaryThresholdValue );
 		}
 	
 		// update found markers
