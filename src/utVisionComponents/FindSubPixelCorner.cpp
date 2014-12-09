@@ -130,7 +130,7 @@ void CornerDetectionSubPix::pushPositions( const Measurement::Position2D& m )
 			
 		}
 		if( f_flipping )
-			corners[ 0 ].y = imgIn->height - corners[ 0 ].y;
+			corners[ 0 ].y = imgIn->height() - corners[ 0 ].y;
 		m_outPortPosition.send( Measurement::Position2D( m.time(), Math::Vector< double, 2 >( corners[ 0 ].x, corners[ 0 ].y ) ) );
 		
 		

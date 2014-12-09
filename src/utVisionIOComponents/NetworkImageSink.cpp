@@ -186,8 +186,8 @@ protected:
 			LOG4CPP_INFO(logger, "sending"<< stream.str().size());
 			 */ 
 			 int packet[5];
-			packet[0] = m->width;
-			packet[1] =  m->height;
+			packet[0] = m->width();
+			packet[1] =  m->height();
 			packet[2] =  m->nChannels;
 			packet[3] =  m->depth;
 			packet[4] = m->origin;	

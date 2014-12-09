@@ -95,12 +95,12 @@ public:
 			this->assign( subgraph->getNode( "Marker" )->getAttributeString( "markerId" ) );
 			
 			if ( this->empty() )
-			UBITRACK_THROW( "Missing markerId attribute on node Marker" );
+				UBITRACK_THROW( "Missing markerId attribute on node Marker" );
 			
 			std::istringstream idStream( *this );
 			idStream >> std::hex >> nCode;
 			return;
-	}
+		}
 		if( subgraph->hasEdge( "Image" ) )
 		{
 			this->assign( "Image" );
@@ -430,7 +430,7 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 		{
 			Math::Util::matrix_cast_assign( K, *(*it)->intrinsics( m.time() ) );
 			break;
-	}
+		}
 	}
 
 	if( it == components.end() )
@@ -438,9 +438,9 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 		LOG4CPP_WARN( logger, "Guessing an own 3-by-3 intrinsic matrix, since no matrix is provided." );
 		
 		// compute cheap camera matrix if none given
-		float fTx = static_cast< float >( m->width / 2 );
-		float fTy = static_cast< float >( m->height / 2 );
-		float f = 1.25f * m->width;
+		float fTx = static_cast< float >( m->width() / 2 );
+		float fTy = static_cast< float >( m->height() / 2 );
+		float f = 1.25f * m->width();
 		K( 0, 0 ) = f;
 		K( 0, 1 ) = 0.0f;
 		K( 0, 2 ) = -fTx;
@@ -607,7 +607,7 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 	{
 		for ( it = components.begin(); it != components.end(); it++ )
 			(*it)->m_debugPort.send( Measurement::ImageMeasurement( m.time(), pDebugImg ) );
-		}
+	}
 }
 
 

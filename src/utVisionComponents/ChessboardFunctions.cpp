@@ -47,6 +47,7 @@
 // OpenCV
 #include <utVision/Image.h>
 #include <opencv/cv.h>
+#include <opencv2/calib3d/calib3d_c.h> 
  
 // boost
 #include <boost/scoped_array.hpp>
@@ -373,7 +374,7 @@ public:
 					// int index = ( m_height - 1 ) * m_width - i + 2 * ( i % m_width );
 				
 					imgPoints[ 2 * index     ] = corners[ i ].x;
-					imgPoints[ 2 * index + 1 ] = ( img->height - 1 - corners[ i ].y );
+					imgPoints[ 2 * index + 1 ] = ( img->height() - 1 - corners[ i ].y );
 #else				
 					imgPoints[ 2 * i     ] = corners[ i ].x;
 					imgPoints[ 2 * i + 1 ] = img->height - 1 - corners[ i ].y;
@@ -386,7 +387,7 @@ public:
 				for( int i = 0; i < m_edges ; ++i )
 				{
 					corners[ i ].x = imgPoints[ 2 * i     ];
-					corners[ i ].y = img->height - 1 - imgPoints[ 2 * i +1  ];
+					corners[ i ].y = img->height() - 1 - imgPoints[ 2 * i +1  ];
 				}
 #else
 				// do the same?
@@ -399,7 +400,7 @@ public:
 				positions.reserve( m_edges );
 				if( m_normalize )				
 					for( int i = 0; i < m_edges; ++i )
-						positions.push_back( Math::Vector< double, 2 >( imgPoints[ 2*i ] / (img->width-1), imgPoints[ 2*i+1 ] / (img->height-1) ) );
+						positions.push_back( Math::Vector< double, 2 >( imgPoints[ 2*i ] / (img->width()-1), imgPoints[ 2*i+1 ] / (img->height()-1) ) );
 				else
 					for( int i = 0; i < m_edges; ++i )
 						positions.push_back( Math::Vector< double, 2 >( imgPoints[ 2*i ] , imgPoints[ 2*i+1 ] ) );
@@ -454,8 +455,8 @@ public:
 				catch( const Ubitrack::Util::Exception& )
 				{
 					intrVal[ 0 ] = intrVal[ 4 ] = 650.0f;
-					intrVal[ 2 ] = static_cast< float > ( ( img->width - 1 ) >> 2 );
-					intrVal[ 5 ] = static_cast< float > ( ( img->height - 1 ) >> 2 );
+					intrVal[ 2 ] = static_cast< float > ( ( img->width() - 1 ) >> 2 );
+					intrVal[ 5 ] = static_cast< float > ( ( img->height() - 1 ) >> 2 );
 					intrVal[ 8 ] = 1.0f;
 					intrVal[ 1 ] = intrVal[ 3 ] = intrVal[ 6 ] = intrVal[ 7 ] = 0.0f;
 				}

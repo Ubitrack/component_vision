@@ -103,8 +103,8 @@ public:
 		}
 		boost::shared_ptr< Image > pImage( new Image( m_w, m_h, nChannels ) );
 
-		cv::Mat dst( *pImage );
-		cv::Mat src( *img    );
+		cv::Mat dst( cv::cvarrToMat(*pImage) );
+		cv::Mat src( cv::cvarrToMat(*img) );
 
 #if 0
 		//		cv::imshow("ImageWarp src",src);

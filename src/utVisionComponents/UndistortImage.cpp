@@ -145,7 +145,7 @@ public:
 		}
 		
 		// skip if already initialized with same values
-		if ( !m_pMapX || m_pMapX->width != pImage->width || m_pMapX->height != pImage->height )
+		if ( !m_pMapX || m_pMapX->width() != pImage->width() || m_pMapX->height() != pImage->height() )
 		{
 		
 			// read parameters
@@ -161,10 +161,10 @@ public:
 					
 					intrinsics = camIntrinsics.matrix;
 					//scale the matrix, depending on the calibartion size
-					intrinsics( 0, 0 ) *= pImage->width / static_cast< double >( camIntrinsics.dimension( 0 ) );
-					intrinsics( 0, 2 ) *= pImage->width / static_cast< double >( camIntrinsics.dimension( 0 ) );
-					intrinsics( 1, 1 ) *= pImage->height / static_cast< double >( camIntrinsics.dimension( 1 ) );
-					intrinsics( 1, 2 ) *= pImage->height / static_cast< double >( camIntrinsics.dimension( 1 ) );
+					intrinsics( 0, 0 ) *= pImage->width() / static_cast< double >( camIntrinsics.dimension( 0 ) );
+					intrinsics( 0, 2 ) *= pImage->width() / static_cast< double >( camIntrinsics.dimension( 0 ) );
+					intrinsics( 1, 1 ) *= pImage->height() / static_cast< double >( camIntrinsics.dimension( 1 ) );
+					intrinsics( 1, 2 ) *= pImage->height() / static_cast< double >( camIntrinsics.dimension( 1 ) );
 
 					Math::CameraIntrinsics< double >::radial_type radDist = camIntrinsics.radial_params;
 					Math::CameraIntrinsics< double >::tangential_type tanDist =	camIntrinsics.tangential_params;
@@ -200,16 +200,16 @@ public:
 			// compensate if origin==0
 			if ( !pImage->origin )
 			{
-				intrinsics( 1, 2 ) = pImage->height - 1 - intrinsics( 1, 2 );
+				intrinsics( 1, 2 ) = pImage->height() - 1 - intrinsics( 1, 2 );
 				coeffs( 2 ) *= -1.0;
 			}
 		
 			// initialize the distortion map
-			initMap( pImage->width, pImage->height, coeffs, intrinsics );
+			initMap( pImage->width(), pImage->height(), coeffs, intrinsics );
 		}
 		
 		// undistort
-		boost::shared_ptr< Image > imgUndistorted( new Image( pImage->width, pImage->height, pImage->nChannels, pImage->depth ) );
+		boost::shared_ptr< Image > imgUndistorted( new Image( pImage->width(), pImage->height(), pImage->nChannels, pImage->depth ) );
 		imgUndistorted->origin = pImage->origin;
 		cvRemap( *pImage, *imgUndistorted, *m_pMapX, *m_pMapY );
 		
