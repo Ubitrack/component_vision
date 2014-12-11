@@ -187,9 +187,9 @@ protected:
 			 */ 
 			 int packet[5];
 			packet[0] = m->width();
-			packet[1] =  m->height();
-			packet[2] =  m->nChannels;
-			packet[3] =  m->depth;
+			packet[1] = m->height();
+			packet[2] = m->channels();
+			packet[3] = m->depth();
 			packet[4] = m->origin;	
 			m_headerSend = true;
 			boost::asio::write(*m_SendSocket, boost::asio::buffer( (char*) packet, 5*4 ));

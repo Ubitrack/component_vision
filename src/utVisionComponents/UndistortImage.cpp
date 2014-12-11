@@ -209,7 +209,7 @@ public:
 		}
 		
 		// undistort
-		boost::shared_ptr< Image > imgUndistorted( new Image( pImage->width(), pImage->height(), pImage->nChannels, pImage->depth ) );
+		boost::shared_ptr< Image > imgUndistorted( new Image( pImage->width(), pImage->height(), pImage->channels(), pImage->depth() ) );
 		imgUndistorted->origin = pImage->origin;
 		cvRemap( *pImage, *imgUndistorted, *m_pMapX, *m_pMapY );
 		
