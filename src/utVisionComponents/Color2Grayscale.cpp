@@ -115,7 +115,7 @@ void Color2Grayscale::pushImage(const ImageMeasurement& m )
 	{
 		LOG4CPP_DEBUG( logger, "Got color image: pushing converted" );
 		boost::shared_ptr< Image > pImage( new Image( img->width, img->height, 1 ) );
-		pImage->origin = img->origin; //inserted by CW to have correct origin
+		pImage->iplImage()->origin = img->origin; //inserted by CW to have correct origin
 		cvConvertImage(*m,*pImage);
 		m_outPort.send( ImageMeasurement( m.time(), pImage ) );
 	}

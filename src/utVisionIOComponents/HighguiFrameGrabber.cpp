@@ -282,7 +282,7 @@ void HighguiFrameGrabber::ThreadProc()
 #else
 				boost::shared_ptr< Image > pImage( new Image( pIpl->width, pIpl->height, 3 ) );
 				cvConvertImage( pIpl, *pImage );
-				pImage->origin = pIpl->origin;
+				pImage->iplImage()->origin = pIpl->origin;
 				pImage->channelSeq[0]='B';
 				pImage->channelSeq[1]='G';
 				pImage->channelSeq[2]='R';
@@ -294,7 +294,7 @@ void HighguiFrameGrabber::ThreadProc()
 				// convert to greyscale
 				boost::shared_ptr< Image > pImage( new Image( pIpl->width, pIpl->height, 1 ) );
 				cvConvertImage( pIpl, *pImage );
-				pImage->origin = pIpl->origin;
+				pImage->iplImage()->origin = pIpl->origin;
 				m_outPort.send( ImageMeasurement( time, pImage ) );
 			}
 		}

@@ -198,7 +198,7 @@ public:
 			boost::numeric::ublas::column( intrinsics, 2 ) *= -1;
 			
 			// compensate if origin==0
-			if ( !pImage->origin )
+			if ( !pImage->origin() )
 			{
 				intrinsics( 1, 2 ) = pImage->height() - 1 - intrinsics( 1, 2 );
 				coeffs( 2 ) *= -1.0;
@@ -210,7 +210,7 @@ public:
 		
 		// undistort
 		boost::shared_ptr< Image > imgUndistorted( new Image( pImage->width(), pImage->height(), pImage->channels(), pImage->depth() ) );
-		imgUndistorted->origin = pImage->origin;
+		imgUndistorted->iplImage()->origin = pImage->origin();
 		cvRemap( *pImage, *imgUndistorted, *m_pMapX, *m_pMapY );
 		
 		// send result

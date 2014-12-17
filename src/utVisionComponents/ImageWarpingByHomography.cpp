@@ -125,7 +125,7 @@ public:
 		cv::flip(src,src,0);
 		cv::flip(dst,dst,0); /// OpenCV --> Ubitrack
 
-		pImage->origin = img->origin; //inserted by CW to have correct origin
+		pImage->iplImage()->origin = img->origin(); //inserted by CW to have correct origin
 		m_outImagePort.send( Measurement::ImageMeasurement( img.time(), pImage ) );
 	}
 

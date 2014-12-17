@@ -331,7 +331,7 @@ public:
 			CvMat image_points = cvMat ( m_edges, 2, CV_32F, imgPoints.get() );
 			CvMat object_points = cvMat ( m_edges, 3, CV_32F, objPoints.get() );
 
-			if( img->origin ) // == IPL_ORIGIN_BL
+			if( img->origin() ) // == IPL_ORIGIN_BL
 			{
 				LOG4CPP_DEBUG( logger, "Origin flag set" );
 				
@@ -527,7 +527,7 @@ public:
 			else
 				debugImg = img->Clone();
 				
-			debugImg->origin = img->origin; // it should not flip.....
+			debugImg->iplImage()->origin = img->origin(); // it should not flip.....
 			
 			cvDrawChessboardCorners( *debugImg, cvSize( m_width, m_height ), corners.get(), m_edges, pattern_was_found );
 
