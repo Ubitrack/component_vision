@@ -283,9 +283,9 @@ void HighguiFrameGrabber::ThreadProc()
 				boost::shared_ptr< Image > pImage( new Image( pIpl->width, pIpl->height, 3 ) );
 				cvConvertImage( pIpl, *pImage );
 				pImage->iplImage()->origin = pIpl->origin;
-				pImage->channelSeq[0]='B';
-				pImage->channelSeq[1]='G';
-				pImage->channelSeq[2]='R';
+				pImage->iplImage()->channelSeq[0]='B';
+				pImage->iplImage()->channelSeq[1]='G';
+				pImage->iplImage()->channelSeq[2]='R';
 #endif
 				m_colorPort.send( ImageMeasurement( time, pImage ) );
 				

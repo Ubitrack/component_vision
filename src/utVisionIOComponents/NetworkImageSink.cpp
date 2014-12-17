@@ -196,7 +196,7 @@ protected:
 		} else {
 			//packet << boost::serialization::make_binary_object(m->imageData, m->imageSize );			
 			boost::asio::write(*m_SendSocket, boost::asio::buffer( &sendtime, sizeof(sendtime) ));
-			boost::asio::write(*m_SendSocket, boost::asio::buffer( m->imageData, m->imageSize ));
+			boost::asio::write(*m_SendSocket, boost::asio::buffer( m->iplImage()->imageData, m->iplImage()->imageSize ));
 			//LOG4CPP_INFO(logger, "sending"<< m->imageSize);
 		}
 				

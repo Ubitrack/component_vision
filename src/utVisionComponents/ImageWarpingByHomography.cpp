@@ -97,7 +97,7 @@ public:
 
 		LOG4CPP_DEBUG( logger, "Create a warped iamge" );
 		int nChannels = 3;
-		if(img->nChannels == 1)
+		if(img->channels() == 1)
 		{
 			nChannels = 1;
 		}

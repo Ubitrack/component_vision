@@ -120,8 +120,8 @@ public:
 		cvInitUndistortMap( pCvIntrinsics, pCvCoeffs, *m_pMapX, *m_pMapY );
 
  		LOG4CPP_TRACE( logger, "first pixel mapped from " << 
-			*reinterpret_cast< float* >( m_pMapX->imageData ) << ", " <<
-			*reinterpret_cast< float* >( m_pMapY->imageData ) );
+			*reinterpret_cast< float* >( m_pMapX->iplImage()->imageData ) << ", " <<
+			*reinterpret_cast< float* >( m_pMapY->iplImage()->imageData ) );
 		
 		cvReleaseMat( &pCvIntrinsics );
 		cvReleaseMat( &pCvCoeffs );

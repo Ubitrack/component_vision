@@ -177,7 +177,7 @@ protected:
 				//Measurement::Timestamp timeNow = Measurement::now();				
 				//LOG4CPP_INFO(logger, "timestamp:" << sendtime << " : "<< sendtime - timeNow << " : "<< timeNow - sendtime  );
 				
-				len_new  = boost::asio::read(*m_SendSocket, boost::asio::buffer(currentImage->imageData, currentImage->imageSize),boost::asio::transfer_all(), error);
+				len_new  = boost::asio::read(*m_SendSocket, boost::asio::buffer(currentImage->iplImage()->imageData, currentImage->iplImage()->imageSize),boost::asio::transfer_all(), error);
 				
 		
 				m_outPort.send( Measurement::ImageMeasurement( sendtime, currentImage ) );

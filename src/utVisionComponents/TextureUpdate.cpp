@@ -108,7 +108,7 @@ namespace Ubitrack { namespace Components {
 
 
 		if( textureID == 0 && currentImage.get() != NULL){
-			Measurement::Position result(textureID, Math::Vector< double, 3 >(currentImage->width(),currentImage->height(),currentImage->nChannels));
+			Measurement::Position result(textureID, Math::Vector< double, 3 >(currentImage->width(),currentImage->height(),currentImage->channels() ));
 			return result;
 		}
 
@@ -123,7 +123,7 @@ namespace Ubitrack { namespace Components {
 			}
 
 			LOG4CPP_DEBUG(m_logger, "receiveUpdateTextureASDF:"<<currentImage.get());
-			if(currentImage->nChannels == 4){
+			if(currentImage->channels() == 4){
 				LOG4CPP_DEBUG(m_logger, "image correct channels");
 				sourceImage = currentImage;
 				currentImage.reset();
@@ -150,7 +150,7 @@ namespace Ubitrack { namespace Components {
 		LOG4CPP_DEBUG(m_logger, "receiveUpdateTexture ID:"<<textureID);
 		glBindTexture( GL_TEXTURE_2D, (GLuint) textureID );
 		glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, sourceImage->width(), sourceImage->height(), 
-			GL_RGBA, GL_UNSIGNED_BYTE, sourceImage->imageData );		
+			GL_RGBA, GL_UNSIGNED_BYTE, sourceImage->iplImage()->imageData );		
 		return Measurement::Position(textureID, Math::Vector< double, 3 >(0,0,0));;
 
     }

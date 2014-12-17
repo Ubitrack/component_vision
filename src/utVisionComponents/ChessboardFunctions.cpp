@@ -522,7 +522,7 @@ public:
 		{
 			boost::shared_ptr< Image > debugImg;
 
-			if( img->nChannels == 1 )
+			if( img->channels() == 1 )
 				debugImg = img->CvtColor( CV_GRAY2RGB, 3 );
 			else
 				debugImg = img->Clone();

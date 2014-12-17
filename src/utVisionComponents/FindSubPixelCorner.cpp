@@ -113,7 +113,7 @@ void CornerDetectionSubPix::pushPositions( const Measurement::Position2D& m )
 	try
 	{
 		boost::shared_ptr< Vision::Image > imgIn = ( m_inPortImage.get( m.time() )->Clone() );
-		if( imgIn->nChannels != 1 )
+		if( imgIn->channels() != 1 )
 			UBITRACK_THROW( "Expecting Grayscale Image, got color image!");
 		
 		Math::Vector< double, 2 > position = *m;
