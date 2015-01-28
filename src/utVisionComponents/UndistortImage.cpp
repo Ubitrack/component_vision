@@ -35,6 +35,8 @@
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 
 #include <opencv/cv.h>
+#include <opencv2/imgproc/imgproc.hpp>
+ 
 
 #include <utMath/Vector.h>
 #include <utMath/Matrix.h>
@@ -44,6 +46,11 @@
 #include <utDataflow/TriggerOutPort.h>
 #include <utDataflow/ComponentFactory.h>
 #include <utVision/Image.h>
+
+#define DO_TIMING
+#ifdef DO_TIMING
+#include <utUtil/BlockTimer.h>
+#endif
 
 #include <log4cpp/Category.hh>
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.UndistortImage" ) );
@@ -79,6 +86,10 @@ protected:
 	
 	/** mapping of the y coordinates */
 	boost::scoped_ptr< Image > m_pMapY;
+
+	#ifdef DO_TIMING
+	Ubitrack::Util::BlockTimer m_remapTimer;
+	#endif
 public:
 	UndistortImage( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > pConfig )
 		: TriggerComponent( sName, pConfig )
@@ -87,6 +98,9 @@ public:
 		, m_intrinsicsPort( "CameraIntrinsics", *this ) //new port
 		, m_imageIn( "Input", *this )
 		, m_imageOut( "Output", *this )
+		#ifdef DO_TIMING
+		, m_remapTimer( "detectMarkers", "Ubitrack.Timing" )
+		#endif
 	{
 	}
 
@@ -112,19 +126,32 @@ public:
 			for ( std::size_t j = 0; j < 3; j++ )
 				reinterpret_cast< float* >( pCvIntrinsics->data.ptr + i * pCvIntrinsics->step)[ j ] 
 					= static_cast< float >( intrinsics( i, j ) );
-		
+
+	/*	cv::UMat pCoeffs( 1, dist_size, CV_32FC1);
+		for ( std::size_t i = 0; i< dist_size; ++i )
+			reinterpret_cast< float* >( pCoeffs.u->data )[ i ] = static_cast< float >( coeffs( i ) );
+	
+		cv::UMat pIntrinsics( 3, 3, CV_32FC1);
+		for ( std::size_t i = 0; i < 3; i++ )
+			for ( std::size_t j = 0; j < 3; j++ )
+				reinterpret_cast< float* >( pIntrinsics.u->data + i * pIntrinsics.step)[ j ] 
+					= static_cast< float >( intrinsics( i, j ) );*/
+
+		LOG4CPP_INFO( logger, "info1" );
 		// create map images
 		m_pMapX.reset( new Image( width, height, 1, IPL_DEPTH_32F ) );
 		m_pMapY.reset( new Image( width, height, 1, IPL_DEPTH_32F ) );
-		
+		LOG4CPP_INFO( logger, "info2" );
 		cvInitUndistortMap( pCvIntrinsics, pCvCoeffs, *m_pMapX, *m_pMapY );
-
+		//cv::initUndistortRectifyMap( pIntrinsics, pCoeffs, cv::UMat(), 
+		LOG4CPP_INFO( logger, "info3" );
  		LOG4CPP_TRACE( logger, "first pixel mapped from " << 
 			*reinterpret_cast< float* >( m_pMapX->iplImage()->imageData ) << ", " <<
 			*reinterpret_cast< float* >( m_pMapY->iplImage()->imageData ) );
-		
+		LOG4CPP_INFO( logger, "info4" );
 		cvReleaseMat( &pCvIntrinsics );
 		cvReleaseMat( &pCvCoeffs );
+		LOG4CPP_INFO( logger, "info5" );
 	}
 
 	
@@ -211,8 +238,24 @@ public:
 		// undistort
 		boost::shared_ptr< Image > imgUndistorted( new Image( pImage->width(), pImage->height(), pImage->channels(), pImage->depth() ) );
 		imgUndistorted->iplImage()->origin = pImage->origin();
-		cvRemap( *pImage, *imgUndistorted, *m_pMapX, *m_pMapY );
-		
+		#ifdef DO_TIMING
+		static int counter = 0;
+		#endif
+		LOG4CPP_INFO( logger, "remap" );
+		{
+			#ifdef DO_TIMING
+			UBITRACK_TIME( m_remapTimer );
+			#endif
+			cv::remap(*pImage->uMat(), *imgUndistorted->uMat(), *m_pMapX->uMat(), *m_pMapY->uMat(), CV_INTER_LINEAR); 
+			#ifdef DO_TIMING
+			counter++;
+			if(counter > 10){
+				LOG4CPP_INFO( logger, "remap-timer: " << m_remapTimer );
+				counter = 0;
+			}
+			#endif
+			//cvRemap( *pImage, *imgUndistorted, *m_pMapX, *m_pMapY );
+		}
 		// send result
 		m_imageOut.send( Measurement::ImageMeasurement( t, imgUndistorted ) );
 	}
