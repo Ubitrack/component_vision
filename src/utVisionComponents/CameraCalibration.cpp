@@ -233,7 +233,7 @@ public:
 						&object_points,
 						&image_points,
 						&point_counts,
-						cvSize( 768, 576 ), //OpenCV modifies centers to (cvSize -1) * 0.5
+						cvSize( 640, 480 ), //OpenCV modifies centers to (cvSize -1) * 0.5
 						&intrinsic_matrix,
 						&distortion_coeffs,
 						NULL ,		//	NULL for no output

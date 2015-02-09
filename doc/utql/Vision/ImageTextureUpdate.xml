@@ -6,9 +6,9 @@
                       xmlns:h="http://www.w3.org/1999/xhtml"
                       xsi:schemaLocation='http://ar.in.tum.de/ubitrack/utql ../../schema/utql_templates.xsd'>
     
-    <Pattern name="TextureUpdateOpenGL" displayName="TextureUpdateOpenGL">
+    <Pattern name="TextureUpdateOpenGL" displayName="TextureUpdate">
         <Description>
-            <h:p>TextureUpdateOpenGL
+            <h:p>TextureUpdate for OpenGL and DirectX
             </h:p>
         </Description>
         
@@ -34,6 +34,15 @@
 		</Output>
         
         <DataflowConfiguration>
+			<Attribute name="Framework" displayName="Framework" default="OpenGL" xsi:type="EnumAttributeDeclarationType">
+                <Description>
+                    <h:p>
+					Either use OpenGL or DirectX as the Graphics Framework to update the texture
+                    </h:p>
+                </Description>
+                <EnumValue name="OpenGL" displayName="OpenGL"/>
+                <EnumValue name="DirectX"  displayName="DirectX"/>
+            </Attribute>
             <UbitrackLib class="TextureUpdateOpenGL"/>
           
         </DataflowConfiguration>

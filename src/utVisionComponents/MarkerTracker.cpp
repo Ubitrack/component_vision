@@ -92,13 +92,22 @@ public:
 		
 		if( isMarker )
 		{
-			this->assign( subgraph->getNode( "Marker" )->getAttributeString( "markerId" ) );
+			std::string markerID = subgraph->getNode( "Marker" )->getAttributeString( "markerId" );
+			if ( markerID.empty() )
+				UBITRACK_THROW( "Missing markerId attribute on node Marker" );
 			
-			if ( this->empty() )
-			UBITRACK_THROW( "Missing markerId attribute on node Marker" );
-			
-			std::istringstream idStream( *this );
+			std::istringstream idStream( markerID );
 			idStream >> std::hex >> nCode;
+			
+			std::string id;
+			std::ostringstream idStreamOut( id );
+			idStreamOut << "0x" << std::hex << nCode;
+			this->assign( idStreamOut.str() );
+			
+			
+			
+			
+			
 			return;
 	}
 		if( subgraph->hasEdge( "Image" ) )
