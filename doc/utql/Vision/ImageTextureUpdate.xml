@@ -34,6 +34,7 @@
 		</Output>
         
         <DataflowConfiguration>
+			<UbitrackLib class="TextureUpdateOpenGL"/>
 			<Attribute name="Framework" displayName="Framework" default="OpenGL" xsi:type="EnumAttributeDeclarationType">
                 <Description>
                     <h:p>
@@ -43,7 +44,7 @@
                 <EnumValue name="OpenGL" displayName="OpenGL"/>
                 <EnumValue name="DirectX"  displayName="DirectX"/>
             </Attribute>
-            <UbitrackLib class="TextureUpdateOpenGL"/>
+            
           
         </DataflowConfiguration>
     </Pattern>
