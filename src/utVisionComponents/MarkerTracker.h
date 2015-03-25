@@ -178,7 +178,7 @@ public:
 	void trackMarkers( const Measurement::ImageMeasurement& );
 
 	/** fetch the intrinsic matrix from one of the components **/
-	Math::Matrix< float, 3, 3 > MarkerTrackerModule::getIntrinsicsMatrix(const Measurement::ImageMeasurement& time);
+	Math::Matrix< float, 3, 3 > getIntrinsicsMatrix( const Measurement::ImageMeasurement& time );
 
 	/** create new components. Necessary to support multiple component types. */
 	//boost::shared_ptr< MarkerTrackerBase > createComponent( const std::string& type, const std::string& name, 
