@@ -28,37 +28,32 @@
  *
  * @author Christian Waechter <christian.waechter@in.tum.de>
  */
- 
-#include <iostream>
-#include <fstream>
-#include <vector>
+
+// std
 #include <string>
+#include <vector>
+#include <fstream>
+#include <iostream>
 
-
-#include <boost/filesystem.hpp>
+// Boost
 #include <boost/regex.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/numeric/ublas/io.hpp>
 
 //highgui includes windows.h with the wrong parameters
 #ifdef _WIN32
 #include <utUtil/CleanWindows.h>
 #endif
-#include <opencv/highgui.h>
+
+// OpenCV
 #include <opencv/cv.h>
+#include <opencv/highgui.h>
 
-#include <utMath/Optimization/NewFunction/Function.h>
-#include <utMath/Optimization/NewFunction/Addition.h>
-#include <utMath/Optimization/NewFunction/Dehomogenization.h>
-#include <utMath/Optimization/NewFunction/LieRotation.h>
-#include <utMath/Stochastic/BackwardPropagation.h>
-#include <utAlgorithm/NewFunction/CameraIntrinsicsMultiplication.h>
-#include <utAlgorithm/3DPointReconstruction.h>
- #include <utAlgorithm/LensDistortion.h>
-
-#include <utVision/Undistortion.h>
-
+// Ubitrack
 #include <utUtil/Logging.h>
-#include <log4cpp/Category.hh>
+#include <utVision/Image.h>
+
+//#include <log4cpp/Category.hh>
 //static log4cpp::Category& optLogger( log4cpp::Category::getInstance( "Ubitrack.Utils.MarkerFinder" ) );
 
 
