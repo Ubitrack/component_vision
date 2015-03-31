@@ -38,7 +38,7 @@ env.AppendUnique( **cornerfinder_options )
 # d)
 # build the application
 # {buildenvironment, source files, name of the application, build target}
-setupAppBuild( env, sources, "CornerFinder", 'utApps')	
+setupAppBuild( env, sources, "utCornerFinder", 'utApps')	
 
 # e)
-createVisualStudioProject(env, sources, [], 'CornerFinder')
+createVisualStudioProject(env, sources, [], 'utCornerFinder')
