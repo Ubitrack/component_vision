@@ -1149,6 +1149,7 @@ int main( int ac, char** av )
 		Math::Matrix< float, 3, 3 > intrinsics;
 		Math::Util::matrix_cast_assign( intrinsics, pUndistorter->getMatrix() );
 		
+		LOG4CPP_INFO( logger, "Using these intrinsics for further computations :\n"  << intrinsics );
 		
 		// find image files in directories
 		std::vector< std::string > imageNames;
@@ -1211,11 +1212,24 @@ int main( int ac, char** av )
 		
 		// initialize poses
 		baInfo.initMarkers();
+		
+		if ( baInfo.markers.size() < 2 )
+		{
+			std::stringstream msgStream;
+			msgStream << "Cannot apply bundle adjustment to only " << baInfo.markers.size() << " marker(s). ";
+			msgStream << "Need at least two markers to execute computations.";
+			msgStream << "\n\nDid you specify the correct markers? If unsure try to use \"utMarkerBundle --help\".\n\n";
+			LOG4CPP_ERROR( logger,  msgStream.str().c_str() );
+			
+			exit( EXIT_FAILURE );
+		}
+		
+		LOG4CPP_INFO( logger, "initialized markers bundle adjustment with " << baInfo.markers.size() << " markers." );
 		// do bundle adjustment
 		baInfo.bundleAdjustment( false );
+		LOG4CPP_INFO( logger, "Marker bundle adjustment finished." );
 		baInfo.printConfiguration();
 		baInfo.printResiduals();
-		
 		if ( !g_config.refPoints.empty() )
 		{
 			// add information from reference points
