@@ -29,18 +29,8 @@
  * @author Frieder Pankratz
  */
 
-// WARNING: all boost/serialization headers should be
-//          included AFTER all boost/archive headers
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/utility.hpp>
-#include <boost/serialization/binary_object.hpp>
-
+// std
 #include <string>
-#include <cstdlib>
-#include <iostream>
-#include <sstream>
-#include <iomanip>
 
 // on windows, asio must be included before anything that possible includes windows.h
 // don't ask why.
@@ -48,20 +38,17 @@
 
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
+#include <boost/scoped_ptr.hpp>
 
-#include <boost/array.hpp>
-#include <boost/thread.hpp>
-
+// Ubitrack
+#include <utDataflow/Component.h>
 #include <utDataflow/PushConsumer.h>
 #include <utDataflow/ComponentFactory.h>
-#include <utDataflow/Component.h>
-#include <utMeasurement/Measurement.h>
 
-#ifdef HAVE_OPENCV
+#ifdef HAVE_UTVISION
 	#include <utVision/Image.h>
-	#include <opencv/highgui.h>
 #endif
-using namespace Ubitrack::Measurement;
+
 namespace Ubitrack { namespace Vision {
 
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Drivers.NetworkSink" ) );
@@ -94,133 +81,149 @@ class ImageNetworkSinkComponent
 	: public Dataflow::Component
 {
 
+	// consumer port
+	Dataflow::PushConsumer< Measurement::ImageMeasurement > m_inPort;
+
+	/// the boost asio underlying network service
+	boost::asio::io_service m_ioService;
+
+	/// network socket
+	boost::asio::ip::tcp::socket m_socket;
+
+	/// thread that runs the boost asio network service, (if connections was established)
+	boost::scoped_ptr< boost::thread > m_pNetworkThread;
+	
+	/// ip-address trying to reach
+	std::string m_dstAddress;
+	
+	/// port at destination trying to reach
+	std::string m_dstPort;
+
 public:
 
 	/** constructor */
 	ImageNetworkSinkComponent( const std::string& name, boost::shared_ptr< Graph::UTQLSubgraph > pConfig )
 		: Dataflow::Component( name )
 		, m_inPort( "Input", *this, boost::bind( &ImageNetworkSinkComponent::eventIn, this, _1 ) )
-		, m_IoService()
-		, m_connected( false )
-		, m_headerSend( false )
-		, m_TCPPort( 0x5554 ) // default port is 0x5554 (UT)
-		, m_Destination( "127.0.0.1" )
+		, m_ioService()
+		, m_socket( m_ioService )
+		, m_dstAddress( "127.0.0.1" )
+		, m_dstPort( "21844" ) // or 0x5554 as hex
 	{
-		using boost::asio::ip::tcp;
-
-		// check for configuration
-		pConfig->m_DataflowAttributes.getAttributeData( "networkPort", m_TCPPort );
+		// check for configurations and reset values if necessary
+		pConfig->m_DataflowAttributes.getAttributeData( "networkPort", m_dstPort );
 		if ( pConfig->m_DataflowAttributes.hasAttribute( "networkDestination" ) )
 		{
-			m_Destination = pConfig->m_DataflowAttributes.getAttributeString( "networkDestination" );
+			m_dstAddress = pConfig->m_DataflowAttributes.getAttributeString( "networkDestination" );
 		}
-
-		tcp::resolver resolver( m_IoService );
-		
-		// open new socket which we use for sending stuff
-		m_SendSocket = boost::shared_ptr< tcp::socket >( new tcp::socket (m_IoService) );
-		
-		// resolve destination pair and store the remote endpoint
-		
-
-		std::ostringstream portString;
-		portString << m_TCPPort;
-
-		tcp::resolver::query query( tcp::v4(), m_Destination, portString.str() );
-		resolver.async_resolve(query,  boost::bind(&ImageNetworkSinkComponent::resolve_handler, this,
-          boost::asio::placeholders::error,
-          boost::asio::placeholders::iterator)); 
-		//m_IoService.run();
-		boost::shared_ptr< boost::thread > m_NetworkThread = boost::shared_ptr< boost::thread >( new boost::thread( boost::bind( &boost::asio::io_service::run, &m_IoService ) ) );
-				
+	}
+	
+	virtual ~ImageNetworkSinkComponent()
+	{
+		m_ioService.stop();
 	}
 
+	virtual void start()
+	{
+		if( reset( m_dstAddress, m_dstPort ) )
+			LOG4CPP_INFO( logger, "Starting to send image data to \"" << m_dstAddress << ":" << m_dstPort << "\"."  )
+		else
+			LOG4CPP_ERROR( logger, "Some problem occured, cannot start to send image data to \"" << m_dstAddress << ":" << m_dstPort << "\"."  )
+	}
+	
+	virtual void stop()
+	{
+		if( m_socket.is_open() )
+		{
+			boost::system::error_code errCode;
+			m_socket.shutdown( boost::asio::ip::tcp::socket::shutdown_both, errCode );
+			if( errCode )
+				LOG4CPP_ERROR( logger, "Could not shutdown the whole connection properly, got the following error:\n\n\"" << errCode.message() << "\" (\"" << errCode << "\")\n\n"  );
+			m_socket.close();
+		}
+		
+		LOG4CPP_TRACE( logger, "stopping thread to send to \"" << m_dstAddress << ":" << m_dstPort << "\"" );
+		if( m_pNetworkThread )
+			m_pNetworkThread->join();
+	}
 protected:
 	
-
-	void connect_handler(const boost::system::error_code& ec,
-      boost::asio::ip::tcp::resolver::iterator endpoint_iterator) 
-	{ 
-		LOG4CPP_INFO(logger, "connect handler");
-	  if (!ec) 
-	  { 
-		m_connected= true;
-		LOG4CPP_INFO(logger, "Connected");
+	bool reset( const std::string& dstIpAddress, const std::string& dstPortNr )
+	{			
+		boost::asio::ip::tcp::resolver resolver( m_ioService );
 		
-	  } 
-	} 
-
-	void resolve_handler(const boost::system::error_code &ec, boost::asio::ip::tcp::resolver::iterator it) 
-	{ 
-		LOG4CPP_INFO(logger, "resolve handler");
-		if (!ec) 
+		boost::asio::ip::tcp::resolver::query query( boost::asio::ip::tcp::v4(), dstIpAddress, dstPortNr );
+		boost::system::error_code errCode;
+		boost::asio::ip::tcp::resolver::iterator result = resolver.resolve( query, errCode );
+		
+		if( errCode )
 		{ 
-			m_SendSocket->async_connect(*it, boost::bind(&ImageNetworkSinkComponent::connect_handler, this,
-			boost::asio::placeholders::error, ++it)); 
-		} 
+			LOG4CPP_ERROR( logger, "Could not set the resolver for \"" << dstIpAddress << ":" << dstPortNr << "\" properly, got the following error:\n\n\"" << errCode.message() << "\" (\"" << errCode << "\")\n\n"  );
+			return false;
+		}
+		
+		LOG4CPP_INFO( logger, "Destination \"" << dstIpAddress << ":" << dstPortNr << "\" could be resolved, trying to establish a tcp connection." );
+		
+		// opening the socket to send some data
+		m_socket.async_connect( *result
+			, boost::bind( &ImageNetworkSinkComponent::connect_handler
+			, this
+			, boost::asio::placeholders::error, ++result ) ); 
+		
+		m_pNetworkThread.reset( new boost::thread( boost::bind( &boost::asio::io_service::run, &m_ioService ) ) );
+		
+		return true;
 	}
-	// receive a new pose from the dataflow
+
+	void connect_handler( const boost::system::error_code& errCode, boost::asio::ip::tcp::resolver::iterator endpoint_iterator ) 
+	{ 
+		if( errCode )
+		{ 
+			LOG4CPP_ERROR( logger, "Could not establish a tcp connection to \"" << m_dstAddress << ":" << m_dstPort << "\", got the following error:\n\n\"" << errCode.message() << "\" (\"" << errCode << "\")\n\n"  );
+			return;
+		}
+		LOG4CPP_INFO( logger, "tcp connection to \"" << m_dstAddress << ":" << m_dstPort << "\" is established.\n" );
+	}
+
 	void eventIn( const Measurement::ImageMeasurement& m )
 	{
-		if(!m_connected) return;
-		
-		
-		
-
-		std::string suffix("\n");
-		Measurement::Timestamp sendtime = m.time();
-				
-		if(!m_headerSend) {
-			/*
-			std::ostringstream stream;
-			boost::archive::text_oarchive packet( stream );
-			// serialize the measurement, component name and current local time
-			//packet << m_name;
-			packet << m->width;
-			packet << m->height;
-			packet << m->nChannels;
-			packet << m->depth;
-			packet << m->origin;	
-			m_headerSend = true;
-			boost::asio::write(*m_SendSocket, boost::asio::buffer( stream.str().c_str(), stream.str().size() ));
-			LOG4CPP_INFO(logger, "sending"<< stream.str().size());
-			 */ 
-			 int packet[5];
-			packet[0] = m->width;
-			packet[1] =  m->height;
-			packet[2] =  m->nChannels;
-			packet[3] =  m->depth;
-			packet[4] = m->origin;	
-			m_headerSend = true;
-			boost::asio::write(*m_SendSocket, boost::asio::buffer( (char*) packet, 5*4 ));
-		} else {
-			//packet << boost::serialization::make_binary_object(m->imageData, m->imageSize );			
-			boost::asio::write(*m_SendSocket, boost::asio::buffer( &sendtime, sizeof(sendtime) ));
-			boost::asio::write(*m_SendSocket, boost::asio::buffer( m->imageData, m->imageSize ));
-			//LOG4CPP_INFO(logger, "sending"<< m->imageSize);
+		if( !m_socket.is_open() )
+		{
+			LOG4CPP_WARN( logger, "No connection to \"" << m_dstAddress << ":" << m_dstPort << "\", not sending any image." );
+			return;
 		}
+		
+		// remember internally if header was already send to destination
+		static bool headerSend = false;
+		
+		if( !headerSend )
+		{
+			int imageHeaderInfos[ 5 ];
+			imageHeaderInfos[ 0 ] = m->width;
+			imageHeaderInfos[ 1 ] = m->height;
+			imageHeaderInfos[ 2 ] = m->nChannels;
+			imageHeaderInfos[ 3 ] = m->depth;
+			imageHeaderInfos[ 4 ] = m->origin;	
+
+			LOG4CPP_INFO( logger, "sending image header to \"" << m_dstAddress << ":" << m_dstPort << "\" :"
+				<< "\nwidth   : " << imageHeaderInfos[ 0 ] << " [pixels]"
+				<< "\nheight  : " << imageHeaderInfos[ 1 ] << " [pixels]"
+				<< "\nchannels: " << imageHeaderInfos[ 2 ] 
+				<< "\ndepth   : " << imageHeaderInfos[ 3 ] << " [bit]"
+				<< "\norigin  : " << imageHeaderInfos[ 4 ] << " (0==top; 1==bottom)" );
 				
-		
-		//
-		
-				 
-		//m_SendSocket->send_to( boost::asio::buffer( stream.str().c_str(), stream.str().size() ), *m_SendEndpoint );
+			boost::asio::write( m_socket, boost::asio::buffer( &imageHeaderInfos[ 0 ], 5*sizeof(int) ) );
+			headerSend = true;
+		}
+		else
+		{
+			LOG4CPP_TRACE( logger, "Sending image data to \"" << m_dstAddress << ":" << m_dstPort << "\"." );
+			const Measurement::Timestamp t = m.time();
+			boost::asio::write( m_socket, boost::asio::buffer( &t, sizeof( Measurement::Timestamp ) ) );
+			boost::asio::write( m_socket, boost::asio::buffer( m->imageData, m->imageSize ) );
+		}
 	}
-
-	// consumer port
-	Dataflow::PushConsumer< ImageMeasurement > m_inPort;
-
-	boost::asio::io_service m_IoService;
-	boost::shared_ptr< boost::asio::ip::tcp::socket > m_SendSocket;	
-
-	bool m_connected;
-	bool m_headerSend;
-
-	int m_TCPPort;
-	std::string m_Destination;
 };
-
-
 
 // register module at factory
 UBITRACK_REGISTER_COMPONENT( Dataflow::ComponentFactory* const cf ) {
