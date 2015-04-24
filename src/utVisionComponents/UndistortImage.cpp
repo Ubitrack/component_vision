@@ -243,20 +243,15 @@ public:
 		}
 		
 		// undistort
-		LOG4CPP_INFO( logger, "alloc imgUndistorted" );
+		//LOG4CPP_INFO( logger, "alloc imgUndistorted" );
 		boost::shared_ptr< Image > imgUndistorted( new Image( pImage->width(), pImage->height(), pImage->channels(), pImage->depth() ) );
-		LOG4CPP_INFO( logger, "allocted: imgUndistorted" << imgUndistorted->m_debugImageId);
+		//LOG4CPP_INFO( logger, "allocted: imgUndistorted" << imgUndistorted->m_debugImageId);
+
 		//imgUndistorted->iplImage()->origin = pImage->origin();
 		#ifdef DO_TIMING
 		static int counter = 0;
 		#endif
-		//cv::UMat srcImage = cv::cvarrToMat(pImage->iplImage(), true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
-		//cv::UMat dstImage = cv::cvarrToMat(imgUndistorted->iplImage(), true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
 		
-		
-		
-
-		//cv::UMat dst = cv::cvarrToMat(imgUndistorted->iplImage(), true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
 		LOG4CPP_INFO( logger, "remap" );
 		{
 			#ifdef DO_TIMING
@@ -268,24 +263,8 @@ public:
 			cv::UMat& mapY = m_pMapY->uMat();
 
 
-	/*		cv::UMat srcImage = pImage->uMat();
-			cv::UMat mapX = m_pMapX->uMat();
-			cv::UMat mapY = m_pMapY->uMat();*/
 			cv::remap(src, dst, mapX, mapY, cv::INTER_LINEAR ); 
 			//cvRemap( *pImage, *imgUndistorted, *m_pMapX, *m_pMapY );
-			//cv::imshow("imgUndistorted: UMmat", imgUndistorted->uMat());
-			////cv::imshow("imgUndistorted", imgUndistorted->iplImage());
-			//cv::imshow("distroted: UMat", pImage->uMat());
-			//cv::imshow("mapx: UMat", m_pMapX->uMat());
-			//
-			//cvShowImage("undistort", *m_pMapX );
-			//cvWaitKey(1);
-			//cv::waitKey(0);
-			/*cvNamedWindow("image", CV_WINDOW_AUTOSIZE);
-						
-			cvShowImage("image", imgUndistorted->iplImage());
-			cvWaitKey(0);
-			*/
 
 			#ifdef DO_TIMING
 			counter++;
@@ -294,12 +273,8 @@ public:
 				counter = 0;
 			}
 			#endif
-			//
 		}
-		//cv::imshow("undistorted: UMat", dst);
-		
-		//cv::waitKey(5);
-		//cvRemap( *pImage, *imgUndistorted, *m_pMapX, *m_pMapY );
+
 		LOG4CPP_INFO( logger, "sending" );
 		// send result
 		m_imageOut.send( Measurement::ImageMeasurement( t, imgUndistorted ) );
