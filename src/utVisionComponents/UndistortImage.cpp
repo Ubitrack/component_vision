@@ -28,7 +28,8 @@
  *
  * @author Daniel Pustka <daniel.pustka@in.tum.de>
  */
-
+#include <opencv/highgui.h>
+#include <opencv2/highgui.hpp>
 #include <string>
 
 #include <boost/scoped_ptr.hpp>
@@ -37,6 +38,7 @@
 #include <opencv/cv.h>
 #include <opencv2/imgproc/imgproc.hpp>
  
+#include <opencv2/core.hpp>
 
 #include <utMath/Vector.h>
 #include <utMath/Matrix.h>
@@ -87,6 +89,8 @@ protected:
 	/** mapping of the y coordinates */
 	boost::scoped_ptr< Image > m_pMapY;
 
+	//cv::UMat m_pMapXUMat;
+	//cv::UMat m_pMapYUMat;
 	#ifdef DO_TIMING
 	Ubitrack::Util::BlockTimer m_remapTimer;
 	#endif
@@ -144,6 +148,9 @@ public:
 		LOG4CPP_INFO( logger, "info2" );
 		cvInitUndistortMap( pCvIntrinsics, pCvCoeffs, *m_pMapX, *m_pMapY );
 		//cv::initUndistortRectifyMap( pIntrinsics, pCoeffs, cv::UMat(), 
+		//m_pMapXUMat = cv::cvarrToMat(m_pMapX->iplImage(), true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
+		//m_pMapYUMat = cv::cvarrToMat(m_pMapY->iplImage(), true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
+
 		LOG4CPP_INFO( logger, "info3" );
  		LOG4CPP_TRACE( logger, "first pixel mapped from " << 
 			*reinterpret_cast< float* >( m_pMapX->iplImage()->imageData ) << ", " <<
@@ -236,17 +243,50 @@ public:
 		}
 		
 		// undistort
+		LOG4CPP_INFO( logger, "alloc imgUndistorted" );
 		boost::shared_ptr< Image > imgUndistorted( new Image( pImage->width(), pImage->height(), pImage->channels(), pImage->depth() ) );
-		imgUndistorted->iplImage()->origin = pImage->origin();
+		LOG4CPP_INFO( logger, "allocted: imgUndistorted" << imgUndistorted->m_debugImageId);
+		//imgUndistorted->iplImage()->origin = pImage->origin();
 		#ifdef DO_TIMING
 		static int counter = 0;
 		#endif
+		//cv::UMat srcImage = cv::cvarrToMat(pImage->iplImage(), true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
+		//cv::UMat dstImage = cv::cvarrToMat(imgUndistorted->iplImage(), true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
+		
+		
+		
+
+		//cv::UMat dst = cv::cvarrToMat(imgUndistorted->iplImage(), true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
 		LOG4CPP_INFO( logger, "remap" );
 		{
 			#ifdef DO_TIMING
 			UBITRACK_TIME( m_remapTimer );
 			#endif
-			cv::remap(*pImage->uMat(), *imgUndistorted->uMat(), *m_pMapX->uMat(), *m_pMapY->uMat(), CV_INTER_LINEAR); 
+			cv::UMat& dst = imgUndistorted->uMat();
+			cv::UMat& src = pImage->uMat();
+			cv::UMat& mapX = m_pMapX->uMat();
+			cv::UMat& mapY = m_pMapY->uMat();
+
+
+	/*		cv::UMat srcImage = pImage->uMat();
+			cv::UMat mapX = m_pMapX->uMat();
+			cv::UMat mapY = m_pMapY->uMat();*/
+			cv::remap(src, dst, mapX, mapY, cv::INTER_LINEAR ); 
+			//cvRemap( *pImage, *imgUndistorted, *m_pMapX, *m_pMapY );
+			//cv::imshow("imgUndistorted: UMmat", imgUndistorted->uMat());
+			////cv::imshow("imgUndistorted", imgUndistorted->iplImage());
+			//cv::imshow("distroted: UMat", pImage->uMat());
+			//cv::imshow("mapx: UMat", m_pMapX->uMat());
+			//
+			//cvShowImage("undistort", *m_pMapX );
+			//cvWaitKey(1);
+			//cv::waitKey(0);
+			/*cvNamedWindow("image", CV_WINDOW_AUTOSIZE);
+						
+			cvShowImage("image", imgUndistorted->iplImage());
+			cvWaitKey(0);
+			*/
+
 			#ifdef DO_TIMING
 			counter++;
 			if(counter > 10){
@@ -254,8 +294,13 @@ public:
 				counter = 0;
 			}
 			#endif
-			//cvRemap( *pImage, *imgUndistorted, *m_pMapX, *m_pMapY );
+			//
 		}
+		//cv::imshow("undistorted: UMat", dst);
+		
+		//cv::waitKey(5);
+		//cvRemap( *pImage, *imgUndistorted, *m_pMapX, *m_pMapY );
+		LOG4CPP_INFO( logger, "sending" );
 		// send result
 		m_imageOut.send( Measurement::ImageMeasurement( t, imgUndistorted ) );
 	}
