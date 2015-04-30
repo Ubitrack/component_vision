@@ -252,7 +252,7 @@ public:
 		static int counter = 0;
 		#endif
 		
-		LOG4CPP_INFO( logger, "remap" );
+		//LOG4CPP_INFO( logger, "remap" );
 		{
 			#ifdef DO_TIMING
 			UBITRACK_TIME( m_remapTimer );
@@ -275,7 +275,6 @@ public:
 			#endif
 		}
 
-		LOG4CPP_INFO( logger, "sending" );
 		// send result
 		m_imageOut.send( Measurement::ImageMeasurement( t, imgUndistorted ) );
 	}
