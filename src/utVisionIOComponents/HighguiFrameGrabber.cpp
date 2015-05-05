@@ -272,6 +272,7 @@ void HighguiFrameGrabber::ThreadProc()
 		}
 		else
 		{
+
 			if (m_colorPort.isConnected()) {
 				// convert to color
 #ifdef ANDROID
