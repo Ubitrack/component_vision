@@ -42,7 +42,10 @@
 
 
 #define WITH_OPENGL_TEXTURE_UPDATE 1
+
+#ifdef _WIN32
 #define WITH_DIRECTX11_TEXTURE_UPDATE 1
+#endif
 
 #ifdef WITH_DIRECTX11_TEXTURE_UPDATE
 #include <d3d11.h>
