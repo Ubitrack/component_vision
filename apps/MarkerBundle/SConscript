@@ -38,7 +38,7 @@ env.AppendUnique( **markerbundle_options )
 # d)
 # build the application
 # {buildenvironment, source files, name of the application, build target}
-setupAppBuild( env, sources, "MarkerBundle", 'utApps')	
+setupAppBuild( env, sources, "utMarkerBundle", 'utApps')	
 
 # e)
-createVisualStudioProject(env, sources, [], 'MarkerBundle')
+createVisualStudioProject(env, sources, [], 'utMarkerBundle')

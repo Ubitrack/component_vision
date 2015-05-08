@@ -28,34 +28,27 @@
  *
  * @author Daniel Pustka <daniel.pustka@in.tum.de>
  */
-#include <opencv/highgui.h>
-#include <opencv2/highgui.hpp>
+
 #include <string>
 
-#include <boost/scoped_ptr.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 
 #include <opencv/cv.h>
-#include <opencv2/imgproc/imgproc.hpp>
- 
-#include <opencv2/core.hpp>
 
 #include <utMath/Vector.h>
 #include <utMath/Matrix.h>
 #include <utMath/CameraIntrinsics.h>
+
+#include <utVision/Image.h>
+#include <utVision/Undistortion.h>
+
 #include <utDataflow/TriggerComponent.h>
 #include <utDataflow/TriggerInPort.h>
 #include <utDataflow/TriggerOutPort.h>
 #include <utDataflow/ComponentFactory.h>
-#include <utVision/Image.h>
-
-#define DO_TIMING
-#ifdef DO_TIMING
-#include <utUtil/BlockTimer.h>
-#endif
 
 #include <log4cpp/Category.hh>
-static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.UndistortImage" ) );
+static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.Undistortion.Component" ) );
 
 using namespace Ubitrack;
 using namespace Ubitrack::Vision;
@@ -66,7 +59,7 @@ namespace Ubitrack { namespace Vision {
 class UndistortImage
 	: public TriggerComponent
 {
-
+	
 protected:
 	/** @deprecated (radial and tangential) distortion parameters */
 	PullConsumer< Measurement::Vector4D > m_coeffPort;
@@ -83,17 +76,9 @@ protected:
 	/** undistorted outgoing image */
 	TriggerOutPort< Measurement::ImageMeasurement > m_imageOut;
 	
-	/** mapping of the x coordinates */
-	boost::scoped_ptr< Image > m_pMapX;
+	/** structure to handle the undistortion */
+	Vision::Undistortion m_undistorter;
 	
-	/** mapping of the y coordinates */
-	boost::scoped_ptr< Image > m_pMapY;
-
-	//cv::UMat m_pMapXUMat;
-	//cv::UMat m_pMapYUMat;
-	#ifdef DO_TIMING
-	Ubitrack::Util::BlockTimer m_remapTimer;
-	#endif
 public:
 	UndistortImage( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > pConfig )
 		: TriggerComponent( sName, pConfig )
@@ -102,70 +87,11 @@ public:
 		, m_intrinsicsPort( "CameraIntrinsics", *this ) //new port
 		, m_imageIn( "Input", *this )
 		, m_imageOut( "Output", *this )
-		#ifdef DO_TIMING
-		, m_remapTimer( "detectMarkers", "Ubitrack.Timing" )
-		#endif
-	{
-	}
-
-	
-	void initMap( int width, int height, const Math::Vector< double, 8 >& coeffs, const Math::Matrix< double, 3, 3 >& intrinsics )
-	{
-		LOG4CPP_INFO( logger, "Creating undistortion map" );
-		LOG4CPP_DEBUG( logger, "coeffs=" << coeffs );
-		LOG4CPP_DEBUG( logger, "intrinsic=" << intrinsics );
-	
-#if (CV_MAJOR_VERSION>1) && (CV_MINOR_VERSION>2)
-		const std::size_t dist_size = 8;
-#else
-		const std::size_t dist_size = 4;
-#endif
-		// copy ublas to OpenCV parameters
-		CvMat* pCvCoeffs = cvCreateMat( 1, dist_size, CV_32FC1 );
-		for ( std::size_t i = 0; i< dist_size; ++i )
-			reinterpret_cast< float* >( pCvCoeffs->data.ptr )[ i ] = static_cast< float >( coeffs( i ) );
-		
-		CvMat* pCvIntrinsics = cvCreateMat( 3, 3, CV_32FC1 );
-		for ( std::size_t i = 0; i < 3; i++ )
-			for ( std::size_t j = 0; j < 3; j++ )
-				reinterpret_cast< float* >( pCvIntrinsics->data.ptr + i * pCvIntrinsics->step)[ j ] 
-					= static_cast< float >( intrinsics( i, j ) );
-
-	/*	cv::UMat pCoeffs( 1, dist_size, CV_32FC1);
-		for ( std::size_t i = 0; i< dist_size; ++i )
-			reinterpret_cast< float* >( pCoeffs.u->data )[ i ] = static_cast< float >( coeffs( i ) );
-	
-		cv::UMat pIntrinsics( 3, 3, CV_32FC1);
-		for ( std::size_t i = 0; i < 3; i++ )
-			for ( std::size_t j = 0; j < 3; j++ )
-				reinterpret_cast< float* >( pIntrinsics.u->data + i * pIntrinsics.step)[ j ] 
-					= static_cast< float >( intrinsics( i, j ) );*/
-
-		LOG4CPP_INFO( logger, "info1" );
-		// create map images
-		m_pMapX.reset( new Image( width, height, 1, IPL_DEPTH_32F ) );
-		m_pMapY.reset( new Image( width, height, 1, IPL_DEPTH_32F ) );
-		LOG4CPP_INFO( logger, "info2" );
-		cvInitUndistortMap( pCvIntrinsics, pCvCoeffs, *m_pMapX, *m_pMapY );
-		//cv::initUndistortRectifyMap( pIntrinsics, pCoeffs, cv::UMat(), 
-		//m_pMapXUMat = cv::cvarrToMat(m_pMapX->iplImage(), true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
-		//m_pMapYUMat = cv::cvarrToMat(m_pMapY->iplImage(), true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
-
-		LOG4CPP_INFO( logger, "info3" );
- 		LOG4CPP_TRACE( logger, "first pixel mapped from " << 
-			*reinterpret_cast< float* >( m_pMapX->iplImage()->imageData ) << ", " <<
-			*reinterpret_cast< float* >( m_pMapY->iplImage()->imageData ) );
-		LOG4CPP_INFO( logger, "info4" );
-		cvReleaseMat( &pCvIntrinsics );
-		cvReleaseMat( &pCvCoeffs );
-		LOG4CPP_INFO( logger, "info5" );
-	}
-
+		, m_undistorter( )
+	{}
 	
 	void compute( Measurement::Timestamp t )
 	{
-		
-		
 		// get the image
 		Measurement::ImageMeasurement pImage;
 		try
@@ -177,106 +103,43 @@ public:
 			LOG4CPP_WARN( logger, "Could not undistort an image, no image available." );
 			return;
 		}
+		// check if we already set appropriate parameters for the incoming image
+		if( !m_undistorter.isValid( *pImage ) )
+			if( !reset( t ) ) //fetch new intrinsics
+				return;
 		
-		// skip if already initialized with same values
-		if ( !m_pMapX || m_pMapX->width() != pImage->width() || m_pMapX->height() != pImage->height() )
-		{
-		
-			// read parameters
-			Math::Vector< double, 8 > coeffs;
-			Math::Matrix< double, 3, 3 > intrinsics;
-			
-			try
-			{
-				//support for new camera intrinsics measurement
-				if( m_intrinsicsPort.isConnected() )
-				{
-					Math::CameraIntrinsics< double > camIntrinsics = *m_intrinsicsPort.get( t );
-					
-					intrinsics = camIntrinsics.matrix;
-					//scale the matrix, depending on the calibartion size
-					intrinsics( 0, 0 ) *= pImage->width() / static_cast< double >( camIntrinsics.dimension( 0 ) );
-					intrinsics( 0, 2 ) *= pImage->width() / static_cast< double >( camIntrinsics.dimension( 0 ) );
-					intrinsics( 1, 1 ) *= pImage->height() / static_cast< double >( camIntrinsics.dimension( 1 ) );
-					intrinsics( 1, 2 ) *= pImage->height() / static_cast< double >( camIntrinsics.dimension( 1 ) );
-
-					Math::CameraIntrinsics< double >::radial_type radDist = camIntrinsics.radial_params;
-					Math::CameraIntrinsics< double >::tangential_type tanDist =	camIntrinsics.tangential_params;
-					coeffs( 0 )  = radDist[ 0 ];
-					coeffs( 1 )  = radDist[ 1 ];
-					coeffs( 2 )  = tanDist[ 0 ];
-					coeffs( 3 )  = tanDist[ 1 ];
-					coeffs( 4 ) = coeffs( 5 ) = coeffs( 6 ) = coeffs( 7 ) = 0;
-					for(std::size_t i = 2; i < camIntrinsics.radial_size; ++i )
-						coeffs( i+2 )  = radDist[ i ];
-				}
-				else //support for old pattern
-				{
-					intrinsics = *m_matrixPort.get( t );
-					Math::Vector< double, 4 > dist = *m_coeffPort.get( t );
-					coeffs( 0 )  = dist( 0 );
-					coeffs( 1 )  = dist( 1 );
-					coeffs( 2 )  = dist( 2 );
-					coeffs( 3 )  = dist( 3 );
-					coeffs( 4 ) = coeffs( 5 ) = coeffs( 6 ) = coeffs( 7 ) = 0;
-				}
-			}catch( ... )
-			{
-				coeffs( 0 ) = coeffs( 1 ) = coeffs( 2 ) = coeffs( 3 ) = 0;
-				coeffs( 4 ) = coeffs( 5 ) = coeffs( 6 ) = coeffs( 7 ) = 0;
-				intrinsics = Math::Matrix< double, 3, 3 >::identity();
-				LOG4CPP_WARN( logger, "Setting default values for camera intrinsics." );
-			}
-			
-			// compensate for left-handed OpenCV coordinate frame
-			boost::numeric::ublas::column( intrinsics, 2 ) *= -1;
-			
-			// compensate if origin==0
-			if ( !pImage->origin() )
-			{
-				intrinsics( 1, 2 ) = pImage->height() - 1 - intrinsics( 1, 2 );
-				coeffs( 2 ) *= -1.0;
-			}
-		
-			// initialize the distortion map
-			initMap( pImage->width(), pImage->height(), coeffs, intrinsics );
-		}
-		
-		// undistort
-		//LOG4CPP_INFO( logger, "alloc imgUndistorted" );
-		boost::shared_ptr< Image > imgUndistorted( new Image( pImage->width(), pImage->height(), pImage->channels(), pImage->depth() ) );
-		//LOG4CPP_INFO( logger, "allocted: imgUndistorted" << imgUndistorted->m_debugImageId);
-
-		//imgUndistorted->iplImage()->origin = pImage->origin();
-		#ifdef DO_TIMING
-		static int counter = 0;
-		#endif
-		
-		//LOG4CPP_INFO( logger, "remap" );
-		{
-			#ifdef DO_TIMING
-			UBITRACK_TIME( m_remapTimer );
-			#endif
-			cv::UMat& dst = imgUndistorted->uMat();
-			cv::UMat& src = pImage->uMat();
-			cv::UMat& mapX = m_pMapX->uMat();
-			cv::UMat& mapY = m_pMapY->uMat();
-
-
-			cv::remap(src, dst, mapX, mapY, cv::INTER_LINEAR ); 
-			//cvRemap( *pImage, *imgUndistorted, *m_pMapX, *m_pMapY );
-
-			#ifdef DO_TIMING
-			counter++;
-			if(counter > 10){
-				LOG4CPP_INFO( logger, "remap-timer: " << m_remapTimer );
-				counter = 0;
-			}
-			#endif
-		}
-
-		// send result
+		boost::shared_ptr< Image > imgUndistorted = m_undistorter.undistort( *pImage );
 		m_imageOut.send( Measurement::ImageMeasurement( t, imgUndistorted ) );
+	}
+	
+	bool reset( const Measurement::Timestamp t )
+	{
+		Math::CameraIntrinsics< double > camIntrinsics;
+		try
+		{
+			// old opencv/ubitrack intrinsic parameters
+			if( m_matrixPort.isConnected() && m_coeffPort.isConnected() )
+			{
+				const Math::Matrix< double, 3, 3 > camMat = *m_matrixPort.get( t );
+				const Math::Vector< double, 4 > camDis = *m_coeffPort.get( t );
+				const Math::Vector< double, 2 > camRad( camDis( 0 ), camDis( 1 ) );
+				const Math::Vector< double, 2 > camTan( camDis( 2 ), camDis( 3 ) );
+				
+				camIntrinsics = Math::CameraIntrinsics< double >( camMat, camRad, camTan );
+			}
+			
+			// newer ubitrack format
+			if( m_intrinsicsPort.isConnected() )
+				camIntrinsics = *m_intrinsicsPort.get( t );	
+		}
+		catch( ... )
+		{
+			LOG4CPP_ERROR( logger, "Cannot fetch camera intrinsic parameters. Please verify if specified correctly." );
+			return false;
+		}
+		
+		m_undistorter.reset( camIntrinsics );
+		return true;
 	}
 };
 

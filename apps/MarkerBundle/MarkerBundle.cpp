@@ -29,14 +29,18 @@
  * @author Daniel Pustka <daniel.pustka@in.tum.de>
  */
 
-#include <vector>
-#include <deque>
-#include <string>
+
+// std
 #include <set>
+#include <string>
+#include <deque>
+#include <vector>
 #include <fstream>
 #include <sstream>
-#include <boost/filesystem.hpp>
+
+// Boost
 #include <boost/regex.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/program_options.hpp>
 
@@ -46,27 +50,33 @@
 #endif
 #include <opencv/highgui.h>
 
+
+// Ubitrack
+#include <utMath/Stochastic/BackwardPropagation.h>
 #include <utMath/Optimization/NewFunction/Function.h>
 #include <utMath/Optimization/NewFunction/Addition.h>
-#include <utMath/Optimization/NewFunction/Dehomogenization.h>
 #include <utMath/Optimization/NewFunction/LieRotation.h>
-#include <utMath/Stochastic/BackwardPropagation.h>
+#include <utMath/Optimization/NewFunction/Dehomogenization.h>
 #include <utAlgorithm/NewFunction/CameraIntrinsicsMultiplication.h>
-#include <utAlgorithm/PoseEstimation3D3D/AbsoluteOrientation.h>
-#include <utAlgorithm/3DPointReconstruction.h>
-#include <utAlgorithm/LensDistortion.h>
 
-#include <utVision/MarkerDetection.h>
-#include <utVision/Undistortion.h>
+#include <utAlgorithm/LensDistortion.h>
+#include <utAlgorithm/CameraLens/Correction.h>
+#include <utAlgorithm/3DPointReconstruction.h>
+#include <utAlgorithm/PoseEstimation3D3D/AbsoluteOrientation.h>
+#include <utAlgorithm/NewFunction/CameraIntrinsicsMultiplication.h>
+
 #include <utUtil/Logging.h>
 #include <utUtil/CalibFile.h>
+#include <utVision/Undistortion.h>
+#include <utVision/MarkerDetection.h>
+
 
 #include <log4cpp/Category.hh>
 //#define OPTIMIZATION_LOGGING
-//static log4cpp::Category& optLogger( log4cpp::Category::getInstance( "MarkerBundle" ) );
+//static log4cpp::Category& optLogger( log4cpp::Category::getInstance( "Ubitrack.Vision.MarkerBundle" ) );
 #include <utMath/Optimization/LevenbergMarquardt.h>
 
-static log4cpp::Category& logger( log4cpp::Category::getInstance( "MarkerBundle" ) );
+static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.MarkerBundle" ) );
 
 using namespace Ubitrack;
 namespace Markers = Ubitrack::Vision::Markers;
@@ -94,6 +104,7 @@ struct SConfig
 {
 	void init();
 	std::map< unsigned long long int, Markers::MarkerInfo > markers;
+	std::string sIntrinsicsFile;
 	std::string sMatrixFile;
 	std::string sDistortionFile;
 	std::string sResultFile;
@@ -130,6 +141,7 @@ void SConfig::init()
 	// init regular expressions
 	std::string sComment( "\\s*(#.*)?" );
 	boost::regex reMarker( "\\s*marker\\s+(0x)?([0-9a-fA-F]+)\\s+([.0-9e]+)" + sComment );
+	boost::regex reIntrinsics( "\\s*intrinsicsFile\\s+([^# \\t]+)" + sComment );
 	boost::regex reMatrix( "\\s*matrixFile\\s+([^# \\t]+)" + sComment );
 	boost::regex reDistortion( "\\s*distortionFile\\s+([^# \\t]+)" + sComment );
 	boost::regex reResult( "\\s*resultFile\\s+([^# \\t]+)" + sComment );
@@ -162,6 +174,11 @@ void SConfig::init()
 			double size = strtod( match[ 3 ].str().c_str(), &dummy );
 			markers[ code ].fSize = float( size );
 			std::cout << "Looking for marker " << std::hex << code << " of size " << size << std::endl;
+		}
+		else if( boost::regex_match( buf, match, reIntrinsics ) )
+		{
+			sIntrinsicsFile = match[ 1 ];
+			std::cout << "Using intrinsic parameters from " << sIntrinsicsFile << std::endl;
 		}
 		else if ( boost::regex_match( buf, match, reMatrix ) )
 		{
@@ -229,15 +246,34 @@ struct BACameraInfo
 struct BAInfo
 {
 	BAInfo( const Math::Matrix< float, 3, 3 >& _intrinsics, const Math::Vector< double, 4 >& _radial )
-		: intrinsicMatrix( _intrinsics )
+		: camIntrinsics( _intrinsics, Math::Vector< double, 2 >( _radial( 0 ), _radial( 1 ) ), Math::Vector< double, 2 >( _radial( 2 ), _radial( 3 ) ) )
+		, intrinsicMatrix( _intrinsics )
 		, radialCoeffs( _radial )
 	{
-		intrinsics( 0 ) = _intrinsics( 0, 0 );
-		intrinsics( 1 ) = _intrinsics( 0, 1 );
-		intrinsics( 2 ) = _intrinsics( 0, 2 );
-		intrinsics( 3 ) = _intrinsics( 1, 1 );
-		intrinsics( 4 ) = _intrinsics( 1, 2 );
+		initIntrinsics(_intrinsics );
 	}
+	
+	template< typename T >
+	BAInfo( const Math::CameraIntrinsics< T >& camIntrinsics_ )
+		: camIntrinsics( camIntrinsics_ )
+		, intrinsicMatrix( camIntrinsics.matrix )
+		, radialCoeffs( camIntrinsics.radial_params )
+	{
+		initIntrinsics( camIntrinsics.matrix );
+	}
+		
+	template< typename T >
+	void initIntrinsics( const Math::Matrix< T, 3, 3 >& matrix )
+	{
+		intrinsics( 0 ) = matrix( 0, 0 );
+		intrinsics( 1 ) = matrix( 0, 1 );
+		intrinsics( 2 ) = matrix( 0, 2 );
+		intrinsics( 3 ) = matrix( 1, 1 );
+		intrinsics( 4 ) = matrix( 1, 2 );
+	}
+	
+	
+	
 
 	// marker and camera data
 	typedef std::map< unsigned long long int, BAMarkerInfo > MarkerMap;
@@ -285,6 +321,7 @@ struct BAInfo
 	bool m_bUseRefPoints;
 
 	// intrinsic camera parameters
+	Math::CameraIntrinsics< double > camIntrinsics;
 	Math::Matrix< double, 3, 3 > intrinsicMatrix;
 	Math::Vector< double, 4 > radialCoeffs;
 	Math::Vector< double, 5 > intrinsics;
@@ -375,7 +412,8 @@ void BAInfo::initRefPoints()
 	for ( SConfig::RefPointMap::iterator it = g_config.refPoints.begin(); it != g_config.refPoints.end(); it++ )
 		for ( std::vector< SConfig::RefPoint::Meas >::iterator itM = it->second.measurements.begin();
 			itM != it->second.measurements.end(); itM++ )
-			itM->pos = Algorithm::lensUnDistort( itM->pos, radialCoeffs, intrinsicMatrix );
+				Algorithm::CameraLens::undistort( camIntrinsics, itM->pos, itM->pos );
+				//itM->pos = Algorithm::lensUnDistort( itM->pos, radialCoeffs, intrinsicMatrix );
 
 	// find reference points with at least two measurements
 	std::cout << std::endl << "Initializing reference points:" << std::endl;
@@ -1040,8 +1078,6 @@ void createImageList( std::vector< std::string >& l )
 int main( int ac, char** av )
 {
 
-
-
 	try
 	{
 		// initialize logging
@@ -1090,25 +1126,40 @@ int main( int ac, char** av )
 		std::cerr << "Try MarkerBundle --help for help" << std::endl;
 		return 1;
 	}
-
-
+	
 	try
 	{
-
 		g_config.init();
 
-		// load intrinsics
-		Vision::Undistortion undistorter( g_config.sMatrixFile, g_config.sDistortionFile );
+		// load intrinsics and start the bundle adjustment
+		boost::scoped_ptr< Vision::Undistortion > pUndistorter;
+		
+		if( !g_config.sIntrinsicsFile.empty() )
+			pUndistorter.reset ( new Vision::Undistortion( g_config.sIntrinsicsFile  ) );
+		else
+			if( !g_config.sMatrixFile.empty() &&  !g_config.sDistortionFile.empty() )
+				pUndistorter.reset( new Vision::Undistortion( g_config.sMatrixFile, g_config.sDistortionFile ) );
+			else
+			{
+				LOG4CPP_ERROR(logger, "No intrinsics in new/old format available" );
+				std::exit( EXIT_FAILURE );
+			}
 
+		
 		Math::Matrix< float, 3, 3 > intrinsics;
-		Math::Util::matrix_cast_assign( intrinsics, undistorter.getIntrinsics() );
+		Math::Util::matrix_cast_assign( intrinsics, pUndistorter->getMatrix() );
+		
+		LOG4CPP_INFO( logger, "Using these intrinsics for further computations :\n"  << intrinsics );
 		
 		// find image files in directories
 		std::vector< std::string > imageNames;
 		createImageList( imageNames );
 		
+		
 		// open each file and search for markers
-		BAInfo baInfo( intrinsics, undistorter.getRadialCoeffs() );
+		//BAInfo baInfo( pUndistorter->getMatrix(), pUndistorter->getRadialCoeffs() );
+		
+		BAInfo baInfo( pUndistorter->getIntrinsics() );
 		for ( std::vector< std::string >::iterator itImage = imageNames.begin(); itImage != imageNames.end(); itImage++ )
 		{
 			const std::size_t camId( baInfo.cameras.size() );
@@ -1118,7 +1169,7 @@ int main( int ac, char** av )
 			
 			// load image			
 			IplImage* myImage = cvLoadImage( itImage->c_str(), CV_LOAD_IMAGE_GRAYSCALE );	
-			if(myImage == 0){
+			if( myImage == 0 ){
 				LOG4CPP_ERROR(logger, "Image could not be loaded" << itImage->c_str() << "\n");
 				continue;
 			} 
@@ -1127,8 +1178,8 @@ int main( int ac, char** av )
 			boost::shared_ptr< Vision::Image > pImage( pImageTmp );
 
 			// undistort
-			pImage = undistorter.undistort( pImage );
-			
+			pImage = pUndistorter->undistort( pImage );
+
 			// find markers
 			std::map< unsigned long long int, Markers::MarkerInfo > markerMap( g_config.markers );
 			
@@ -1141,14 +1192,14 @@ int main( int ac, char** av )
 			//Markers::detectMarkers( *pImage, markerMap, intrinsics, NULL, false, 4, 6, 0xFFFF, true );
 			Markers::detectMarkers( *pImage, markerMap, intrinsics, NULL, false, iCodeSize, iMarkerSize, uiCodeMask, true );
 
-			
+			LOG4CPP_INFO( logger, "Marker detection done!" );
 			// erase not-seen markers from map
 			for( std::map< unsigned long long int, Markers::MarkerInfo >::iterator itMarker = markerMap.begin(); itMarker != markerMap.end();  )
 				if ( itMarker->second.found != Vision::Markers::MarkerInfo::ENotFound )
 				{
 					baInfo.markers[ itMarker->first ].fSize = itMarker->second.fSize;
 					baInfo.markers[ itMarker->first ].cameras.insert( camId );
-					std::cout << "Found marker " << std::hex << itMarker->first << " in " << *itImage << " (camera " << std::dec << camId << ")" << std::endl;
+					LOG4CPP_INFO(logger, "Found marker " << std::hex << itMarker->first << " in " << *itImage << " (camera " << std::dec << camId << ")" );
 					itMarker++;
 				}
 				else
@@ -1156,17 +1207,29 @@ int main( int ac, char** av )
 			
 			// copy remaining marker infos
 			baInfo.cameras[ camId ].measMarker.swap( markerMap );
-			
 		}
 		
 		
 		// initialize poses
 		baInfo.initMarkers();
+		
+		if ( baInfo.markers.size() < 2 )
+		{
+			std::stringstream msgStream;
+			msgStream << "Cannot apply bundle adjustment to only " << baInfo.markers.size() << " marker(s). ";
+			msgStream << "Need at least two markers to execute computations.";
+			msgStream << "\n\nDid you specify the correct markers? If unsure try to use \"utMarkerBundle --help\".\n\n";
+			LOG4CPP_ERROR( logger,  msgStream.str().c_str() );
+			
+			exit( EXIT_FAILURE );
+		}
+		
+		LOG4CPP_INFO( logger, "initialized markers bundle adjustment with " << baInfo.markers.size() << " markers." );
 		// do bundle adjustment
 		baInfo.bundleAdjustment( false );
+		LOG4CPP_INFO( logger, "Marker bundle adjustment finished." );
 		baInfo.printConfiguration();
 		baInfo.printResiduals();
-		
 		if ( !g_config.refPoints.empty() )
 		{
 			// add information from reference points
@@ -1185,4 +1248,5 @@ int main( int ac, char** av )
 	{ std::cout << "Error: " << s << std::endl; }
 	catch ( const std::runtime_error& e )
 	{ std::cout << "Error: " << e.what() << std::endl; }
+	
 }

@@ -71,7 +71,7 @@
 #endif
 
 #endif
-
+#include <opencv/highgui.h>
 namespace Ubitrack { namespace Components {
 
   /**
@@ -124,21 +124,45 @@ namespace Ubitrack { namespace Components {
 		LOG4CPP_DEBUG(m_logger, "receiveImage start");
 		boost::mutex::scoped_lock l( m_mutex );
 		currentImage = image;
+		LOG4CPP_INFO(m_logger, "new IMage!!!!!!!");
 		LOG4CPP_DEBUG(m_logger, "receiveImage:"<<currentImage.get());
     }
 	
 	Measurement::Position receiveUpdateTexture( Measurement::Timestamp textureID )
     {
 		
+		LOG4CPP_INFO(m_logger, "receiveUpdateTexture TextureID: " << textureID);
 
 
-		if( textureID == 0 && currentImage.get() != NULL){
-			Measurement::Position result(textureID, Math::Vector< double, 3 >(currentImage->width(),currentImage->height(),currentImage->channels()));
+		if( textureID == 0 ){//&& currentImage.get() != NULL){
+			//Measurement::Position result(textureID, Math::Vector< double, 3 >(currentImage->width(),currentImage->height(),currentImage->channels()));
+			Measurement::Position result(textureID, Math::Vector< double, 3 >(640, 480, 4));
 			return result;
 		}
+#ifdef USE_UMAT
 
+		if( !m_clImageInitialized )
+		{
+			LOG4CPP_INFO(m_logger, "initializeing OCL Manager");
+			m_clImageInitialized = true;
+
+			//define texture parameters like in BackgroundImage?
+			cl_int err;
+			Ubitrack::Vision::OpenCLManager& oclManager = Ubitrack::Vision::OpenCLManager::singleton();
+			oclManager.initialize();
+			m_commandQueue = oclManager.getCommandQueue();
+			
+			m_clImage = clCreateFromGLTexture2D( oclManager.getContext(), CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, (GLuint) textureID, &err);
+			if(err != CL_SUCCESS)
+			{
+				LOG4CPP_INFO( m_logger, "error at  clCreateFromGLTexture2D:" << err );
+				m_clImageInitialized = false;
+			}
+			LOG4CPP_INFO(m_logger, "initializeing finished: " << oclManager.isInitialized() );
+		}
+#endif
 	
-			LOG4CPP_DEBUG(m_logger, "receiveUpdateTexture start");
+			LOG4CPP_INFO(m_logger, "receiveUpdateTexture start");
 		{
 
 			boost::mutex::scoped_lock l( m_mutex );
@@ -182,7 +206,7 @@ namespace Ubitrack { namespace Components {
 	void updateTextuteOpenGL(Measurement::Timestamp textureID){
 		boost::shared_ptr< Vision::Image > sourceImage;
 
-		if (currentImage->channels() == 4){
+		if (currentImage->channels() == 4 || currentImage->channels() == 1){
 			LOG4CPP_DEBUG(m_logger, "image correct channels");
 			sourceImage = currentImage;			
 		}
@@ -194,7 +218,7 @@ namespace Ubitrack { namespace Components {
 
 			}
 			LOG4CPP_DEBUG(m_logger, "convert image");
-
+			
 #ifdef USE_UMAT
 			cv::cvtColor(currentImage->uMat(), rgbaImage->uMat(), cv::COLOR_BGR2RGBA);
 #else
@@ -208,37 +232,24 @@ namespace Ubitrack { namespace Components {
 		glBindTexture(GL_TEXTURE_2D, (GLuint)textureID);
 
 #ifdef USE_UMAT
-		if( !m_clImageInitialized )
-		{
-			m_clImageInitialized = true;
-
-			//define texture parameters like in BackgroundImage?
-			cl_int err;
-			Ubitrack::Vision::OpenCLManager& oclManager = Ubitrack::Vision::OpenCLManager::singleton();
-			m_commandQueue = oclManager.getCommandQueue();
-			m_clImage = clCreateFromGLTexture2D( oclManager.getContext(), CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, (GLuint) textureID, &err);
-			if(err != CL_SUCCESS)
-			{
-				LOG4CPP_INFO( m_logger, "error at  clCreateFromGLTexture2D:" << err );
-				m_clImageInitialized = false;
-			}
-		}
 
 		glEnable(GL_TEXTURE_2D);
 		cl_mem clBuffer = (cl_mem) sourceImage->uMat().handle(cv::ACCESS_READ);
-	
 		
-
+		
+		LOG4CPP_INFO(m_logger, "starting aquire");
 		cl_int err;
 		err = clEnqueueAcquireGLObjects(m_commandQueue, 1, &m_clImage, 0, NULL, NULL);
 		if(err != CL_SUCCESS)
 		{
 			LOG4CPP_INFO( m_logger, "error at  clEnqueueAcquireGLObjects:" << err );
+			return;
 		}
 		size_t offset = 0; 
 		size_t dst_origin[3] = {0, 0, 0};
 		size_t region[3] = {sourceImage->width(), sourceImage->height(), 1};
 
+		LOG4CPP_INFO(m_logger, "starting copy");
 		if(sourceImage->uMat().isContinuous()){
 			err = clEnqueueCopyBufferToImage(m_commandQueue, clBuffer, m_clImage, 0, dst_origin, region, 0, NULL, NULL);
 		}
@@ -246,21 +257,26 @@ namespace Ubitrack { namespace Components {
 		if (err != CL_SUCCESS)
 		{
 			LOG4CPP_INFO( m_logger, "error at  clEnqueueCopyBufferToImage:" << err );
+			return;
 		}
-
+		LOG4CPP_INFO(m_logger, "starting release");
 		err = clEnqueueReleaseGLObjects(m_commandQueue, 1, &m_clImage, 0, NULL, NULL);
 		if(err != CL_SUCCESS) 
 		{
 			LOG4CPP_INFO( m_logger, "error at  clEnqueueReleaseGLObjects:" << err );
+			return;
 		}
-
+		LOG4CPP_INFO(m_logger, "starting to finish");
 		err = clFinish(m_commandQueue);
 
 		if (err != CL_SUCCESS)
 		{
 			LOG4CPP_INFO( m_logger, "error at  clFinish:" << err );
+			return;
 		}
+		LOG4CPP_INFO(m_logger, "CL done");
 		glDisable( GL_TEXTURE_2D );
+		LOG4CPP_INFO(m_logger, "return");
 #else
 		if (sourceImage->depth() == IPL_DEPTH_32F) {
 			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sourceImage->width(), sourceImage->height(),

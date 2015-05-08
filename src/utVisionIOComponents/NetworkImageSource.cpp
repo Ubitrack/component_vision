@@ -29,19 +29,8 @@
  * @author Frieder Pankratz
  */
 
-// WARNING: all boost/serialization headers should be
-//          included AFTER all boost/archive headers
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/utility.hpp>
-#include <boost/serialization/binary_object.hpp>
-
+// std
 #include <string>
-#include <cstdlib>
-#include <iostream>
-#include <sstream>
-#include <iomanip>
 
 // on windows, asio must be included before anything that possible includes windows.h
 // don't ask why.
@@ -49,21 +38,23 @@
 
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
+#include <boost/scoped_ptr.hpp>
 
-#include <boost/array.hpp>
-#include <boost/thread.hpp>
-
+#include <utDataflow/Component.h>
 #include <utDataflow/PushSupplier.h>
 #include <utDataflow/ComponentFactory.h>
-#include <utDataflow/Component.h>
-#include <utMeasurement/Measurement.h>
+
+
 
 #include <utVision/Image.h>
 #include <opencv/highgui.h>
 
+#include <log4cpp/Category.hh>
+static log4cpp::Category& logger( log4cpp::Category::getInstance( "Drivers.NetworkSource" ) );
+
 namespace Ubitrack { namespace Vision {
 
-static log4cpp::Category& logger( log4cpp::Category::getInstance( "Drivers.NetworkSource" ) );
+
 	
 /**
  * @ingroup dataflow_components
@@ -92,128 +83,196 @@ static log4cpp::Category& logger( log4cpp::Category::getInstance( "Drivers.Netwo
 class ImageNetworkSourceComponent
 	: public Dataflow::Component
 {
+	// consumer port
+	Dataflow::PushSupplier< Measurement::ImageMeasurement > m_outPort;
 
+	int m_listenPort;
+
+	// boost asio service
+	boost::asio::io_service m_ioService;
+
+	// the socket for receiving image information
+	boost::asio::ip::tcp::socket m_socket;
+
+	// accepting incoming packages
+	boost::asio::ip::tcp::acceptor m_acceptor;
+
+	/// thread running the IO service
+	boost::scoped_ptr< boost::thread > m_pNetworkThread;
+
+	/**
+	 * array to store image header values
+	 * 
+	 * contains the following elements in consecutive order
+	 * - width
+	 * - height
+	 * - nChannels;
+	 * - depth;
+	 * - origin;
+	 */
+	int imageHeaderInfos[ 5 ];
+	
 public:
 
 	/** constructor */
 	ImageNetworkSourceComponent( const std::string& name, boost::shared_ptr< Graph::UTQLSubgraph > pConfig )
 		: Dataflow::Component( name )
 		, m_outPort( "Output", *this )
-		, m_IoService()
-		, m_TCPPort( 0x5554 ) // default port is 0x5554 (UT)		
-		, m_connected(false)
+		, m_listenPort( 0x5554 ) // default port is 0x5554 (UT) 21844
+		, m_ioService( )
+		, m_socket ( m_ioService )
+		, m_acceptor( m_ioService, boost::asio::ip::tcp::endpoint( boost::asio::ip::tcp::v4(), m_listenPort ) )
 	{
-		using boost::asio::ip::tcp;
-
 		// check for configuration
-		pConfig->m_DataflowAttributes.getAttributeData( "networkPort", m_TCPPort );
+		if( pConfig->m_DataflowAttributes.hasAttribute( "networkPort" ) )
+		{
+			LOG4CPP_WARN( logger, "Attention: if your port is different than " << m_listenPort << " the component will not work at the moment." );
+			// pConfig->m_DataflowAttributes.getAttributeData( "networkPort", m_listenPort );
+			// m_acceptor.bind( boost::asio::ip::tcp::endpoint( boost::asio::ip::tcp::v4(), m_listenPort ) );
+		}
+	}
+	
+	virtual void start()
+	{
+		restart();
+	}
+	
+	virtual void stop()
+	{
 		
+		if( m_socket.is_open() )
+		{
+			m_socket.cancel();
+			LOG4CPP_NOTICE( logger, "tcp socket " << m_listenPort << ": cancelled" );
+			boost::system::error_code errCode;
+			m_socket.shutdown( boost::asio::ip::tcp::socket::shutdown_both, errCode );
+			if( errCode )
+				LOG4CPP_ERROR( logger, "Could not shutdown the whole connection properly, got the following error:\n\n\"" << errCode.message() << "\" (\"" << errCode << "\")\n\n"  );
+			LOG4CPP_NOTICE( logger, "tcp socket " << m_listenPort << ": shutdown" );
+			
+			m_socket.close();
+			LOG4CPP_NOTICE( logger, "tcp socket " << m_listenPort << ": closed" );
+		}
+		
+		if( m_pNetworkThread )
+		{
+			m_ioService.stop();
+			LOG4CPP_NOTICE( logger, "tcp socket " << m_listenPort << ": io service stopped" );
+			
+			
+			if( m_pNetworkThread->joinable() )
+			{
 				
-		m_acceptor = boost::shared_ptr<tcp::acceptor>(
-        new tcp::acceptor(
-            m_IoService,
-            tcp::endpoint(tcp::v4(), m_TCPPort)));
-		
-		// open new socket which we use for sending stuff
-		/*
-		m_SendSocket = boost::shared_ptr< tcp::socket >( new tcp::socket (m_IoService) );
-		
-		m_acceptor->listen(); 
-		m_acceptor->async_accept(*m_SendSocket, boost::bind(&ImageNetworkSourceComponent::accept_handler, this,
-          boost::asio::placeholders::error)); 
-		*/
-		start_accept();
-		boost::shared_ptr< boost::thread > m_NetworkThread = boost::shared_ptr< boost::thread >( new boost::thread( boost::bind( &boost::asio::io_service::run, &m_IoService ) ) );
-				
+				LOG4CPP_NOTICE( logger, "tcp socket " << m_listenPort << ": listening thread asked to stop" );
+				m_pNetworkThread->join(); ///< somehow this does not really work @todo have a look at closing the thread correctly
+				LOG4CPP_NOTICE( logger, "tcp socket " << m_listenPort << ": listening thread stopped" );
+				m_pNetworkThread.reset();
+			}
+		}
+		LOG4CPP_INFO( logger, "tcp socket " << m_listenPort << ": stopped listening" );
 	}
 
 protected:
 	
-	void start_accept() {
-		m_SendSocket = boost::shared_ptr< boost::asio::ip::tcp::socket >( new boost::asio::ip::tcp::socket (m_IoService) );
+	void restart()
+	{
+		LOG4CPP_INFO( logger, "Starting network thread to listen on port " <<  m_listenPort << "." );
+		// clean up if there is already a connection
+		stop();
 		
-		m_acceptor->listen(); 
-		m_acceptor->async_accept(*m_SendSocket, boost::bind(&ImageNetworkSourceComponent::accept_handler, this,
-          boost::asio::placeholders::error)); 
+		// starting the handler thread for fetching images
+		m_acceptor.listen();
+		m_acceptor.async_accept( m_socket, boost::bind( &ImageNetworkSourceComponent::dataHeaderHandler, this, boost::asio::placeholders::error ) );
+		m_pNetworkThread.reset( new boost::thread( boost::bind( &boost::asio::io_service::run, &m_ioService ) ) );
+		
+		LOG4CPP_INFO( logger, "thread started to listen on tcp port " << m_listenPort );
 	}
-	
 
-	void accept_handler(const boost::system::error_code &ec) 
+	void dataHeaderHandler( const boost::system::error_code &errCode )
 	{ 
-		LOG4CPP_INFO(logger, "accept handler");
-		if (!ec) 
-		{ 
-			
-			boost::system::error_code error;
-			/*
-			char headerBuffer[42];
-			headerBuffer[41] = '\0';
-			 
-			size_t len  = boost::asio::read(*m_SendSocket, boost::asio::buffer(headerBuffer,41),boost::asio::transfer_all(), error);
-			
-			std::string data( headerBuffer );
-			LOG4CPP_INFO(logger, "Header:" << data  );			
-			std::istringstream stream( data );
-			boost::archive::text_iarchive message( stream );
-			
-			int width, height, nChannels, depth, origin;
-			
-			message >> width;
-			message >> height;
-			message >> nChannels;
-			message >> depth;
-			message >> origin;	
-			 */
-			 int headerBuffer[5];
-			 size_t len  = boost::asio::read(*m_SendSocket, boost::asio::buffer((char*)headerBuffer,5*4),boost::asio::transfer_all(), error);
-			LOG4CPP_INFO(logger, "HeaderData:" << headerBuffer[0] << " : " << headerBuffer[1] << " : " << headerBuffer[2] << " : " << headerBuffer[3] << " : " << headerBuffer[4]);
-				
-			while(!error) {
-				boost::shared_ptr< Image > currentImage(new Image(headerBuffer[0], headerBuffer[1], headerBuffer[2], headerBuffer[3], headerBuffer[4]));
-				
-				Measurement::Timestamp sendtime;
-				size_t len_new  = boost::asio::read(*m_SendSocket, boost::asio::buffer(&sendtime, sizeof(sendtime)),boost::asio::transfer_all(), error);
-				
-				//Measurement::Timestamp timeNow = Measurement::now();				
-				//LOG4CPP_INFO(logger, "timestamp:" << sendtime << " : "<< sendtime - timeNow << " : "<< timeNow - sendtime  );
-				
-				len_new  = boost::asio::read(*m_SendSocket, boost::asio::buffer(currentImage->iplImage()->imageData, currentImage->iplImage()->imageSize),boost::asio::transfer_all(), error);
-				
+		LOG4CPP_INFO( logger, "data handler called" );
 		
-				m_outPort.send( Measurement::ImageMeasurement( sendtime, currentImage ) );
-				
-				
-				if(!error) {
-					// There's no easy way to read into an std::string directly, but it's
-					// possible to read into an std::vector and then use the fact that
-					// vectors are guaranteed to be contiguous to construct a string from
-					// the underlying raw string. It's also possible to use a boost::array
-					// instead.
-					//LOG4CPP_INFO(logger, "got data" << len_new  );
-				}
-				
-				}
-				LOG4CPP_INFO(logger, "done" << len  );
-				
-				start_accept();
-		} 
+		if( errCode )
+		{
+			LOG4CPP_ERROR( logger, "Could not read incoming data properly, got the following error:\n\n\"" << errCode.message() << "\" (\"" << errCode << "\")\n\n"  );
+			return;
+		}
+		
+		while( m_socket.is_open() )
+		{
+			const std::size_t arrivedBytes = m_socket.available();
+
+			if ( !arrivedBytes )
+			{
+				LOG4CPP_TRACE( logger, "No packet arrived yet" );
+				continue;
+			}
+			
+			LOG4CPP_TRACE( logger, "Received " << arrivedBytes << " bytes of image data." );		
+			
+			static bool hasHeaderArrived = false;
+			
+			if( !hasHeaderArrived )
+				hasHeaderArrived = fetchImageHeader();
+			else
+				fetchImageContent();
+		}
+		LOG4CPP_WARN( logger, "Socket has been closed." );
 	}
-	// receive a new pose from the dataflow
 	
+	bool fetchImageHeader()
+	{
+		// boost::system::error_code msgError;
+		const std::size_t sizeHeader = boost::asio::read( m_socket, boost::asio::buffer( &imageHeaderInfos[ 0 ], 5*sizeof(int) ) );//, msgError );
+		if( sizeHeader != 5*sizeof(int) ) 
+		{
+			LOG4CPP_ERROR( logger, "Arrived packet did not contain enough data ("<< sizeHeader << " bytes, expected at least "<<  5*sizeof(int) << ") for image header, trying once more." );
+			return false;
+		}
 
-	// consumer port
-	Dataflow::PushSupplier< Measurement::ImageMeasurement > m_outPort;
-
-	boost::asio::io_service m_IoService;
-	boost::shared_ptr< boost::asio::ip::tcp::acceptor > m_acceptor;
-	boost::shared_ptr< boost::asio::ip::tcp::socket > m_SendSocket;	
+		LOG4CPP_INFO( logger, "Received image header, expecting images of type" 
+			<< "\nwidth   : " << imageHeaderInfos[ 0 ] << " [pixels]"
+			<< "\nheight  : " << imageHeaderInfos[ 1 ] << " [pixels]"
+			<< "\nchannels: " << imageHeaderInfos[ 2 ] 
+			<< "\ndepth   : " << imageHeaderInfos[ 3 ] << " [bit]"
+			<< "\norigin  : " << imageHeaderInfos[ 4 ] << " (0==top; 1==bottom)" );
+			
+		return true;
+	}
 	
-	int m_TCPPort;
 	
-	bool m_connected;
+	/// fetching the image data (+timestamp) from the socket
+	bool fetchImageContent()
+	{
+		Measurement::Timestamp sendtime;
+		{
+			boost::system::error_code msgErrorTime;
+			/*const std::size_t lenTime =*/ boost::asio::read( m_socket, boost::asio::buffer( &sendtime, sizeof( Measurement::Timestamp ) ) , boost::asio::transfer_all(), msgErrorTime );
+			if( msgErrorTime )
+			{
+				LOG4CPP_ERROR( logger, "Could not read incoming timestamp properly, got the following error:\n\n\"" << msgErrorTime.message() << "\" (\"" << msgErrorTime << "\")\n\n"  );
+				return false;
+			}
+		}
+		
+		Image::Ptr currentImage( new Image( imageHeaderInfos[ 0 ], imageHeaderInfos[ 1 ], imageHeaderInfos[ 2 ], imageHeaderInfos[ 3 ], imageHeaderInfos[ 4 ] ) );
+		
+		{	// preparing the reading buffer
+			const std::size_t m_numBytes = static_cast< std::size_t >( imageHeaderInfos[ 0 ] * imageHeaderInfos[ 1 ] * imageHeaderInfos[ 2 ] );
+			
+			boost::system::error_code msgErrorData;
+			/*const std::size_t lenData =*/ boost::asio::read( m_socket, boost::asio::buffer( currentImage->iplImage()->imageData, m_numBytes ) , boost::asio::transfer_all(), msgErrorData );
+			if( msgErrorData )
+			{
+				LOG4CPP_ERROR( logger, "Could not read incoming image data properly, got the following error:\n\n\"" << msgErrorData.message() << "\" (\"" << msgErrorData << "\")\n\n"  );
+				return false;
+			}
+		}
+		
+		m_outPort.send( Measurement::ImageMeasurement( sendtime, currentImage ) );
+		return true;
+	}
 };
-
-
 
 // register module at factory
 UBITRACK_REGISTER_COMPONENT( Dataflow::ComponentFactory* const cf ) {
@@ -221,4 +280,4 @@ UBITRACK_REGISTER_COMPONENT( Dataflow::ComponentFactory* const cf ) {
 
 }
 
-} } // namespace Ubitrack::Drivers
+} } // namespace Ubitrack::Vision
