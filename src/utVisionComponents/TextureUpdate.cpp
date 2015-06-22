@@ -100,7 +100,7 @@ namespace Ubitrack { namespace Components {
 	  , m_inPortTextureID( "InputTextureID", *this, boost::bind( &TextureUpdateOpenGL::receiveUpdateTexture, this, _1 ) )      
       , m_logger( log4cpp::Category::getInstance( "Ubitrack.Components.TextureUpdate:" + subgraph->m_ID) )
 	  , useOpenGL(true)
-//	,m_lastUpdate(0)
+	,m_lastUpdate(0)
 	,rgbaImage()
     {
 		std::string frameworkPara;
@@ -116,10 +116,11 @@ namespace Ubitrack { namespace Components {
     /** Method that computes the result. */
     void receiveImage( const Measurement::ImageMeasurement& image )
     {
-		LOG4CPP_DEBUG(m_logger, "receiveImage start");
+		//LOG4CPP_DEBUG(m_logger, "receiveImage start");
 		boost::mutex::scoped_lock l( m_mutex );
 		currentImage = image;
-		LOG4CPP_DEBUG(m_logger, "receiveImage:"<<currentImage.get());
+		m_lastUpdate = image.time();
+		//LOG4CPP_DEBUG(m_logger, "receiveImage:"<<currentImage.get());
     }
 	
 	Measurement::Position receiveUpdateTexture( Measurement::Timestamp textureID )
@@ -128,12 +129,13 @@ namespace Ubitrack { namespace Components {
 
 
 		if( textureID == 0 && currentImage.get() != NULL){
-			Measurement::Position result(textureID, Math::Vector< double, 3 >(currentImage->width,currentImage->height,currentImage->nChannels));
+			Measurement::Position result(0, Math::Vector< double, 3 >(currentImage->width,currentImage->height,currentImage->nChannels));
 			return result;
 		}
 
+		
 	
-			LOG4CPP_DEBUG(m_logger, "receiveUpdateTexture start");
+			//LOG4CPP_DEBUG(m_logger, "receiveUpdateTexture start");
 		{
 
 			boost::mutex::scoped_lock l( m_mutex );
@@ -145,7 +147,7 @@ namespace Ubitrack { namespace Components {
 			}
 
 			
-			LOG4CPP_DEBUG(m_logger, "Update texture");
+			//LOG4CPP_DEBUG(m_logger, "Update texture");
 	
 			if (useOpenGL)
 				updateTextuteOpenGL(textureID);
@@ -153,7 +155,7 @@ namespace Ubitrack { namespace Components {
 			else
 				updateTextureDirectX11(textureID);
 #endif
-
+			
 			currentImage.reset();
 		}
 			/*
@@ -161,13 +163,13 @@ namespace Ubitrack { namespace Components {
 		*/
 
 	
-		return Measurement::Position(textureID, Math::Vector< double, 3 >(0,0,0));;
+			return Measurement::Position(m_lastUpdate, Math::Vector< double, 3 >(0, 0, 0));;
 
     }
 
   protected:
     
-    boost::shared_ptr< Vision::Image >  currentImage;
+    boost::shared_ptr< Vision::Image >  currentImage;	
 
     /** Input port of the component. */
     Dataflow::PushConsumer< Measurement::ImageMeasurement > m_inPort;

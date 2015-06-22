@@ -127,7 +127,7 @@ Math::Matrix< float, 3, 3 > MarkerTrackerModule::getIntrinsicsMatrix(const Measu
 	// ComponentList::iterator it = std::find_if ( components.begin(), components.end() , std::mem_fun( &MarkerTracker::isIntrinsics ) );
 	ComponentList::const_iterator it = components.begin();
 	for( ; it != components.end(); ++it )
-	{
+	{		
 		if( (*it)->isIntrinsics() )
 		{
 			boost::shared_ptr<MarkerTracker> lMTrackerIntrinicsComp = boost::static_pointer_cast<MarkerTracker>(*it);
@@ -525,7 +525,7 @@ void MultiMarkerTracker::readConfigFile(MarkerDetectionConfig& config)
 
 	// different pathes for win and unix
 	#ifdef WIN32
-	boost::regex reMarkerDir( "\\s*markerdir\\s+([A-Z]+:(/.*)+)" + sComment );
+	boost::regex reMarkerDir("\\s*markerdir\\s+(([a-zA-Z]:)(/.*)+)" + sComment);	
 	#else
 	boost::regex reMarkerDir( "\\s*markerdir\\s+((/.*)+)" + sComment );
 	#endif
@@ -533,11 +533,18 @@ void MultiMarkerTracker::readConfigFile(MarkerDetectionConfig& config)
 	boost::regex reEmpty( sComment );
 
 	std::ifstream f( m_markerConfig.c_str() );
+
+	boost::filesystem::path p(m_markerConfig);
+	boost::filesystem::path dir = p.parent_path();
+	m_markerDirectory = dir.string();
 	
 	
 	// unable to read the file
-	if ( f.fail() )
-		throw std::runtime_error( "unable to open markerbundle.conf" );
+	if (f.fail()){
+		LOG4CPP_INFO(logger, "file not found for: " << m_markerConfig);
+		throw std::runtime_error("unable to open markerbundle.conf");
+	
+	}
 
 	// compare each line
 	while ( !f.fail() && !f.eof() )
@@ -599,6 +606,7 @@ void MultiMarkerTracker::readConfigFile(MarkerDetectionConfig& config)
 		// get the directory, where the calibration files of the marker can be found and will be writen later on
 		else if ( boost::regex_match( buf, match, reMarkerDir ) )
 		{
+			LOG4CPP_INFO(logger, "calib file dir:" << match[1].str());
 			m_markerDirectory =  match[ 1 ].str();
 		}
 
