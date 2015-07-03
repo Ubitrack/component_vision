@@ -48,6 +48,11 @@
 #include <CL/cl_d3d11_ext.h>
 #endif
 
+//#define DO_TIMING
+#ifdef DO_TIMING
+	#include <utUtil/BlockTimer.h>
+#endif
+
 #define WITH_OPENGL_TEXTURE_UPDATE 1
 #define WITH_DIRECTX11_TEXTURE_UPDATE 1
 
@@ -110,6 +115,9 @@ namespace Ubitrack { namespace Components {
 	,convertedImage()
 #ifdef USE_UMAT
 	  , m_clImageInitialized(false)
+#ifdef DO_TIMING
+	  , m_blockTimer( "Rendering Timer",  "Ubitrack.Components.TextureUpdate")
+#endif
 #endif
     {
 		
@@ -132,14 +140,16 @@ namespace Ubitrack { namespace Components {
 		//LOG4CPP_INFO( m_logger, "Setting delay time" << m_delayTime );
     }
 
+
     /** Method that computes the result. */
     void receiveImage( const Measurement::ImageMeasurement& image )
     {
 		static int received = 0;
-		LOG4CPP_DEBUG(m_logger, "receiveImage start");
+
 		boost::mutex::scoped_lock l( m_mutex );
+		
 		currentImage = image;
-		LOG4CPP_INFO(m_logger, "new IMage!!!!!!!: " << received++);
+		LOG4CPP_INFO(m_logger, "new Image with timestamp: " << image.time() );
 		LOG4CPP_DEBUG(m_logger, "receiveImage:"<<currentImage.get());
     }
 	
@@ -254,38 +264,75 @@ namespace Ubitrack { namespace Components {
 			LOG4CPP_DEBUG(m_logger, "Update texture");
 
 		
-			LOG4CPP_INFO(m_logger, "Image Type: " << currentImage->uMat().type());
-			//cl_image_format imgFormat;
-			//
-			//err = clGetImageInfo((cl_mem) currentImage->uMat().handle(cv::ACCESS_READ), CL_IMAGE_FORMAT, NULL, &imgFormat, NULL);
-			//if(err == CL_SUCCESS)
-			//{
-			//	LOG4CPP_INFO(m_logger, "data type: " << imgFormat.image_channel_data_type <<" channel order" << imgFormat.image_channel_order);
-			//}else{
-			//	LOG4CPP_INFO(m_logger, "data type failed: " << err);
-			//}
-			
+#ifdef DO_TIMING
+			{
+			UBITRACK_TIME( m_blockTimer );
+#endif
 			if (useOpenGL)
 				updateTextuteOpenGL(textureID);
 #ifdef WITH_DIRECTX11_TEXTURE_UPDATE
 			else
 				updateTextureDirectX11(textureID);
 #endif
+#ifdef DO_TIMING
+			}
+			static int i = 0;
+			if(i == 10)
+			{
+				LOG4CPP_INFO( m_logger, "timer: " << m_blockTimer << std::endl );
+				LOG4CPP_INFO( m_logger, "res: " << currentImage->width() << "x" << currentImage->height() << std::endl );
+				i = 0;
+			}
+			i++;
+#endif
+#ifdef DO_TIMING_1			
 
+			/*Measurement::Timestamp currentTimeStamp = Measurement::now();
+			Measurement::Timestamp diff = currentTimeStamp - currentImage.time();
+
+			LOG4CPP_INFO(m_logger, 
+				 "timestamp diff: " << Measurement::timestampToShortString(diff) << 
+				" original int: " << diff/1000000.0f << 
+				" currentTimeStamp: " << Measurement::timestampToShortString(currentTimeStamp) <<
+				" taken timestamp: " << Measurement::timestampToShortString(currentImage.time()) );*/
+			Measurement::Timestamp now = Util::getHighPerformanceCounter();
+			Measurement::Timestamp diff = now - currentImage.time();
+
+			m_blockTimer.addMeasurement(diff);
+			double delayInMS = diff/1000000.0f;
+			
+			/*if(delayInMS < 1000000)
+			{*/
+				static int counterI = 0;
+				static double sum = 0;
+				static unsigned long long numOfMeasurement = 0;
+
+				counterI++;
+				numOfMeasurement++;
+
+				sum += delayInMS;
+
+				if(counterI == 10)
+				{
+					counterI = 0;
+					LOG4CPP_INFO(m_logger, "avg: " << sum/numOfMeasurement << "sum: " << sum << " numOfMeasurement " << numOfMeasurement << " currntDelay: " << delayInMS);
+					LOG4CPP_INFO(m_logger, "blockTImer: " << m_blockTimer << std::endl);
+				
+				}
+			/*}*/
+#endif
+			
 			currentImage.reset();
 		}
-			/*
-		
-		*/
 
-	
-		return Measurement::Position(textureID, Math::Vector< double, 3 >(0,0,0));;
+		
+		return Measurement::Position( textureID, Math::Vector< double, 3 >(0, 0, 0) );
 
     }
 
   protected:
-    
-    boost::shared_ptr< Vision::Image >  currentImage;
+    Measurement::ImageMeasurement		currentImage;
+    //boost::shared_ptr< Vision::Image >  currentImage;
 
     /** Input port of the component. */
     Dataflow::PushConsumer< Measurement::ImageMeasurement > m_inPort;
@@ -661,6 +708,10 @@ void updateTextureDirectX11(Measurement::Timestamp texturePtr)
 #endif
 #endif
 
+
+#ifdef DO_TIMING
+	Ubitrack::Util::BlockTimer m_blockTimer;
+#endif
 
   };
 

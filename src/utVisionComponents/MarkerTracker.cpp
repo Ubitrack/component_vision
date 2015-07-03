@@ -653,8 +653,12 @@ void MultiMarkerTracker::readWorldFiles(){
 
 			Measurement::ErrorPose errorPose;
 
+			
 			// read the file and store the error pose
+			
 			Util::readCalibFile(cornerFileName.str(), errorPose);
+			
+			
 			Pose tmpPose = Pose( errorPose->rotation(), errorPose->translation() );
 			std::vector<Math::Vector< double, 3 > > corners;
 
