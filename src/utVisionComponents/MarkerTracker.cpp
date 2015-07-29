@@ -176,11 +176,14 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 		for ( it = components.begin(); it != components.end(); it++ )
 			if ( (*it)->debug() )
 			{
-				pDebugImg = m->CvtColor( CV_GRAY2RGB, 3 );
-				break;
+				//pDebugImg = m->CvtColor( CV_GRAY2RGB, 3 );
+				if (!pDebugImg){
+					pDebugImg.reset(new Vision::Image(m->width(), m->height(), 3));
+					cvCvtColor(m->iplImage(), pDebugImg->iplImage(), CV_GRAY2RGB);
+					break;
+				}
 			}
-	}
-	
+	}	
 
 	// fetch the intrinsic matrix from one of the components 
 	Math::Matrix< float, 3, 3 > K = getIntrinsicsMatrix(m);	
