@@ -157,13 +157,14 @@ namespace Ubitrack { namespace Components {
     {
 		
 		LOG4CPP_INFO(m_logger, "receiveUpdateTexture TextureID: " << textureID);
+
 		//if( textureID == 0 && currentImage.get() == NULL)
 		//{
 		//	return Measurement::Position(0, Math::Vector< double, 3 >(0,0,0));
 		//}
 
 		if( textureID == 0){
-			LOG4CPP_INFO(m_logger, "creating texture: " << m_textureWidth << "x" <<m_textureHeight << "x" << m_textureChannels);	
+			LOG4CPP_DEBUG(m_logger, "creating texture: " << m_textureWidth << "x" << m_textureHeight << "x" << m_textureChannels);
 			Measurement::Position result(textureID, Math::Vector< double, 3 >(m_textureWidth, m_textureHeight, m_textureChannels));
 			//Measurement::Position result(textureID, Math::Vector< double, 3 >(640, 480, 4));
 			return result;
@@ -173,7 +174,7 @@ namespace Ubitrack { namespace Components {
 
 		if( !m_clImageInitialized )
 		{
-			LOG4CPP_INFO(m_logger, "initializeing OCL Manager");
+			LOG4CPP_DEBUG(m_logger, "initializeing OCL Manager");
 			m_clImageInitialized = true;
 
 			//define texture parameters like in BackgroundImage?
@@ -190,7 +191,7 @@ namespace Ubitrack { namespace Components {
 				ID3D11Texture2D* textureResource = (ID3D11Texture2D*) textureID;
 				D3D11_TEXTURE2D_DESC textureDesc;
 				textureResource->GetDesc(&textureDesc);
-				LOG4CPP_INFO(m_logger, "D3DX11Info: width: " << textureDesc.Width << " height: " << textureDesc.Height << " format: " << textureDesc.Format );
+				LOG4CPP_DEBUG(m_logger, "D3DX11Info: width: " << textureDesc.Width << " height: " << textureDesc.Height << " format: " << textureDesc.Format);
 				
 
 				//ID3D11Resource* textureResource = (ID3D11Resource*)textureID;
@@ -331,8 +332,12 @@ namespace Ubitrack { namespace Components {
     }
 
   protected:
-    Measurement::ImageMeasurement		currentImage;
-    //boost::shared_ptr< Vision::Image >  currentImage;
+#ifdef DO_TIMING
+	Measurement::ImageMeasurement		currentImage;
+#else
+    
+    boost::shared_ptr< Vision::Image >  currentImage;
+#endif
 
     /** Input port of the component. */
     Dataflow::PushConsumer< Measurement::ImageMeasurement > m_inPort;
@@ -437,16 +442,12 @@ void updateTextureDirectX11(Measurement::Timestamp texturePtr)
 		sourceImage = currentImage;			
 	}
 	else if(currentImage->channels() == 3){
-
-		LOG4CPP_DEBUG(m_logger, "convert 3 to 4 channels");
 		if (convertedImage.get() == 0){
-			LOG4CPP_INFO(m_logger, "create buffer image");
 			convertedImage.reset(new Vision::Image(currentImage->width(), currentImage->height(), 4));
 		}
 		LOG4CPP_DEBUG(m_logger, "convert image");
 		cv::cvtColor(currentImage->uMat(), convertedImage->uMat(), cv::COLOR_BGR2RGBA);			
 		sourceImage = convertedImage;
-	
 	}
 	else if(currentImage->channels() == 1 && currentImage->uMat().type() != CV_32FC1)
 	{
@@ -457,9 +458,7 @@ void updateTextureDirectX11(Measurement::Timestamp texturePtr)
 		currentImage->uMat().convertTo(convertedImage->uMat(), CV_32FC1, 1.0/255.0);
 		sourceImage = convertedImage;
 	}
-
-
-	
+		
 	cl_mem clBuffer = (cl_mem) sourceImage->uMat().handle(cv::ACCESS_READ);	
 	ID3D11DeviceContext* ctx = NULL;
 	ID3D11Device* device = NULL;
@@ -507,6 +506,8 @@ void updateTextureDirectX11(Measurement::Timestamp texturePtr)
 	if (err != CL_SUCCESS)
 	{
 		LOG4CPP_INFO( m_logger, "error at  clEnqueueCopyBufferToImage:" << err );
+		err = clEnqueueReleaseD3D11ObjectsNV(m_commandQueue, 1, &m_clImage, 0, NULL, NULL);
+		LOG4CPP_INFO(m_logger, "releasing status: " << (err == CL_SUCCESS ? "SUCCESS" : "FAILED") );
 		return;
 	}
 	LOG4CPP_INFO(m_logger, "starting release");
@@ -597,13 +598,13 @@ void updateTextureDirectX11(Measurement::Timestamp texturePtr)
 
 			}
 			else if (currentImage->channels() == 3) {
-				//LOG4CPP_DEBUG(m_logger, "convert else");
+				//LOG4CPP_INFO(m_logger, "convert else");
 				if (convertedImage.get() == 0){
 					LOG4CPP_INFO(m_logger, "create buffer image");
 					convertedImage.reset(new Vision::Image(currentImage->width(), currentImage->height(), 4, 8, currentImage->origin()));
 
 				}
-				//LOG4CPP_DEBUG(m_logger, "convert image");
+				//LOG4CPP_INFO(m_logger, "convert image");
 				cvCvtColor(currentImage.get(), convertedImage.get(), CV_BGR2RGBA);
 				data = (unsigned char*)convertedImage->iplImage()->imageData;
 				bytePerRow = 4 * currentImage->width();
