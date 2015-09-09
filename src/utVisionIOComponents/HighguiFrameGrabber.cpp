@@ -119,6 +119,9 @@ protected:
 	// stop the thread?
 	volatile bool m_bStop;
 
+	//automatic upload of images to the GPU
+	bool m_autoGPUUpload;
+
 	// the ports
 	Dataflow::PushSupplier< ImageMeasurement > m_outPort;
 	Dataflow::PushSupplier< ImageMeasurement > m_colorPort;
@@ -168,6 +171,7 @@ HighguiFrameGrabber::HighguiFrameGrabber( const std::string& sName, boost::share
 	, m_bStop( true )
 	, m_outPort( "Output", *this )
 	, m_colorPort( "ColorOutput", *this )
+	, m_autoGPUUpload(false)
 
 {
 	subgraph->m_DataflowAttributes.getAttributeData( "highguiCameraIndex", m_cameraIndex );
@@ -178,6 +182,11 @@ HighguiFrameGrabber::HighguiFrameGrabber( const std::string& sName, boost::share
 	subgraph->m_DataflowAttributes.getAttributeData( "imageHeight", m_height );
 
 	subgraph->m_DataflowAttributes.getAttributeData( "imageFormat", m_imageFormat );
+
+	if (subgraph->m_DataflowAttributes.hasAttribute("uploadImageOnGPU")){
+		m_autoGPUUpload = subgraph->m_DataflowAttributes.getAttributeString("uploadImageOnGPU") == "true";
+		LOG4CPP_INFO(logger, "Upload to GPU enabled? " << m_autoGPUUpload);
+	}
 #ifdef ANDROID
 	
 	
@@ -282,20 +291,33 @@ void HighguiFrameGrabber::ThreadProc()
 				pImage->origin = pIpl->origin;							
 #else
 				boost::shared_ptr< Image > pImage( new Image( pIpl->width, pIpl->height, 3 ) );
-				cvConvertImage( pIpl, *pImage );
-				pImage->iplImage()->origin = pIpl->origin;
-				pImage->iplImage()->channelSeq[0]='B';
-				pImage->iplImage()->channelSeq[1]='G';
-				pImage->iplImage()->channelSeq[2]='R';
+				if (m_autoGPUUpload){
+					boost::shared_ptr< Image > pIplImage(new Image(pIpl, false));
+					cv::cvtColor(pIplImage->uMat(), pImage->uMat(), cv::COLOR_RGB2BGR);
+				}
+				else{
+					cvConvertImage(pIpl, *pImage);
+					pImage->iplImage()->origin = pIpl->origin;
+					pImage->iplImage()->channelSeq[0] = 'B';
+					pImage->iplImage()->channelSeq[1] = 'G';
+					pImage->iplImage()->channelSeq[2] = 'R';
+				}
 #endif
 				m_colorPort.send( ImageMeasurement( time, pImage ) );
-				
 			}
+
 			if (m_outPort.isConnected()) {
 				// convert to greyscale
 				boost::shared_ptr< Image > pImage( new Image( pIpl->width, pIpl->height, 1 ) );
-				cvConvertImage( pIpl, *pImage );
-				pImage->iplImage()->origin = pIpl->origin;
+				if (m_autoGPUUpload){
+					boost::shared_ptr< Image > pIplImage(new Image(pIpl, false));
+					cv::cvtColor(pIplImage->uMat(), pImage->uMat(), cv::COLOR_RGB2GRAY);
+				}
+				else{
+					cvConvertImage(pIpl, *pImage);
+					pImage->iplImage()->origin = pIpl->origin;
+				}
+				
 				m_outPort.send( ImageMeasurement( time, pImage ) );
 			}
 		}

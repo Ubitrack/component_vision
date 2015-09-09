@@ -55,7 +55,15 @@
 				<EnumValue name="3" displayName="BGRA"/>
 				<EnumValue name="4" displayName="RGBA"/>
 			</Attribute>
-			
+			<Attribute name="uploadImageOnGPU" displayName="Automatic Upload on GPU" default="false" xsi:type="EnumAttributeDeclarationType">
+                    <Description>
+                        <h:p>
+							Each grabbed Image is automatically uploaded to the GPU for further processing. Attention: Uploading and downloading images from the GPU is time consuming.
+                        </h:p>
+                    </Description>
+                    <EnumValue name="false" displayName="False"/>
+                    <EnumValue name="true"  displayName="True"/>
+            </Attribute>
 			<Attribute name="androidExposure" default="0" xsi:type="IntAttributeDeclarationType" displayName="Android exposure compensation">
 				<Description>
 					<h:p>Exposure compensation of android camera driver</h:p>
