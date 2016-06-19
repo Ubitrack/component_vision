@@ -97,14 +97,14 @@ public:
 
 		LOG4CPP_DEBUG( logger, "Create a warped iamge" );
 		int nChannels = 3;
-		if(img->nChannels == 1)
+		if(img->channels() == 1)
 		{
 			nChannels = 1;
 		}
 		boost::shared_ptr< Image > pImage( new Image( m_w, m_h, nChannels ) );
 
-		cv::Mat dst( *pImage );
-		cv::Mat src( *img    );
+		cv::Mat dst( cv::cvarrToMat(*pImage) );
+		cv::Mat src( cv::cvarrToMat(*img) );
 
 #if 0
 		//		cv::imshow("ImageWarp src",src);
@@ -125,7 +125,7 @@ public:
 		cv::flip(src,src,0);
 		cv::flip(dst,dst,0); /// OpenCV --> Ubitrack
 
-		pImage->origin = img->origin; //inserted by CW to have correct origin
+		pImage->iplImage()->origin = img->origin(); //inserted by CW to have correct origin
 		m_outImagePort.send( Measurement::ImageMeasurement( img.time(), pImage ) );
 	}
 

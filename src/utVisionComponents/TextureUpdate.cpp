@@ -40,6 +40,18 @@
 #include <utVision/Image.h>
 #include <opencv/cv.h>
 
+#define USE_UMAT
+#ifdef USE_UMAT
+
+#include <utVision/OpenCLManager.h>
+#include <CL/cl_gl.h>
+#include <CL/cl_d3d11_ext.h>
+#endif
+
+//#define DO_TIMING
+#ifdef DO_TIMING
+	#include <utUtil/BlockTimer.h>
+#endif
 
 #define WITH_OPENGL_TEXTURE_UPDATE 1
 
@@ -69,6 +81,8 @@
 #endif
 
 #endif
+#include <opencv/highgui.h>
+
 
 namespace Ubitrack { namespace Components {
 
@@ -100,9 +114,25 @@ namespace Ubitrack { namespace Components {
 	  , m_inPortTextureID( "InputTextureID", *this, boost::bind( &TextureUpdateOpenGL::receiveUpdateTexture, this, _1 ) )      
       , m_logger( log4cpp::Category::getInstance( "Ubitrack.Components.TextureUpdate:" + subgraph->m_ID) )
 	  , useOpenGL(true)
-	,m_lastUpdate(0)
-	,rgbaImage()
+//	,m_lastUpdate(0)
+	,convertedImage()
+#ifdef USE_UMAT
+	  , m_clImageInitialized(false)
+#ifdef DO_TIMING
+	  , m_blockTimer( "Rendering Timer",  "Ubitrack.Components.TextureUpdate")
+#endif
+#endif
     {
+		
+		subgraph->getEdge("Input")->getAttributeData("channels", m_textureChannels);
+		//imageformats like RGB are not supported and have to be converted to RGBA
+		if(m_textureChannels == 3)
+		{
+			m_textureChannels = 4;
+		}
+		subgraph->getEdge("Input")->getAttributeData("imageWidth", m_textureWidth);
+		subgraph->getEdge("Input")->getAttributeData("imageHeight", m_textureHeight);
+
 		std::string frameworkPara;
 		subgraph->m_DataflowAttributes.getAttributeData("Framework", frameworkPara);
 		if (frameworkPara == "OpenGL")
@@ -113,29 +143,118 @@ namespace Ubitrack { namespace Components {
 		//LOG4CPP_INFO( m_logger, "Setting delay time" << m_delayTime );
     }
 
+
     /** Method that computes the result. */
     void receiveImage( const Measurement::ImageMeasurement& image )
     {
-		//LOG4CPP_DEBUG(m_logger, "receiveImage start");
+		static int received = 0;
+
 		boost::mutex::scoped_lock l( m_mutex );
+		
 		currentImage = image;
-		m_lastUpdate = image.time();
-		//LOG4CPP_DEBUG(m_logger, "receiveImage:"<<currentImage.get());
+		LOG4CPP_INFO(m_logger, "new Image with timestamp: " << image.time() );
+		LOG4CPP_DEBUG(m_logger, "receiveImage:"<<currentImage.get());
     }
 	
 	Measurement::Position receiveUpdateTexture( Measurement::Timestamp textureID )
     {
 		
+		LOG4CPP_INFO(m_logger, "receiveUpdateTexture TextureID: " << textureID);
 
+		//if( textureID == 0 && currentImage.get() == NULL)
+		//{
+		//	return Measurement::Position(0, Math::Vector< double, 3 >(0,0,0));
+		//}
 
-		if( textureID == 0 && currentImage.get() != NULL){
-			Measurement::Position result(0, Math::Vector< double, 3 >(currentImage->width,currentImage->height,currentImage->nChannels));
+		if( textureID == 0){
+			LOG4CPP_DEBUG(m_logger, "creating texture: " << m_textureWidth << "x" << m_textureHeight << "x" << m_textureChannels);
+			Measurement::Position result(textureID, Math::Vector< double, 3 >(m_textureWidth, m_textureHeight, m_textureChannels));
+			//Measurement::Position result(textureID, Math::Vector< double, 3 >(640, 480, 4));
 			return result;
 		}
-
 		
-	
-			//LOG4CPP_DEBUG(m_logger, "receiveUpdateTexture start");
+#ifdef USE_UMAT
+
+		if( !m_clImageInitialized )
+		{
+			LOG4CPP_DEBUG(m_logger, "initializeing OCL Manager");
+			m_clImageInitialized = true;
+
+			//define texture parameters like in BackgroundImage?
+			cl_int err;
+			Ubitrack::Vision::OpenCLManager& oclManager = Ubitrack::Vision::OpenCLManager::singleton();
+			
+			
+			if( useOpenGL )
+			{
+				oclManager.initializeOpenGL();
+				m_clImage = clCreateFromGLTexture2D( oclManager.getContext(), CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, (GLuint) textureID, &err);
+			}else
+			{
+				ID3D11Texture2D* textureResource = (ID3D11Texture2D*) textureID;
+				D3D11_TEXTURE2D_DESC textureDesc;
+				textureResource->GetDesc(&textureDesc);
+				LOG4CPP_DEBUG(m_logger, "D3DX11Info: width: " << textureDesc.Width << " height: " << textureDesc.Height << " format: " << textureDesc.Format);
+				
+
+				//ID3D11Resource* textureResource = (ID3D11Resource*)textureID;
+				ID3D11DeviceContext* ctx = NULL;
+				ID3D11Device* device = NULL;
+			
+				textureResource->GetDevice(&device);
+				if (device == NULL){
+					LOG4CPP_ERROR(m_logger, "GetDevice == NULL");
+				}
+
+				oclManager.initializeDirectX(device);
+
+			
+
+				clCreateFromD3D11Texture2DNV_fn clCreateFromD3D11Texture2DNV = (clCreateFromD3D11Texture2DNV_fn) clGetExtensionFunctionAddress("clCreateFromD3D11Texture2DNV");
+				//clCreateFromD3D11Texture2DKHR = (clCreateFromD3D11Texture2DNV_fn) clGetExtensionFunctionAddress("clCreateFromD3D11Texture2DKHR");
+				LOG4CPP_INFO(m_logger, "func pointer to clCreateFromD3D11Texture2DNV" << clCreateFromD3D11Texture2DNV);
+
+				ID3D11Texture2D* d3dtex = (ID3D11Texture2D*)textureID;
+				m_clImage = clCreateFromD3D11Texture2DNV( oclManager.getContext(), CL_MEM_WRITE_ONLY, d3dtex, 0, &err);
+				
+				if(err != CL_SUCCESS){
+					m_clImageInitialized = false;
+					LOG4CPP_INFO(m_logger, "Error creating clImage from Texture: " <<err);
+				}else{
+					m_clImageInitialized = true;
+					LOG4CPP_INFO(m_logger, "success: created From D3DX11 Texture");
+				}
+
+				clEnqueueAcquireD3D11ObjectsNV = (clEnqueueAcquireD3D11ObjectsNV_fn) clGetExtensionFunctionAddress("clEnqueueAcquireD3D11ObjectsNV");
+				LOG4CPP_INFO(m_logger, "func pointer to clEnqueueAcquireD3D11ObjectsNV" << clCreateFromD3D11Texture2DNV);
+				if(!clEnqueueAcquireD3D11ObjectsNV)
+				{
+					LOG4CPP_ERROR(m_logger, "clEnqueueAcquireD3D11ObjectsNV NULL");
+					m_clImageInitialized = false;
+				}
+
+				clEnqueueReleaseD3D11ObjectsNV = (clEnqueueReleaseD3D11ObjectsNV_fn) clGetExtensionFunctionAddress("clEnqueueReleaseD3D11ObjectsNV");
+				LOG4CPP_INFO(m_logger, "func pointer to clEnqueueReleaseD3D11ObjectsNV" << clCreateFromD3D11Texture2DNV);
+				if(!clEnqueueReleaseD3D11ObjectsNV)
+				{
+					LOG4CPP_ERROR(m_logger, "clEnqueueReleaseD3D11ObjectsNV NULL");
+					m_clImageInitialized = false;
+				}
+			}
+			
+			m_commandQueue = oclManager.getCommandQueue();
+			if(err != CL_SUCCESS || !m_clImageInitialized)
+			{
+				LOG4CPP_INFO( m_logger, "error at  clCreateFromGL\\DirectXTexture2D:" << err );
+				m_clImageInitialized = false;
+				return Measurement::Position(0, Math::Vector< double, 3 >(0, 0, 0));
+			}
+
+			LOG4CPP_INFO(m_logger, "initializeing finished: " << oclManager.isInitialized() );
+		}
+#endif
+			
+			LOG4CPP_INFO(m_logger, "receiveUpdateTexture start");
 		{
 
 			boost::mutex::scoped_lock l( m_mutex );
@@ -146,30 +265,82 @@ namespace Ubitrack { namespace Components {
 				return Measurement::Position(0, Math::Vector< double, 3 >(0,0,0));
 			}
 
-			
-			//LOG4CPP_DEBUG(m_logger, "Update texture");
-	
+			LOG4CPP_DEBUG(m_logger, "Update texture");
+
+		
+#ifdef DO_TIMING
+			{
+			UBITRACK_TIME( m_blockTimer );
+#endif
 			if (useOpenGL)
 				updateTextuteOpenGL(textureID);
 #ifdef WITH_DIRECTX11_TEXTURE_UPDATE
 			else
 				updateTextureDirectX11(textureID);
 #endif
+#ifdef DO_TIMING
+			}
+			static int i = 0;
+			if(i == 10)
+			{
+				LOG4CPP_INFO( m_logger, "timer: " << m_blockTimer << std::endl );
+				LOG4CPP_INFO( m_logger, "res: " << currentImage->width() << "x" << currentImage->height() << std::endl );
+				i = 0;
+			}
+			i++;
+#endif
+#ifdef DO_TIMING_1			
+
+			/*Measurement::Timestamp currentTimeStamp = Measurement::now();
+			Measurement::Timestamp diff = currentTimeStamp - currentImage.time();
+
+			LOG4CPP_INFO(m_logger, 
+				 "timestamp diff: " << Measurement::timestampToShortString(diff) << 
+				" original int: " << diff/1000000.0f << 
+				" currentTimeStamp: " << Measurement::timestampToShortString(currentTimeStamp) <<
+				" taken timestamp: " << Measurement::timestampToShortString(currentImage.time()) );*/
+			Measurement::Timestamp now = Util::getHighPerformanceCounter();
+			Measurement::Timestamp diff = now - currentImage.time();
+
+			m_blockTimer.addMeasurement(diff);
+			double delayInMS = diff/1000000.0f;
+			
+			/*if(delayInMS < 1000000)
+			{*/
+				static int counterI = 0;
+				static double sum = 0;
+				static unsigned long long numOfMeasurement = 0;
+
+				counterI++;
+				numOfMeasurement++;
+
+				sum += delayInMS;
+
+				if(counterI == 10)
+				{
+					counterI = 0;
+					LOG4CPP_INFO(m_logger, "avg: " << sum/numOfMeasurement << "sum: " << sum << " numOfMeasurement " << numOfMeasurement << " currntDelay: " << delayInMS);
+					LOG4CPP_INFO(m_logger, "blockTImer: " << m_blockTimer << std::endl);
+				
+				}
+			/*}*/
+#endif
 			
 			currentImage.reset();
 		}
-			/*
-		
-		*/
 
-	
-			return Measurement::Position(m_lastUpdate, Math::Vector< double, 3 >(0, 0, 0));;
+		
+		return Measurement::Position( textureID, Math::Vector< double, 3 >(0, 0, 0) );
 
     }
 
   protected:
+#ifdef DO_TIMING
+	Measurement::ImageMeasurement		currentImage;
+#else
     
-    boost::shared_ptr< Vision::Image >  currentImage;	
+    boost::shared_ptr< Vision::Image >  currentImage;
+#endif
 
     /** Input port of the component. */
     Dataflow::PushConsumer< Measurement::ImageMeasurement > m_inPort;
@@ -179,40 +350,195 @@ namespace Ubitrack { namespace Components {
 	void updateTextuteOpenGL(Measurement::Timestamp textureID){
 		boost::shared_ptr< Vision::Image > sourceImage;
 
-		if (currentImage->nChannels == 4){
+		if (currentImage->channels() == 4 || currentImage->channels() == 1){
 			LOG4CPP_DEBUG(m_logger, "image correct channels");
 			sourceImage = currentImage;			
 		}
 		else{
 			LOG4CPP_DEBUG(m_logger, "convert else");
-			if (rgbaImage.get() == 0){
+			if (convertedImage.get() == 0){
 				LOG4CPP_INFO(m_logger, "create buffer image");
-				rgbaImage.reset(new Vision::Image(currentImage->width, currentImage->height, 4));
+				convertedImage.reset(new Vision::Image(currentImage->width(), currentImage->height(), 4));
 
 			}
 			LOG4CPP_DEBUG(m_logger, "convert image");
-			cvCvtColor(currentImage.get(), rgbaImage.get(), CV_BGR2RGBA);
-			sourceImage = rgbaImage;			
+			
+#ifdef USE_UMAT
+			cv::cvtColor(currentImage->uMat(), convertedImage->uMat(), cv::COLOR_BGR2RGBA);
+#else
+			cvCvtColor(currentImage.get(), convertedImage.get(), CV_BGR2RGBA);
+#endif		
+			
+			sourceImage = convertedImage;			
 		}
 
 		LOG4CPP_DEBUG(m_logger, "receiveUpdateTexture ID:" << textureID);
 		glBindTexture(GL_TEXTURE_2D, (GLuint)textureID);
-		if (sourceImage->depth == IPL_DEPTH_32F) {
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sourceImage->width, sourceImage->height,
-				GL_RGBA, GL_FLOAT, sourceImage->imageData);
-		}
-		else if (sourceImage->depth == IPL_DEPTH_8U) {
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sourceImage->width, sourceImage->height,
-				GL_RGBA, GL_UNSIGNED_BYTE, sourceImage->imageData);
-		}
 
+#ifdef USE_UMAT
+
+		glEnable(GL_TEXTURE_2D);
+		cl_mem clBuffer = (cl_mem) sourceImage->uMat().handle(cv::ACCESS_READ);
+		
+		LOG4CPP_INFO(m_logger, "starting aquire");
+		cl_int err;
+		err = clEnqueueAcquireGLObjects(m_commandQueue, 1, &m_clImage, 0, NULL, NULL);
+		if(err != CL_SUCCESS)
+		{
+			LOG4CPP_INFO( m_logger, "error at  clEnqueueAcquireGLObjects:" << err );
+			return;
+		}
+		size_t offset = 0; 
+		size_t dst_origin[3] = {0, 0, 0};
+		size_t region[3] = {sourceImage->width(), sourceImage->height(), 1};
+
+		LOG4CPP_INFO(m_logger, "starting copy: "<< sourceImage->uMat().size().width << "x" << sourceImage->uMat().size().height << "x" << sourceImage->uMat().channels() );
+
+		if(sourceImage->uMat().isContinuous()){
+			err = clEnqueueCopyBufferToImage(m_commandQueue, clBuffer, m_clImage, 0, dst_origin, region, 0, NULL, NULL);
+		}
+	
+		if (err != CL_SUCCESS)
+		{
+			LOG4CPP_INFO( m_logger, "error at  clEnqueueCopyBufferToImage:" << err );
+			return;
+		}
+		LOG4CPP_INFO(m_logger, "starting release");
+		err = clEnqueueReleaseGLObjects(m_commandQueue, 1, &m_clImage, 0, NULL, NULL);
+		if(err != CL_SUCCESS) 
+		{
+			LOG4CPP_INFO( m_logger, "error at  clEnqueueReleaseGLObjects:" << err );
+			return;
+		}
+		LOG4CPP_INFO(m_logger, "starting to finish");
+		err = clFinish(m_commandQueue);
+
+		if (err != CL_SUCCESS)
+		{
+			LOG4CPP_INFO( m_logger, "error at  clFinish:" << err );
+			return;
+		}
+		LOG4CPP_INFO(m_logger, "CL done");
+		glDisable( GL_TEXTURE_2D );
+		LOG4CPP_INFO(m_logger, "return");
+#else
+		if (sourceImage->depth() == IPL_DEPTH_32F) {
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sourceImage->width(), sourceImage->height(),
+				GL_RGBA, GL_FLOAT, sourceImage->iplImage()->imageData);
+		}
+		else if (sourceImage->depth() == IPL_DEPTH_8U) {
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sourceImage->width(), sourceImage->height(),
+				GL_RGBA, GL_UNSIGNED_BYTE, sourceImage->iplImage()->imageData);
+		}
+#endif
 	}
 
-
 #ifdef WITH_DIRECTX11_TEXTURE_UPDATE
+#ifdef USE_UMAT
+void updateTextureDirectX11(Measurement::Timestamp texturePtr)
+{
+	LOG4CPP_DEBUG(m_logger, "updateTextureD11");
+	boost::shared_ptr< Vision::Image > sourceImage;
 
-	void updateTextureDirectX11(Measurement::Timestamp texturePtr){
+	if (currentImage->channels() == 4){
+		LOG4CPP_DEBUG(m_logger, "image correct channels");
+		sourceImage = currentImage;			
+	}
+	else if(currentImage->channels() == 3){
+		if (convertedImage.get() == 0){
+			convertedImage.reset(new Vision::Image(currentImage->width(), currentImage->height(), 4));
+		}
+		LOG4CPP_DEBUG(m_logger, "convert image");
+		cv::cvtColor(currentImage->uMat(), convertedImage->uMat(), cv::COLOR_BGR2RGBA);			
+		sourceImage = convertedImage;
+	}
+	else if(currentImage->channels() == 1 && currentImage->uMat().type() != CV_32FC1)
+	{
+		if (convertedImage.get() == 0){
+			LOG4CPP_INFO(m_logger, "create buffer image");
+			convertedImage.reset(new Vision::Image(currentImage->width(), currentImage->height(), 1));
+		}
+		currentImage->uMat().convertTo(convertedImage->uMat(), CV_32FC1, 1.0/255.0);
+		sourceImage = convertedImage;
+	}
+		
+	cl_mem clBuffer = (cl_mem) sourceImage->uMat().handle(cv::ACCESS_READ);	
+	ID3D11DeviceContext* ctx = NULL;
+	ID3D11Device* device = NULL;
+	
+
+	ID3D11Texture2D* d3dtex = (ID3D11Texture2D*)texturePtr;
+	D3D11_TEXTURE2D_DESC desc;
+	d3dtex->GetDesc(&desc);
+
+	//recover device
+	d3dtex->GetDevice(&device);
+	if (device == NULL){
+		LOG4CPP_ERROR(m_logger, "GetDevice == NULL");
+		return;
+	}
+
+	//recover context
+	device->GetImmediateContext(&ctx);
+	if (ctx == NULL){
+		LOG4CPP_ERROR(m_logger, "GetImmediateContext == NULL");
+		return;
+	}
+	
+	//aquire the clImage 
+	LOG4CPP_INFO(m_logger, "starting aquire");
+	cl_int err;
+	
+	err = clEnqueueAcquireD3D11ObjectsNV(m_commandQueue, 1, &m_clImage, 0, NULL, NULL);
+	if(err != CL_SUCCESS)
+	{
+		LOG4CPP_INFO( m_logger, "error at  clEnqueueAcquireGLObjects:" << err );
+		return;
+	}
+	LOG4CPP_INFO(m_logger, "done aquire");
+	size_t offset = 0; 
+	size_t dst_origin[3] = {0, 0, 0};
+	size_t region[3] = {sourceImage->width(), sourceImage->height(), 1};
+
+	//LOG4CPP_INFO(m_logger, "starting copy");
+	LOG4CPP_INFO(m_logger, "starting copy: offset: " << sourceImage->uMat().offset <<  ": "<< sourceImage->uMat().size().width << "x" << sourceImage->uMat().size().height << "x" << sourceImage->uMat().channels() );
+	if(sourceImage->uMat().isContinuous()){
+		err = clEnqueueCopyBufferToImage(m_commandQueue, clBuffer, m_clImage, 0, dst_origin, region, 0, NULL, NULL);
+	}
+	
+	if (err != CL_SUCCESS)
+	{
+		LOG4CPP_INFO( m_logger, "error at  clEnqueueCopyBufferToImage:" << err );
+		err = clEnqueueReleaseD3D11ObjectsNV(m_commandQueue, 1, &m_clImage, 0, NULL, NULL);
+		LOG4CPP_INFO(m_logger, "releasing status: " << (err == CL_SUCCESS ? "SUCCESS" : "FAILED") );
+		return;
+	}
+	LOG4CPP_INFO(m_logger, "starting release");
+	err = clEnqueueReleaseD3D11ObjectsNV(m_commandQueue, 1, &m_clImage, 0, NULL, NULL);
+	if(err != CL_SUCCESS) 
+	{
+		LOG4CPP_INFO( m_logger, "error at  clEnqueueReleaseGLObjects:" << err );
+		return;
+	}
+	LOG4CPP_INFO(m_logger, "starting to finish");
+	err = clFinish(m_commandQueue);
+
+	if (err != CL_SUCCESS)
+	{
+		LOG4CPP_INFO( m_logger, "error at  clFinish:" << err );
+		return;
+	}
+	static int receivedAndREnder = 0;
+	LOG4CPP_INFO(m_logger, "CL done: " << receivedAndREnder++);
+}
+#else
+//#ifdef WITH_DIRECTX11_TEXTURE_UPDATE
+
+	void updateTextureDirectX11(Measurement::Timestamp texturePtr)
+	{
 		try{
+			
+			LOG4CPP_INFO(m_logger, "updateTextureDirectX11");
 			ID3D11Resource* textureResource = (ID3D11Resource*)texturePtr;
 			ID3D11DeviceContext* ctx = NULL;
 			ID3D11Device* device = NULL;
@@ -243,12 +569,12 @@ namespace Ubitrack { namespace Components {
 
 
 
-			unsigned char* data = (unsigned char*)currentImage->imageData;
+			unsigned char* data = (unsigned char*)currentImage->iplImage()->imageData;
 			boost::shared_ptr<D3D11_BOX> box;
 			int bytePerRow=4;
 
-			if (desc.Height == currentImage->height && desc.Width == currentImage->width) {
-				//LOG4CPP_INFO(m_logger, "same width and height  ");
+			if (desc.Height == currentImage->height() && desc.Width == currentImage->width()) {
+				LOG4CPP_INFO(m_logger, "same width and height  ");
 				
 			} else{
 				boost::shared_ptr< Vision::Image > sourceImage;
@@ -259,32 +585,32 @@ namespace Ubitrack { namespace Components {
 				box->back = 1;
 				box->front = 0;
 				box->left = 0;
-				box->right = sourceImage->width;
+				box->right = sourceImage->width();
 				box->bottom = 0;
-				box->top = sourceImage->height;				
+				box->top = sourceImage->height();				
 				//ctx->UpdateSubresource(d3dtex, 0, 0, data, sourceImage->width * 4, 0);
 			}
 
-			if ((desc.Format == DXGI_FORMAT_R32_SINT || desc.Format == DXGI_FORMAT_R32_TYPELESS) && currentImage->nChannels == 1 && currentImage->depth == IPL_DEPTH_32S) {
-				bytePerRow = 4*currentImage->width;
+			if ((desc.Format == DXGI_FORMAT_R32_SINT || desc.Format == DXGI_FORMAT_R32_TYPELESS) && currentImage->channels() == 1 && currentImage->depth() == IPL_DEPTH_32S) {
+				bytePerRow = 4*currentImage->width();
 
 
-				//LOG4CPP_INFO(m_logger, "same byte layout, nothing to do  ");
+				LOG4CPP_INFO(m_logger, "same byte layout, nothing to do  ");
 
 
 
 			}
-			else if (currentImage->nChannels == 3) {
-				//LOG4CPP_DEBUG(m_logger, "convert else");
-				if (rgbaImage.get() == 0){
+			else if (currentImage->channels() == 3) {
+				//LOG4CPP_INFO(m_logger, "convert else");
+				if (convertedImage.get() == 0){
 					LOG4CPP_INFO(m_logger, "create buffer image");
-					rgbaImage.reset(new Vision::Image(currentImage->width, currentImage->height, 4, 8, currentImage->origin));
+					convertedImage.reset(new Vision::Image(currentImage->width(), currentImage->height(), 4, 8, currentImage->origin()));
 
 				}
-				//LOG4CPP_DEBUG(m_logger, "convert image");
-				cvCvtColor(currentImage.get(), rgbaImage.get(), CV_BGR2RGBA);
-				data = (unsigned char*)rgbaImage->imageData;
-				bytePerRow = 4 * currentImage->width;
+				//LOG4CPP_INFO(m_logger, "convert image");
+				cvCvtColor(currentImage.get(), convertedImage.get(), CV_BGR2RGBA);
+				data = (unsigned char*)convertedImage->iplImage()->imageData;
+				bytePerRow = 4 * currentImage->width();
 			}
 
 		
@@ -365,15 +691,31 @@ namespace Ubitrack { namespace Components {
 	}
 
 #endif
+#endif
     /** log4cpp logger reference */
     log4cpp::Category& m_logger;	
 	
 	boost::mutex m_mutex;
 	Measurement::Timestamp m_lastUpdate;
-	boost::shared_ptr< Vision::Image >  rgbaImage;
+	boost::shared_ptr< Vision::Image >  convertedImage;
 	bool useOpenGL;
+	int m_textureChannels;
+	int m_textureWidth;
+	int m_textureHeight;
+#ifdef USE_UMAT
+	cl_mem m_clImage;
+	cl_command_queue m_commandQueue;
+	bool m_clImageInitialized;
+#ifdef WITH_DIRECTX11_TEXTURE_UPDATE
+	clEnqueueAcquireD3D11ObjectsNV_fn clEnqueueAcquireD3D11ObjectsNV;
+	clEnqueueReleaseD3D11ObjectsNV_fn clEnqueueReleaseD3D11ObjectsNV;
+#endif
+#endif
 
-	
+
+#ifdef DO_TIMING
+	Ubitrack::Util::BlockTimer m_blockTimer;
+#endif
 
   };
 

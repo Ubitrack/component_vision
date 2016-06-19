@@ -142,9 +142,9 @@ Math::Matrix< float, 3, 3 > MarkerTrackerModule::getIntrinsicsMatrix(const Measu
 		LOG4CPP_WARN( logger, "Guessing an own 3-by-3 intrinsic matrix, since no matrix is provided." );
 		
 		// compute cheap camera matrix if none given
-		float fTx = static_cast< float >( m->width / 2 );
-		float fTy = static_cast< float >( m->height / 2 );
-		float f = 1.25f * m->width;
+		float fTx = static_cast< float >( m->width() / 2 );
+		float fTy = static_cast< float >( m->height() / 2 );
+		float f = 1.25f * m->width();
 		K( 0, 0 ) = f;
 		K( 0, 1 ) = 0.0f;
 		K( 0, 2 ) = -fTx;
@@ -176,11 +176,14 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 		for ( it = components.begin(); it != components.end(); it++ )
 			if ( (*it)->debug() )
 			{
-				pDebugImg = m->CvtColor( CV_GRAY2RGB, 3 );
-				break;
+				//pDebugImg = m->CvtColor( CV_GRAY2RGB, 3 );
+				if (!pDebugImg){
+					pDebugImg.reset(new Vision::Image(m->width(), m->height(), 3));
+					cvCvtColor(m->iplImage(), pDebugImg->iplImage(), CV_GRAY2RGB);
+					break;
+				}
 			}
-	}
-	
+	}	
 
 	// fetch the intrinsic matrix from one of the components 
 	Math::Matrix< float, 3, 3 > K = getIntrinsicsMatrix(m);	
@@ -653,8 +656,12 @@ void MultiMarkerTracker::readWorldFiles(){
 
 			Measurement::ErrorPose errorPose;
 
+			
 			// read the file and store the error pose
+			
 			Util::readCalibFile(cornerFileName.str(), errorPose);
+			
+			
 			Pose tmpPose = Pose( errorPose->rotation(), errorPose->translation() );
 			std::vector<Math::Vector< double, 3 > > corners;
 
@@ -929,7 +936,7 @@ void MultiMarkerTrackerBundleAdustment::imageQueue(const Measurement::ImageMeasu
 		
 
 		// test if the image is a grayscale image
-		if( image->nChannels != 1 ){
+		if( image->channels() != 1 ){
 			UBITRACK_THROW( "The MarkerTracker requires a grayscale image" );
 		}
 
@@ -1009,7 +1016,7 @@ void MultiMarkerTrackerBundleAdustment::imageQueue(const Measurement::ImageMeasu
 						}
 
 						// only valid markers are used
-						if( !validateMarker(mapEl2.second,mapEl2.first,mapEl.first,image->width,image->height) && !prevMarker ){
+						if( !validateMarker(mapEl2.second,mapEl2.first,mapEl.first,image->width(),image->height()) && !prevMarker ){
 
 							// delete false markers from the map
 							BOOST_FOREACH( MultiMarkerInfoMap::value_type& el, markerMap )

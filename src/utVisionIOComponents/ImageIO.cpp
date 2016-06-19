@@ -114,6 +114,7 @@ ImageMeasurement ImageReader::pullImage( Ubitrack::Measurement::Timestamp t )
 {
 	if ( m_fileIt == m_files.end() ) {
 		UBITRACK_THROW( "End of image list reached" );
+		m_fileIt = m_files.begin();
 	}
 	
 	std::string file = (*m_fileIt).string();

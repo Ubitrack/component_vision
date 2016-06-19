@@ -199,11 +199,11 @@ protected:
 		if( !headerSend )
 		{
 			int imageHeaderInfos[ 5 ];
-			imageHeaderInfos[ 0 ] = m->width;
-			imageHeaderInfos[ 1 ] = m->height;
-			imageHeaderInfos[ 2 ] = m->nChannels;
-			imageHeaderInfos[ 3 ] = m->depth;
-			imageHeaderInfos[ 4 ] = m->origin;	
+			imageHeaderInfos[ 0 ] = m->width();
+			imageHeaderInfos[ 1 ] = m->height();
+			imageHeaderInfos[ 2 ] = m->channels();
+			imageHeaderInfos[ 3 ] = m->depth();
+			imageHeaderInfos[ 4 ] = m->origin();	
 
 			LOG4CPP_INFO( logger, "sending image header to \"" << m_dstAddress << ":" << m_dstPort << "\" :"
 				<< "\nwidth   : " << imageHeaderInfos[ 0 ] << " [pixels]"
@@ -220,7 +220,7 @@ protected:
 			LOG4CPP_TRACE( logger, "Sending image data to \"" << m_dstAddress << ":" << m_dstPort << "\"." );
 			const Measurement::Timestamp t = m.time();
 			boost::asio::write( m_socket, boost::asio::buffer( &t, sizeof( Measurement::Timestamp ) ) );
-			boost::asio::write( m_socket, boost::asio::buffer( m->imageData, m->imageSize ) );
+			boost::asio::write( m_socket, boost::asio::buffer( m->iplImage()->imageData, m->iplImage()->imageSize ) );
 		}
 	}
 };
