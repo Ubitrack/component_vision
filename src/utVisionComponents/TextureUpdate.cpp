@@ -40,14 +40,26 @@
 #include <utVision/Image.h>
 #include <opencv/cv.h>
 
+// @todo should that be a compiletime option??
+#ifdef WIN32
 #define USE_UMAT
-#ifdef USE_UMAT
-
-#include <utVision/OpenCLManager.h>
-#include <CL/cl_gl.h>
-#include <CL/cl_d3d11_ext.h>
 #endif
 
+#ifdef USE_UMAT
+#include <utVision/OpenCLManager.h>
+
+#ifdef __APPLE__
+    #include "OpenCL/cl_gl.h"
+#else
+    #include "CL/cl_gl.h"
+	#ifdef WIN32
+		#include <CL/cl_d3d11_ext.h>
+	#endif
+#endif
+
+#endif
+
+// @todo should that be a compiletime option??
 //#define DO_TIMING
 #ifdef DO_TIMING
 	#include <utUtil/BlockTimer.h>

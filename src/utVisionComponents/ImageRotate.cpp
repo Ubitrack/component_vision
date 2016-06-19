@@ -99,11 +99,11 @@ ImageRotate::~ImageRotate()
 void ImageRotate::pushImage( const ImageMeasurement& m )
 {
 	IplImage* img = cvCloneImage( *m );
-	unsigned int width = m->width;
-	unsigned int height = m->height;
+	unsigned int width = m->width();
+	unsigned int height = m->height();
 	if ((m_rotation == 1) || (m_rotation == 2)) {
-		width = m->height;
-		height = m->width;
+		width = m->height();
+		height = m->width();
 	}
 	IplImage *tmp = cvCreateImage( cvSize( width, height ), img->depth, img->nChannels );
 	tmp->origin = img->origin;		
