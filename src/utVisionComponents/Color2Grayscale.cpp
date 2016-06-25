@@ -102,22 +102,31 @@ Color2Grayscale::~Color2Grayscale()
 
 void Color2Grayscale::pushImage(const ImageMeasurement& m )
 {
-	IplImage* img = *m;
-	if(img->nChannels == 1)
+	if(m->channels() == 1)
 	{
 		LOG4CPP_DEBUG( logger, "Got grayscale image: pushing unmodified" );
 		m_outPort.send( m );
-		// TODO: why should we clone the image instead of just pushing the measurement?
-		//boost::shared_ptr< Image > pImage(new Image(cvCloneImage(img)));
-		//m_outPort.send( ImageMeasurement( m.time(), pImage ) );
 	}
 	else
-	{
-		LOG4CPP_DEBUG( logger, "Got color image: pushing converted" );
-		boost::shared_ptr< Image > pImage( new Image( img->width, img->height, 1 ) );
-		pImage->iplImage()->origin = img->origin; //inserted by CW to have correct origin
-		cvConvertImage(*m,*pImage);
-		m_outPort.send( ImageMeasurement( m.time(), pImage ) );
+		{
+		// @todo we need to care about the color model here!!!
+		if (m->isOnGPU()) {
+			boost::shared_ptr< Image > pImage( new Image( m->width(), m->height(), 1 ) );
+			if (m->channels() == 3) {
+				cv::cvtColor(m->uMat(), pImage->uMat(), cv::COLOR_RGB2GRAY);
+			} else if (m->channels() == 4) {
+				cv::cvtColor(m->uMat(), pImage->uMat(), cv::COLOR_RGBA2GRAY);
+			}
+			// @ todo: what about the origin
+			m_outPort.send( ImageMeasurement( m.time(), pImage ) );
+		} else {
+			IplImage* img = *m;
+			LOG4CPP_DEBUG( logger, "Got color image: pushing converted" );
+			boost::shared_ptr< Image > pImage( new Image( img->width, img->height, 1 ) );
+			pImage->iplImage()->origin = img->origin; //inserted by CW to have correct origin
+			cvConvertImage(*m,*pImage);
+			m_outPort.send( ImageMeasurement( m.time(), pImage ) );
+		}
 	}
 }
 
