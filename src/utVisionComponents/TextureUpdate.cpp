@@ -436,11 +436,11 @@ namespace Ubitrack { namespace Components {
 #else
 		if (sourceImage->depth() == IPL_DEPTH_32F) {
 			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sourceImage->width(), sourceImage->height(),
-				GL_RGBA, GL_FLOAT, sourceImage->iplImage()->imageData);
+				GL_RGBA, GL_FLOAT, sourceImage->Mat().data);
 		}
 		else if (sourceImage->depth() == IPL_DEPTH_8U) {
 			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sourceImage->width(), sourceImage->height(),
-				GL_RGBA, GL_UNSIGNED_BYTE, sourceImage->iplImage()->imageData);
+				GL_RGBA, GL_UNSIGNED_BYTE, sourceImage->Mat().data);
 		}
 #endif
 	}

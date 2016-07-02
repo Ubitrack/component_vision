@@ -260,21 +260,19 @@ void HighguiFrameGrabber::ThreadProc()
 		LOG4CPP_DEBUG( logger, "time = " << time / 1000000 );
 		
 #ifdef ANDROID
-		IplImage* pIpl = cvRetrieveFrame( cap, m_imageFormat );		
+		cv::Mat pMat = cv::cvarrToMat(cvRetrieveFrame( cap, m_imageFormat ));
 #else
-		IplImage* pIpl = cvRetrieveFrame( cap );
+		cv::Mat pMat = cv::cvarrToMat(cvRetrieveFrame( cap ));
 #endif
 		
 		// choose only certain frames and drop the others
 		if( (  m_counter++ % m_divisor ) != 0 )
 		{
-			if ( !pIpl )
-				cvReleaseImage( &pIpl );
 			continue;
 		}
 		
 		
-		if ( !pIpl )
+		if ( !(pMat.total() > 0) )
 		{
 			LOG4CPP_WARN( logger, "HighguiFrameGrabber: Error in cvRetrieveFrame, hold on a second" );
 			Util::sleep( 1000 );
@@ -282,25 +280,19 @@ void HighguiFrameGrabber::ThreadProc()
 		else
 		{
 
+			// what about the origin ??
 			if (m_colorPort.isConnected()) {
 				// convert to color
 #ifdef ANDROID
 				boost::shared_ptr< Image > pImage( new Image( pIpl->width, pIpl->height, pIpl->nChannels ) );
-				//cvConvertImage( pIpl, *pImage );
-				cvCopy( pIpl, *pImage );	
-				pImage->origin = pIpl->origin;							
+				pImage->Mat() = pMat.clone();
 #else
-				boost::shared_ptr< Image > pImage( new Image( pIpl->width, pIpl->height, 3 ) );
+				boost::shared_ptr< Image > pImage( new Image( pMat.rows, pMat.cols, 3 ) );
 				if (m_autoGPUUpload){
-					boost::shared_ptr< Image > pIplImage(new Image(pIpl, false));
-					cv::cvtColor(pIplImage->uMat(), pImage->uMat(), cv::COLOR_RGB2BGR);
+					cv::cvtColor(pMat.getUMat(0), pImage->uMat(), cv::COLOR_RGB2BGR);
 				}
 				else{
-					cvConvertImage(pIpl, *pImage);
-					pImage->iplImage()->origin = pIpl->origin;
-					pImage->iplImage()->channelSeq[0] = 'B';
-					pImage->iplImage()->channelSeq[1] = 'G';
-					pImage->iplImage()->channelSeq[2] = 'R';
+					cv::cvtColor(pMat, pImage->Mat(), cv::COLOR_RGB2BGR);
 				}
 #endif
 				m_colorPort.send( ImageMeasurement( time, pImage ) );
@@ -308,16 +300,14 @@ void HighguiFrameGrabber::ThreadProc()
 
 			if (m_outPort.isConnected()) {
 				// convert to greyscale
-				boost::shared_ptr< Image > pImage( new Image( pIpl->width, pIpl->height, 1 ) );
+				boost::shared_ptr< Image > pImage( new Image( pMat.rows, pMat.cols, 1 ) );
 				if (m_autoGPUUpload){
-					boost::shared_ptr< Image > pIplImage(new Image(pIpl, false));
-					cv::cvtColor(pIplImage->uMat(), pImage->uMat(), cv::COLOR_RGB2GRAY);
+					cv::cvtColor(pMat.getUMat(0), pImage->uMat(), cv::COLOR_RGB2GRAY);
 				}
 				else{
-					cvConvertImage(pIpl, *pImage);
-					pImage->iplImage()->origin = pIpl->origin;
+					cv::cvtColor(pMat, pImage->Mat(), cv::COLOR_RGB2GRAY);
 				}
-				
+
 				m_outPort.send( ImageMeasurement( time, pImage ) );
 			}
 		}

@@ -277,7 +277,7 @@ public:
 			Vision::Image::Ptr tmpa = img->Clone();
 			for( int i( 0 ) ; i < m_scaleFactor; ++i ) 
 				tmpa = tmpa->PyrDown();
-			pattern_was_found = cvFindChessboardCorners( *tmpa, cvSize( m_width, m_height ) , corners.get(), &found, CV_CALIB_CB_ADAPTIVE_THRESH );
+			pattern_was_found = cvFindChessboardCorners( &(tmpa->Mat()), cvSize( m_width, m_height ) , corners.get(), &found, CV_CALIB_CB_ADAPTIVE_THRESH );
 
 			// Rescale 2d measurements to original image size
 			for( int i=0; i<m_edges; i++ )
@@ -317,14 +317,14 @@ public:
 			}
 			
 #else
-			pattern_was_found = cvFindChessboardCorners( *img, cvSize( m_width, m_height ) , corners.get(), &found, CV_CALIB_CB_ADAPTIVE_THRESH );
+			pattern_was_found = cvFindChessboardCorners( &(img->Mat()), cvSize( m_width, m_height ) , corners.get(), &found, CV_CALIB_CB_ADAPTIVE_THRESH );
 #endif
 		}
 		
 		if( pattern_was_found && found == m_edges )
 		{
 			if( m_grid_type == 0 )
-				cvFindCornerSubPix( *img, corners.get(), m_edges, cvSize( 10, 10 ), cvSize( -1, -1 ), cvTermCriteria( CV_TERMCRIT_ITER, 10, 0.1f ) );
+				cvFindCornerSubPix( &(img->Mat()), corners.get(), m_edges, cvSize( 10, 10 ), cvSize( -1, -1 ), cvTermCriteria( CV_TERMCRIT_ITER, 10, 0.1f ) );
 
 			/** copies all values into OpenCV compatible formats */
 			boost::scoped_array< float > imgPoints( new float[ 2 * m_edges ] );
@@ -527,9 +527,9 @@ public:
 			else
 				debugImg = img->Clone();
 				
-			debugImg->iplImage()->origin = img->origin(); // it should not flip.....
+			debugImg->set_origin(img->origin()); // it should not flip.....
 			
-			cvDrawChessboardCorners( *debugImg, cvSize( m_width, m_height ), corners.get(), m_edges, pattern_was_found );
+			cvDrawChessboardCorners( &(debugImg->Mat()), cvSize( m_width, m_height ), corners.get(), m_edges, pattern_was_found );
 
 			m_debugPort.send( Measurement::ImageMeasurement( img.time(), debugImg ) );
 		}

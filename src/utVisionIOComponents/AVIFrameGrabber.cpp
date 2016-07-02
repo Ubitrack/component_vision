@@ -188,7 +188,7 @@ void AVIFrameGrabber::ThreadProc()
 			if(m_outPortGS.isConnected())
 			{
 				boost::shared_ptr< Image > pImageGS( new Image( pIpl->width, pIpl->height, 1 ) );
-				cvConvertImage( pIpl, *pImageGS );
+				cvConvertImage( pIpl, &(pImageGS->Mat()) );
 				m_outPortGS.send( ImageMeasurement( time, pImageGS ) );
 			}
 

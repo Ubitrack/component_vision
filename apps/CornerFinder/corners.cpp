@@ -208,7 +208,7 @@ int main( int, char** )
 			//pImage = undistorter.undistort( pImage );
 			
 			
-			img_gray			= cvCloneImage( *pImage );
+			img_gray			= new IplImage(pImage->Mat().clone());
 			CvSize img_size		= cvGetSize( img_gray );
 			height				= img_size.height;
 			// img_size.width		= 

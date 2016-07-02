@@ -97,21 +97,17 @@ ImageShrink::~ImageShrink()
 
 void ImageShrink::pushImage( const ImageMeasurement& m )
 {
-	IplImage* img = cvCloneImage( *m );
+	cv::Mat img = m->Mat();
 	unsigned shrink = 0;
 	while( m_factor > shrink )
 	{
-		IplImage *tmp = cvCreateImage( cvSize( static_cast< int > ( img->width * 0.5 ), static_cast< int > ( img->height * 0.5 ) ), img->depth, img->nChannels );
-		tmp->origin = img->origin;
-		
-		cvPyrDown( img, tmp );
+		cv::Mat tmp;
+		cv::pyrDown(img, tmp, cvSize( static_cast< int > ( img.rows * 0.5 ), static_cast< int > ( img.cols * 0.5 ) ) );
 		shrink++;
-		cvReleaseImage( &img );
-		img = cvCloneImage( tmp );
-		cvReleaseImage( &tmp );
-
+		img = tmp;
 	}
 	boost::shared_ptr< Vision::Image > out ( new Image( img ) );
+	out->copyImageFormatFrom(*m);
 	m_outPort.send( ImageMeasurement( m.time(), out ) );
 }
 

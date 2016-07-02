@@ -103,8 +103,8 @@ public:
 		}
 		boost::shared_ptr< Image > pImage( new Image( m_w, m_h, nChannels ) );
 
-		cv::Mat dst( cv::cvarrToMat(*pImage) );
-		cv::Mat src( cv::cvarrToMat(*img) );
+		cv::Mat dst = pImage->Mat();
+		cv::Mat src = img->Mat();
 
 #if 0
 		//		cv::imshow("ImageWarp src",src);
@@ -125,7 +125,7 @@ public:
 		cv::flip(src,src,0);
 		cv::flip(dst,dst,0); /// OpenCV --> Ubitrack
 
-		pImage->iplImage()->origin = img->origin(); //inserted by CW to have correct origin
+//		pImage->iplImage()->origin = img->origin(); //inserted by CW to have correct origin
 		m_outImagePort.send( Measurement::ImageMeasurement( img.time(), pImage ) );
 	}
 

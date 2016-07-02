@@ -261,7 +261,7 @@ protected:
 			const std::size_t m_numBytes = static_cast< std::size_t >( imageHeaderInfos[ 0 ] * imageHeaderInfos[ 1 ] * imageHeaderInfos[ 2 ] );
 			
 			boost::system::error_code msgErrorData;
-			/*const std::size_t lenData =*/ boost::asio::read( m_socket, boost::asio::buffer( currentImage->iplImage()->imageData, m_numBytes ) , boost::asio::transfer_all(), msgErrorData );
+			/*const std::size_t lenData =*/ boost::asio::read( m_socket, boost::asio::buffer( currentImage->Mat().data, m_numBytes ) , boost::asio::transfer_all(), msgErrorData );
 			if( msgErrorData )
 			{
 				LOG4CPP_ERROR( logger, "Could not read incoming image data properly, got the following error:\n\n\"" << msgErrorData.message() << "\" (\"" << msgErrorData << "\")\n\n"  );

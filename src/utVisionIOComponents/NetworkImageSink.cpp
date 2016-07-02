@@ -220,7 +220,7 @@ protected:
 			LOG4CPP_TRACE( logger, "Sending image data to \"" << m_dstAddress << ":" << m_dstPort << "\"." );
 			const Measurement::Timestamp t = m.time();
 			boost::asio::write( m_socket, boost::asio::buffer( &t, sizeof( Measurement::Timestamp ) ) );
-			boost::asio::write( m_socket, boost::asio::buffer( m->iplImage()->imageData, m->iplImage()->imageSize ) );
+			boost::asio::write( m_socket, boost::asio::buffer( m->Mat().data, m->Mat().total()*m->Mat().elemSize()) );
 		}
 	}
 };

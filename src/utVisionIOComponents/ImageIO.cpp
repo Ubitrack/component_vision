@@ -166,7 +166,7 @@ ImageWriter::~ImageWriter(){};
 void ImageWriter::pushImage( const ImageMeasurement& m )
 {
 	
-	if( cvSaveImage( m_filename.c_str(), *m ) == 0 )
+	if( cvSaveImage( m_filename.c_str(), &(m->Mat()) ) == 0 )
 		LOG4CPP_ERROR( logger, "Error saving image " << m_filename );
 }
 

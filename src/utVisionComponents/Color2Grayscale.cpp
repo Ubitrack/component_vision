@@ -112,19 +112,50 @@ void Color2Grayscale::pushImage(const ImageMeasurement& m )
 		// @todo we need to care about the color model here!!!
 		if (m->isOnGPU()) {
 			boost::shared_ptr< Image > pImage( new Image( m->width(), m->height(), 1 ) );
-			if (m->channels() == 3) {
+			switch(m->pixelFormat()) {
+			case Vision::Image::RGB:
 				cv::cvtColor(m->uMat(), pImage->uMat(), cv::COLOR_RGB2GRAY);
-			} else if (m->channels() == 4) {
+				break;
+			case Vision::Image::RGBA:
 				cv::cvtColor(m->uMat(), pImage->uMat(), cv::COLOR_RGBA2GRAY);
+				break;
+			case Vision::Image::BGR:
+				cv::cvtColor(m->uMat(), pImage->uMat(), cv::COLOR_BGR2GRAY);
+				break;
+			case Vision::Image::BGRA:
+				cv::cvtColor(m->uMat(), pImage->uMat(), cv::COLOR_BGRA2GRAY);
+				break;
+			default:
+				pImage->uMat() = m->uMat();
+				break;
 			}
 			// @ todo: what about the origin
+			pImage->copyImageFormatFrom(*m);
+			pImage->set_pixelFormat(Image::LUMINANCE);
+
 			m_outPort.send( ImageMeasurement( m.time(), pImage ) );
 		} else {
-			IplImage* img = *m;
-			LOG4CPP_DEBUG( logger, "Got color image: pushing converted" );
-			boost::shared_ptr< Image > pImage( new Image( img->width, img->height, 1 ) );
-			pImage->iplImage()->origin = img->origin; //inserted by CW to have correct origin
-			cvConvertImage(*m,*pImage);
+			boost::shared_ptr< Image > pImage( new Image( m->width(), m->height(), 1 ) );
+			switch(m->pixelFormat()) {
+			case Vision::Image::RGB:
+				cv::cvtColor(m->Mat(), pImage->Mat(), cv::COLOR_RGB2GRAY);
+				break;
+			case Vision::Image::RGBA:
+				cv::cvtColor(m->Mat(), pImage->Mat(), cv::COLOR_RGBA2GRAY);
+				break;
+			case Vision::Image::BGR:
+				cv::cvtColor(m->Mat(), pImage->Mat(), cv::COLOR_BGR2GRAY);
+				break;
+			case Vision::Image::BGRA:
+				cv::cvtColor(m->Mat(), pImage->Mat(), cv::COLOR_BGRA2GRAY);
+				break;
+			default:
+				pImage->Mat() = m->Mat();
+				break;
+			}
+			// @ todo: what about the origin
+			pImage->copyImageFormatFrom(*m);
+			pImage->set_pixelFormat(Image::LUMINANCE);
 			m_outPort.send( ImageMeasurement( m.time(), pImage ) );
 		}
 	}

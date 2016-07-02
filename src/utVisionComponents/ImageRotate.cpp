@@ -98,37 +98,32 @@ ImageRotate::~ImageRotate()
 
 void ImageRotate::pushImage( const ImageMeasurement& m )
 {
-	IplImage* img = cvCloneImage( *m );
+	cv::Mat img = m->Mat();
 	unsigned int width = m->width();
 	unsigned int height = m->height();
 	if ((m_rotation == 1) || (m_rotation == 2)) {
 		width = m->height();
 		height = m->width();
 	}
-	IplImage *tmp = cvCreateImage( cvSize( width, height ), img->depth, img->nChannels );
-	tmp->origin = img->origin;		
 
-	// a lot of copying here ..
-	if (m_rotation == 1){
-		cvTranspose(img, tmp);
-		cvFlip(tmp, tmp,1); //transpose+flip(1)=CW
-		cvReleaseImage( &img );
-		img = cvCloneImage( tmp );
+	cv::Mat tmp;
+
+	if (m_rotation == 0) {
+		tmp = img.clone();
+	} else if (m_rotation == 1){
+		cv::transpose(img, tmp);
+		cv::flip(tmp, tmp,1); //transpose+flip(1)=CW
 	} else if (m_rotation == 2) {
-		cvTranspose(img, tmp);
-		cvFlip(tmp, tmp,0); //transpose+flip(1)=CW
-		cvReleaseImage( &img );
-		img = cvCloneImage( tmp );
+		cv::transpose(img, tmp);
+		cv::flip(tmp, tmp, 0); //transpose+flip(1)=CW
 	} else if (m_rotation == 3){
-		cvFlip(img, tmp,-1);    //flip(-1)=180
-		cvReleaseImage( &img );
-		img = cvCloneImage( tmp );
+		cv::flip(img, tmp, -1);    //flip(-1)=180
 	} else if (m_rotation != 0){ //if not 0,1,2,3:
 		UBITRACK_THROW( "Invalid rotation specified" );
 	}
-	cvReleaseImage( &tmp );
 
-	boost::shared_ptr< Vision::Image > out ( new Image( img ) );
+	boost::shared_ptr< Vision::Image > out ( new Image( tmp ) );
+	out->copyImageFormatFrom(*m);
 	m_outPort.send( ImageMeasurement( m.time(), out ) );
 }
 

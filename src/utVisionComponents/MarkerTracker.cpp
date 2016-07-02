@@ -179,7 +179,7 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 				//pDebugImg = m->CvtColor( CV_GRAY2RGB, 3 );
 				if (!pDebugImg){
 					pDebugImg.reset(new Vision::Image(m->width(), m->height(), 3));
-					cvCvtColor(m->iplImage(), pDebugImg->iplImage(), CV_GRAY2RGB);
+					cv::cvtColor(m->Mat(), pDebugImg->Mat(), CV_GRAY2RGB);
 					break;
 				}
 			}

@@ -120,12 +120,12 @@ void CornerDetectionSubPix::pushPositions( const Measurement::Position2D& m )
 		boost::scoped_array< CvPoint2D32f > corners( new CvPoint2D32f[ 1 ] );
 		corners[ 0 ].x = static_cast< float > ( position( 0 ) );
 		corners[ 0 ].y = static_cast< float > ( position( 1 ) );
-		cvFindCornerSubPix( *imgIn, corners.get(), 1, cvSize( m_winSize, m_winSize ), cvSize( -1, -1 ), cvTermCriteria( CV_TERMCRIT_ITER, 20, 0.01f ) );
+		cvFindCornerSubPix( &(imgIn->Mat()), corners.get(), 1, cvSize( m_winSize, m_winSize ), cvSize( -1, -1 ), cvTermCriteria( CV_TERMCRIT_ITER, 20, 0.01f ) );
 		if( m_outPortImage.isConnected() )
 		{
 			boost::shared_ptr< Vision::Image > imgOut = imgIn->CvtColor ( CV_GRAY2RGB, 3, IPL_DEPTH_8U );
-			cvCircle( *imgOut, cvPoint( static_cast< int > ( position( 0 ) ), static_cast< int > ( position( 1 ) ) ), 5, CV_RGB( 255, 0, 0 ) );
-			cvCircle( *imgOut, cvPoint( static_cast< int > ( corners[ 0 ].x ), static_cast< int > ( corners[ 0 ].y ) ), 5, CV_RGB( 0, 255, 0 ) );
+			cvCircle( &(imgOut->Mat()), cvPoint( static_cast< int > ( position( 0 ) ), static_cast< int > ( position( 1 ) ) ), 5, CV_RGB( 255, 0, 0 ) );
+			cvCircle( &(imgOut->Mat()), cvPoint( static_cast< int > ( corners[ 0 ].x ), static_cast< int > ( corners[ 0 ].y ) ), 5, CV_RGB( 0, 255, 0 ) );
 			m_outPortImage.send( ImageMeasurement( m.time(), imgOut ) );
 			
 		}
