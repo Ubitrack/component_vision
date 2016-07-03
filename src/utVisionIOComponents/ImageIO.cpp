@@ -122,7 +122,8 @@ ImageMeasurement ImageReader::pullImage( Ubitrack::Measurement::Timestamp t )
 	LOG4CPP_DEBUG( logger, "Loading image " << file );
 
 	m_fileIt++;
-	boost::shared_ptr< Vision::Image > pImage( new Vision::Image( cvLoadImage( file.c_str(), CV_LOAD_IMAGE_UNCHANGED ) ) );
+	cv::Mat img = cv::imread(file, CV_LOAD_IMAGE_UNCHANGED);
+	boost::shared_ptr< Vision::Image > pImage( new Vision::Image( img ) );
 
 	return ImageMeasurement( t, pImage );
 }
@@ -165,8 +166,8 @@ ImageWriter::~ImageWriter(){};
 
 void ImageWriter::pushImage( const ImageMeasurement& m )
 {
-	
-	if( cvSaveImage( m_filename.c_str(), &(m->Mat()) ) == 0 )
+
+	if( cv::imwrite( m_filename, m->Mat() ) == 0 )
 		LOG4CPP_ERROR( logger, "Error saving image " << m_filename );
 }
 

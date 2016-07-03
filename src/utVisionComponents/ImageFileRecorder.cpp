@@ -191,8 +191,7 @@ void ImageFileRecorder::saveImage( const ImageMeasurement &img )
 	path /= fileName;
 	
 	LOG4CPP_DEBUG( logger, "saveImage(): Saving image to file " << path );
-	
-	if( cvSaveImage( path.string().c_str(), &(img) ) == 0 )
+	if( cv::imwrite(path.string(), img->Mat()) == 0 )
 		LOG4CPP_ERROR( logger, "Error saving image " << path );
 	
 	os << (unsigned long long)( img.time() / 1000000.)  << " " << path.filename() << std::endl;
