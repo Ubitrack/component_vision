@@ -106,57 +106,41 @@ void Color2Grayscale::pushImage(const ImageMeasurement& m )
 	{
 		LOG4CPP_DEBUG( logger, "Got grayscale image: pushing unmodified" );
 		m_outPort.send( m );
-	}
-	else
-		{
-		// @todo we need to care about the color model here!!!
-		if (m->isOnGPU()) {
-			boost::shared_ptr< Image > pImage( new Image( m->width(), m->height(), 1 ) );
-			switch(m->pixelFormat()) {
-			case Vision::Image::RGB:
-				cv::cvtColor(m->uMat(), pImage->uMat(), cv::COLOR_RGB2GRAY);
-				break;
-			case Vision::Image::RGBA:
-				cv::cvtColor(m->uMat(), pImage->uMat(), cv::COLOR_RGBA2GRAY);
-				break;
-			case Vision::Image::BGR:
-				cv::cvtColor(m->uMat(), pImage->uMat(), cv::COLOR_BGR2GRAY);
-				break;
-			case Vision::Image::BGRA:
-				cv::cvtColor(m->uMat(), pImage->uMat(), cv::COLOR_BGRA2GRAY);
-				break;
-			default:
-				pImage->uMat() = m->uMat();
-				break;
+	} else {
+
+		int cvtCode = 0;
+		switch(m->pixelFormat()) {
+		case Vision::Image::RGB:
+			cvtCode = cv::COLOR_RGB2GRAY;
+			break;
+		case Vision::Image::RGBA:
+			cvtCode = cv::COLOR_RGBA2GRAY;
+			break;
+		case Vision::Image::BGR:
+			cvtCode = cv::COLOR_BGR2GRAY;
+			break;
+		case Vision::Image::BGRA:
+			cvtCode = cv::COLOR_BGRA2GRAY;
+			break;
+		default:
+			break;
+		}
+		boost::shared_ptr< Image > pImage;
+		if (cvtCode != 0) {
+			if (m->isOnGPU()) {
+				cv::UMat tmp;
+				cv::cvtColor(m->uMat(), tmp, cv::COLOR_RGB2GRAY);
+				pImage.reset( new Image( tmp ) );
+			}  else {
+				cv::Mat tmp;
+				cv::cvtColor(m->Mat(), tmp, cv::COLOR_RGB2GRAY);
+				pImage.reset( new Image( tmp ) );
 			}
-			// @ todo: what about the origin
 			pImage->copyImageFormatFrom(*m);
 			pImage->set_pixelFormat(Image::LUMINANCE);
-
 			m_outPort.send( ImageMeasurement( m.time(), pImage ) );
 		} else {
-			boost::shared_ptr< Image > pImage( new Image( m->width(), m->height(), 1 ) );
-			switch(m->pixelFormat()) {
-			case Vision::Image::RGB:
-				cv::cvtColor(m->Mat(), pImage->Mat(), cv::COLOR_RGB2GRAY);
-				break;
-			case Vision::Image::RGBA:
-				cv::cvtColor(m->Mat(), pImage->Mat(), cv::COLOR_RGBA2GRAY);
-				break;
-			case Vision::Image::BGR:
-				cv::cvtColor(m->Mat(), pImage->Mat(), cv::COLOR_BGR2GRAY);
-				break;
-			case Vision::Image::BGRA:
-				cv::cvtColor(m->Mat(), pImage->Mat(), cv::COLOR_BGRA2GRAY);
-				break;
-			default:
-				pImage->Mat() = m->Mat();
-				break;
-			}
-			// @ todo: what about the origin
-			pImage->copyImageFormatFrom(*m);
-			pImage->set_pixelFormat(Image::LUMINANCE);
-			m_outPort.send( ImageMeasurement( m.time(), pImage ) );
+			LOG4CPP_ERROR(logger, "Unkown PixelColor for Grayscale converion...");
 		}
 	}
 }

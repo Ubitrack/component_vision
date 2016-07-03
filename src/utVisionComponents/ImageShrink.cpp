@@ -95,18 +95,27 @@ ImageShrink::~ImageShrink()
 {
 }
 
-void ImageShrink::pushImage( const ImageMeasurement& m )
-{
-	cv::Mat img = m->Mat();
+template<typename T>
+boost::shared_ptr< Vision::Image > shrinkImage(T& img, int factor) {
 	unsigned shrink = 0;
-	while( m_factor > shrink )
+	while( factor > shrink )
 	{
-		cv::Mat tmp;
+		T tmp;
 		cv::pyrDown(img, tmp, cvSize( static_cast< int > ( img.rows * 0.5 ), static_cast< int > ( img.cols * 0.5 ) ) );
 		shrink++;
 		img = tmp;
 	}
-	boost::shared_ptr< Vision::Image > out ( new Image( img ) );
+	return boost::shared_ptr< Vision::Image >( new Image( img ) );
+}
+
+void ImageShrink::pushImage( const ImageMeasurement& m )
+{
+	boost::shared_ptr< Vision::Image > out;
+	if (m->isOnGPU()) {
+		out = shrinkImage(m->uMat(), m_factor);
+	} else {
+		out = shrinkImage(m->Mat(), m_factor);
+	}
 	out->copyImageFormatFrom(*m);
 	m_outPort.send( ImageMeasurement( m.time(), out ) );
 }

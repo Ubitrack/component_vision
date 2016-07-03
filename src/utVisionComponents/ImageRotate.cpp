@@ -96,9 +96,31 @@ ImageRotate::~ImageRotate()
 {
 }
 
+template<typename T>
+boost::shared_ptr< Vision::Image > rotateImage(T& img, int rotate) {
+	boost::shared_ptr< Vision::Image > out;
+	T tmp;
+
+	if (rotate == 0) {
+		tmp = img;
+	} else if (rotate == 1){
+		cv::transpose(img, tmp);
+		cv::flip(tmp, tmp,1); //transpose+flip(1)=CW
+	} else if (rotate == 2) {
+		cv::transpose(img, tmp);
+		cv::flip(tmp, tmp, 0); //transpose+flip(1)=CW
+	} else if (rotate == 3){
+		cv::flip(img, tmp, -1);    //flip(-1)=180
+	} else if (rotate != 0){ //if not 0,1,2,3:
+		UBITRACK_THROW( "Invalid rotation specified" );
+	}
+	out.reset( new Image( tmp ) );
+}
+
 void ImageRotate::pushImage( const ImageMeasurement& m )
 {
-	cv::Mat img = m->Mat();
+
+	boost::shared_ptr< Vision::Image > out;
 	unsigned int width = m->width();
 	unsigned int height = m->height();
 	if ((m_rotation == 1) || (m_rotation == 2)) {
@@ -106,23 +128,12 @@ void ImageRotate::pushImage( const ImageMeasurement& m )
 		height = m->width();
 	}
 
-	cv::Mat tmp;
-
-	if (m_rotation == 0) {
-		tmp = img.clone();
-	} else if (m_rotation == 1){
-		cv::transpose(img, tmp);
-		cv::flip(tmp, tmp,1); //transpose+flip(1)=CW
-	} else if (m_rotation == 2) {
-		cv::transpose(img, tmp);
-		cv::flip(tmp, tmp, 0); //transpose+flip(1)=CW
-	} else if (m_rotation == 3){
-		cv::flip(img, tmp, -1);    //flip(-1)=180
-	} else if (m_rotation != 0){ //if not 0,1,2,3:
-		UBITRACK_THROW( "Invalid rotation specified" );
+	if (m->isOnGPU()) {
+		out = rotateImage(m->uMat(), m_rotation);
+	} else {
+		out = rotateImage(m->Mat(), m_rotation);
 	}
 
-	boost::shared_ptr< Vision::Image > out ( new Image( tmp ) );
 	out->copyImageFormatFrom(*m);
 	m_outPort.send( ImageMeasurement( m.time(), out ) );
 }
