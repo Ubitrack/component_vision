@@ -46,6 +46,8 @@
 #include <utUtil/OS.h>
 #include <utUtil/Exception.h>
 #include <utVision/Image.h>
+#include <utVision/OpenCLManager.h>
+
 
 #include <opencv/cv.h>
 
@@ -53,93 +55,61 @@ using namespace Ubitrack;
 using namespace Ubitrack::Vision;
 using namespace Ubitrack::Measurement;
 
-static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.ImageRotate" ) );
+static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.ImageGPUUpload" ) );
 
 namespace Ubitrack { namespace Drivers {
 
 
-class ImageRotate
+class ImageGPUUpload
 	: public Dataflow::Component
 {
 public:
 
 	/** constructor */
-	ImageRotate( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > );
+	ImageGPUUpload( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > );
 
 	/** destructor, waits until thread stops */
-	~ImageRotate();
+	~ImageGPUUpload();
 
 protected:
 	// event handler
 	void pushImage( const ImageMeasurement& m );
 
-	// 0=no change, 1=CW, 2=CCW, 3=180
-	unsigned m_rotation;
+	unsigned m_factor;
 	// the ports
 	Dataflow::PushSupplier< ImageMeasurement > m_outPort;
 	Dataflow::PushConsumer< ImageMeasurement > m_inPort;
 };
 
 
-ImageRotate::ImageRotate( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > subgraph )
+ImageGPUUpload::ImageGPUUpload( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > subgraph )
 	: Dataflow::Component( sName )
-	, m_rotation ( 0 )
+	, m_factor ( 0 )
 	, m_outPort( "Output", *this )
-	, m_inPort( "Input", *this, boost::bind( &ImageRotate::pushImage, this, _1 ) )
-{
-	if ( subgraph -> m_DataflowAttributes.hasAttribute( "imageRotation" ) )
-		subgraph -> m_DataflowAttributes.getAttributeData( "imageRotation", m_rotation );
-}
-
-
-ImageRotate::~ImageRotate()
+	, m_inPort( "Input", *this, boost::bind( &ImageGPUUpload::pushImage, this, _1 ) )
 {
 }
 
-template<typename T>
-boost::shared_ptr< Vision::Image > rotateImage(T& img, int rotate) {
-	T tmp;
 
-	if (rotate == 0) {
-		tmp = img;
-	} else if (rotate == 1){
-		cv::transpose(img, tmp);
-		cv::flip(tmp, tmp,1); //transpose+flip(1)=CW
-	} else if (rotate == 2) {
-		cv::transpose(img, tmp);
-		cv::flip(tmp, tmp, 0); //transpose+flip(1)=CW
-	} else if (rotate == 3){
-		cv::flip(img, tmp, -1);    //flip(-1)=180
-	} else if (rotate != 0){ //if not 0,1,2,3:
-		UBITRACK_THROW( "Invalid rotation specified" );
-	}
-	return boost::shared_ptr< Vision::Image >( new Image( tmp ) );
+ImageGPUUpload::~ImageGPUUpload()
+{
 }
 
-void ImageRotate::pushImage( const ImageMeasurement& m )
+
+void ImageGPUUpload::pushImage( const ImageMeasurement& m )
 {
-
-	boost::shared_ptr< Vision::Image > out;
-	unsigned int width = m->width();
-	unsigned int height = m->height();
-	if ((m_rotation == 1) || (m_rotation == 2)) {
-		width = m->height();
-		height = m->width();
-	}
-
-	if (m->isOnGPU()) {
-		out = rotateImage(m->uMat(), m_rotation);
+	Vision::OpenCLManager& oclManager = Vision::OpenCLManager::singleton();
+	if (oclManager.isInitialized()) {
+		//force upload to the GPU
+		m->uMat();
 	} else {
-		out = rotateImage(m->Mat(), m_rotation);
+		LOG4CPP_WARN(logger, "GPU Upload node active, but OpenCL Manager is not initialized.");
 	}
-
-
-	out->copyImageFormatFrom(*m);
-	m_outPort.send( ImageMeasurement( m.time(), out ) );
+	m_outPort.send( m );
 }
 
 } } // namespace Ubitrack::Driver
 
 UBITRACK_REGISTER_COMPONENT( Dataflow::ComponentFactory* const cf ) {
-	cf->registerComponent< Ubitrack::Drivers::ImageRotate > ( "ImageRotate" );
+	cf->registerComponent< Ubitrack::Drivers::ImageGPUUpload > ( "ImageGPUUpload" );
 }
