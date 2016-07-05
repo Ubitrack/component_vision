@@ -96,16 +96,17 @@ ImageShrink::~ImageShrink()
 }
 
 template<typename T>
-boost::shared_ptr< Vision::Image > shrinkImage(T& img, int factor) {
+boost::shared_ptr< Vision::Image > shrinkImage(const T& img, int factor) {
 	unsigned shrink = 0;
+	T cimg = img;
 	while( factor > shrink )
 	{
 		T tmp;
-		cv::pyrDown(img, tmp, cvSize( static_cast< int > ( img.rows * 0.5 ), static_cast< int > ( img.cols * 0.5 ) ) );
+		cv::pyrDown(img, tmp, cvSize( static_cast< int > ( cimg.rows * 0.5 ), static_cast< int > ( cimg.cols * 0.5 ) ) );
 		shrink++;
-		img = tmp;
+		cimg = tmp;
 	}
-	return boost::shared_ptr< Vision::Image >( new Image( img ) );
+	return boost::shared_ptr< Vision::Image >( new Image( cimg ) );
 }
 
 void ImageShrink::pushImage( const ImageMeasurement& m )

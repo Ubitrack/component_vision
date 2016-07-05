@@ -101,7 +101,7 @@ boost::shared_ptr< Vision::Image > rotateImage(T& img, int rotate) {
 	T tmp;
 
 	if (rotate == 0) {
-		tmp = img;
+		tmp = img; // do not copy if no rotation is applied
 	} else if (rotate == 1){
 		cv::transpose(img, tmp);
 		cv::flip(tmp, tmp,1); //transpose+flip(1)=CW
@@ -110,7 +110,7 @@ boost::shared_ptr< Vision::Image > rotateImage(T& img, int rotate) {
 		cv::flip(tmp, tmp, 0); //transpose+flip(1)=CW
 	} else if (rotate == 3){
 		cv::flip(img, tmp, -1);    //flip(-1)=180
-	} else if (rotate != 0){ //if not 0,1,2,3:
+	} else { //if not 0,1,2,3:
 		UBITRACK_THROW( "Invalid rotation specified" );
 	}
 	return boost::shared_ptr< Vision::Image >( new Image( tmp ) );
