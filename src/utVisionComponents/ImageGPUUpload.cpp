@@ -103,7 +103,7 @@ void ImageGPUUpload::pushImage( const ImageMeasurement& m )
 		//force upload to the GPU
 		m->uMat();
 	} else {
-		LOG4CPP_WARN(logger, "GPU Upload node active, but OpenCL Manager is not initialized.");
+		LOG4CPP_WARN(logger, "GPU Upload node active, but OpenCL is not enabled.");
 	}
 	m_outPort.send( m );
 }
