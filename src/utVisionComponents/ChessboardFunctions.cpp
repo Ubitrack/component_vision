@@ -532,8 +532,8 @@ public:
 				debugImg = img->Clone();
 				
 			debugImg->set_origin(img->origin()); // it should not flip.....
-			
-			cvDrawChessboardCorners( &(debugImg->Mat()), cvSize( m_width, m_height ), corners.get(), m_edges, pattern_was_found );
+			IplImage dbgImg = debugImg->Mat();
+			cvDrawChessboardCorners( &dbgImg, cvSize(m_width, m_height), corners.get(), m_edges, pattern_was_found);
 
 			m_debugPort.send( Measurement::ImageMeasurement( img.time(), debugImg ) );
 		}
