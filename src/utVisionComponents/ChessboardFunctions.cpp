@@ -530,9 +530,10 @@ public:
 				debugImg = img->CvtColor( CV_GRAY2RGB, 3 );
 			else
 				debugImg = img->Clone();
-				
-			debugImg->set_origin(img->origin()); // it should not flip.....
+
+			debugImg->set_origin(img->origin()); // it should not flip.....			
 			IplImage dbgImg = debugImg->Mat();
+			dbgImg.origin = img->origin();			
 			cvDrawChessboardCorners( &dbgImg, cvSize(m_width, m_height), corners.get(), m_edges, pattern_was_found);
 
 			m_debugPort.send( Measurement::ImageMeasurement( img.time(), debugImg ) );

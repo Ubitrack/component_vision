@@ -40,9 +40,11 @@
 #include <boost/scoped_array.hpp>
 #include <opencv/cv.h>
 #include <opencv2/calib3d/calib3d_c.h> 
+#include <opencv/cv.hpp>
 
 namespace ublas = boost::numeric::ublas;
 using namespace Ubitrack::Measurement;
+using namespace cv;
 
 namespace Ubitrack { namespace Vision {
 
@@ -181,73 +183,64 @@ public:
 	{
 		m_values = m_inPort.get()->size();
 
-		boost::scoped_array< float > imgPoints( new float[2*m_values*m_corners] );
-		boost::scoped_array< float > objPoints( new float[3*m_values*m_corners] );
-		boost::scoped_array< int > chessNumber( new int[ m_values ] );
+		std::vector<std::vector<Point2f> > imgPoints(m_values);
+		std::vector<std::vector<Point3f> > objPoints(m_values);		
 
 		// copy image corners to big array
 		for( int i = 0; i < m_values; ++i )
 		{
+			imgPoints[i].resize(m_corners);
 			for( int j = 0; j < m_corners; ++j )
-			{
-				imgPoints[2*i*m_corners + 2*j] = static_cast< float > ( m_inPort.get()->at( i ).at( j )( 0 ) );
-				imgPoints[2*i*m_corners + 2*j + 1] = static_cast< float> ( m_inPort.get()->at( i ).at( j )( 1 ) );
+			{				
+				imgPoints[i][j].x = static_cast< float > ( m_inPort.get()->at(i).at(j)(0) );
+				imgPoints[i][j].y = static_cast< float > ( m_inPort.get()->at(i).at(j)(1) );
 			}
 		}
 
 		// generate object points
-		for( int i = 0; i < m_values; ++i )
-			for ( int y = 0; y < m_height; ++y )
-				for ( int x = 0; x < m_width; ++x )
-				{
-					unsigned j = ( i * m_corners + y * m_width + x ) * 3;
-					objPoints[ j     ] = m_sizeX * x;
-					objPoints[ j + 1 ] = m_sizeY * y;
-					objPoints[ j + 2 ] = 0;
+		for (int i = 0; i < m_values; ++i){
+			objPoints[i].resize(m_height*m_width);
+			for (int y = 0; y < m_height; ++y)
+				for (int x = 0; x < m_width; ++x)
+				{				
+					unsigned int j = x + y * m_width;
+					objPoints[i][j].x = m_sizeX * x;
+					objPoints[i][j].y = m_sizeX * y;
+					objPoints[i][j].z = 0;
 				}
+		}
+			
 
-		for( int i = 0; i < m_values; ++i )
-			chessNumber[i] = m_corners;
-
-
+		
 		if( m_values > 1 )
-		{
-			CvMat object_points = cvMat ( m_corners*m_values, 3, CV_32F, objPoints.get() );
-			CvMat image_points = cvMat ( m_corners*m_values, 2, CV_32F, imgPoints.get() );
-			CvMat point_counts = cvMat( 1, m_values, CV_32S, chessNumber.get() );
+		{			
+			Mat intrinsic_matrix = Mat::eye(3, 3, CV_64F);
 
-			float intrVal[9];
-			CvMat intrinsic_matrix = cvMat ( 3, 3, CV_32FC1, intrVal );
+			Mat distortion_coeffs = Mat::zeros(4, 1, CV_64F);
+			
+			std::vector<Mat> rvecs, tvecs;
+			cv::Size imageSize = cv::Size(m_imgWidth, m_imgHeight);
 
-			float disVal[4];
-			CvMat distortion_coeffs = cvMat( 4, 1, CV_32FC1, disVal );
+			
 
+			calibrateCamera(objPoints, imgPoints, imageSize, intrinsic_matrix, distortion_coeffs, rvecs, tvecs, m_flags);
+			
+			
+			intrinsic(0, 0) = intrinsic_matrix.at<double>(0, 0);
+			intrinsic(0, 1) = intrinsic_matrix.at<double>(0, 1);
+			intrinsic(0, 2) = -intrinsic_matrix.at<double>(0, 2);
+			intrinsic(1, 0) = intrinsic_matrix.at<double>(1, 0);
+			intrinsic(1, 1) = intrinsic_matrix.at<double>(1, 1);
+			intrinsic(1, 2) = -intrinsic_matrix.at<double>(1, 2);
+			intrinsic(2, 0) = intrinsic_matrix.at<double>(2, 0);
+			intrinsic(2, 1) = intrinsic_matrix.at<double>(2, 1);
+			intrinsic(2, 2) = -intrinsic_matrix.at<double>(2, 2);
 
-			cvCalibrateCamera2(
-							&object_points,
-							&image_points,
-							&point_counts,
-							cvSize( m_imgWidth, m_imgHeight ),
-							&intrinsic_matrix,
-							&distortion_coeffs,
-							NULL ,		//	NULL for no output
-							NULL ,	//	NULL for no output
-							m_flags );
-
-			intrinsic( 0, 0 ) = static_cast< double >( intrVal[0] );
-			intrinsic( 0, 1 ) = static_cast< double >( intrVal[1] );
-			intrinsic( 0, 2 ) = -static_cast< double >( intrVal[2] );
-			intrinsic( 1, 0 ) = static_cast< double >( intrVal[3] );
-			intrinsic( 1, 1 ) = static_cast< double >( intrVal[4] );
-			intrinsic( 1, 2 ) = -static_cast< double >( intrVal[5] );
-			intrinsic( 2, 0 ) = 0.0;
-			intrinsic( 2, 1 ) = 0.0;
-			intrinsic( 2, 2 ) = -1.0;
-
-			distortion( 0 ) = static_cast< double >( disVal[0] );
-			distortion( 1 ) = static_cast< double >( disVal[1] );
-			distortion( 2 ) = static_cast< double >( disVal[2] );
-			distortion( 3 ) = static_cast< double >( disVal[3] );
+			distortion(0) = distortion_coeffs.at<double>(0);
+			distortion(1) = distortion_coeffs.at<double>(1);
+			distortion(2) = distortion_coeffs.at<double>(2);
+			distortion(3) = distortion_coeffs.at<double>(3);
+			
 		}
 		else UBITRACK_THROW( "Illegal number of poses" );
     }

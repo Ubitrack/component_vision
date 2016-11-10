@@ -38,6 +38,7 @@
 // OpenCV (for the calibration function)
 #include <opencv/cv.h> 
 #include <opencv2/calib3d/calib3d_c.h> 
+#include <opencv/cv.hpp>
 
 // Boost (for data preperation)
 #include <boost/bind.hpp>
@@ -58,6 +59,7 @@
 #include <log4cpp/Category.hh>
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.CameraCalibration" ) );
 
+using namespace cv;
 
 namespace Ubitrack { namespace Vision {
 
@@ -93,6 +95,10 @@ protected:
 	
 	/** thread performing camera calibration in the background. */
 	boost::scoped_ptr< boost::thread > m_pThread;
+
+	int m_imgHeight;
+	int m_imgWidth;
+	bool m_useRationalModel;
 	
 public:
 	/**
@@ -103,14 +109,29 @@ public:
 	 */
 	CameraCalibration( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > pCfg )
 		: Dataflow::TriggerComponent( sName, pCfg )
-		, m_flags( CV_CALIB_RATIONAL_MODEL ) // for using 6 instead of 3 distortion parameters
+		, m_flags( 0 ) // for using 6 instead of 3 distortion parameters
+		, m_useRationalModel(false)
+		, m_imgWidth(640)
+		, m_imgHeight(480)
 		, m_inPort2D( "Points2D", *this )
 		, m_inPort3D( "Points3D", *this )
 		, m_intrPort( "CameraIntrinsics", *this )
 		, m_mutexThread( )
     {
-		
+	
+
+
 		// look for some flags which can be specified...
+
+		if (pCfg->m_DataflowAttributes.hasAttribute("useRationalModel")) // fixes principal point to centre of image plane
+			if (pCfg->m_DataflowAttributes.getAttributeString("useRationalModel") == "true"){
+				m_flags = CV_CALIB_RATIONAL_MODEL;
+				m_useRationalModel = true;
+			}
+				
+		
+
+
 		if ( pCfg->m_DataflowAttributes.hasAttribute( "fixPrincipalPoint" ) ) // fixes principal point to centre of image plane
 			if( pCfg->m_DataflowAttributes.getAttributeString( "fixPrincipalPoint" ) == "true" )
 				m_flags |= CV_CALIB_FIX_PRINCIPAL_POINT;
@@ -122,6 +143,9 @@ public:
 		if ( pCfg->m_DataflowAttributes.hasAttribute( "fixAspectRatio" ) ) // fixes aspect ratio, such that fx/fy
 			if( pCfg->m_DataflowAttributes.getAttributeString( "fixAspectRatio" ) == "true" )
 				m_flags |= CV_CALIB_FIX_ASPECT_RATIO;
+		
+		pCfg->m_DataflowAttributes.getAttributeData("imgHeight", m_imgHeight);
+		pCfg->m_DataflowAttributes.getAttributeData("imgWidth", m_imgWidth);
 		
 		///@todo add some other flags, that are possible with newer versions of OpenCV
     }
@@ -192,53 +216,54 @@ public:
 		const std::size_t summe2D3D = std::accumulate( num_points.begin(), num_points.end(), 0 );
 			
 		
-		// everything is fine so far, prepare copying the data
-		boost::scoped_array< float > imgPoints( new float[2*summe2D3D] );
-		boost::scoped_array< float > objPoints( new float[3*summe2D3D] );
+		// everything is fine so far, prepare copying the data		
+		std::vector<std::vector<Point2f> > imgPoints(m_values);
+		std::vector<std::vector<Point3f> > objPoints(m_values);
 		
 
 		// copy image corners to big array
 		for( std::size_t i ( 0 ); i < m_values; ++i )
 		{
 			const std::size_t corners2D = points2D.at( i ).size();
+			imgPoints[i].resize(corners2D);
 			for( std::size_t j ( 0 ) ; j < corners2D; ++j )
 			{
-				imgPoints[2*i*corners2D + 2*j] = static_cast< float > ( points2D.at( i ).at( j )( 0 ) );
-				imgPoints[2*i*corners2D + 2*j + 1] = static_cast< float> ( points2D.at( i ).at( j )( 1 ) );
+				imgPoints[i][j].x = static_cast< float > ( points2D.at( i ).at( j )( 0 ) );
+				imgPoints[i][j].y = static_cast< float > ( points2D.at(i).at(j)(1));
 			}
 			
 			const std::size_t corners3D = points3D.at( i ).size();
+			objPoints[i].resize(corners3D);
 			for( std::size_t j ( 0 ) ; j < corners3D; ++j )
 			{
-				objPoints[3*i*corners3D + 3*j] = static_cast< float > ( points3D.at( i ).at( j )( 0 ) );
-				objPoints[3*i*corners3D + 3*j + 1] = static_cast< float> ( points3D.at( i ).at( j )( 1 ) );
-				objPoints[3*i*corners3D + 3*j + 2] = static_cast< float > ( points3D.at( i ).at( j )( 2 ) );
+				objPoints[i][j].x = static_cast< float > ( points3D.at( i ).at( j )( 0 ) );
+				objPoints[i][j].y = static_cast< float> (points3D.at(i).at(j)(1));
+				objPoints[i][j].z = static_cast< float > (points3D.at(i).at(j)(2));
 			}
 		}
 
-		CvMat object_points = cvMat ( summe2D3D, 3, CV_32F, objPoints.get() );
-		CvMat image_points = cvMat ( summe2D3D, 2, CV_32F, imgPoints.get() );
-		CvMat point_counts = cvMat( 1, m_values, CV_32S, chessNumber.get() );
+		
+		Mat intrinsic_matrix = Mat::eye(3, 3, CV_64F);
 
-		float intrVal[9];
-		CvMat intrinsic_matrix = cvMat ( 3, 3, CV_32FC1, intrVal );
-
-		float disVal[8];
-		CvMat distortion_coeffs = cvMat( 8, 1, CV_32FC1, disVal );
-
+		Mat distortion_coeffs;
+		if (m_useRationalModel) {
+			distortion_coeffs = Mat::zeros(8, 1, CV_64F);
+		}
+		else {
+			distortion_coeffs = Mat::zeros(4, 1, CV_64F);
+		}
+			
+		
+		
 		
 		try
 		{
-			cvCalibrateCamera2(
-						&object_points,
-						&image_points,
-						&point_counts,
-						cvSize( 640, 480 ), //OpenCV modifies centers to (cvSize -1) * 0.5
-						&intrinsic_matrix,
-						&distortion_coeffs,
-						NULL ,		//	NULL for no output
-						NULL ,	//	NULL for no output
-						m_flags );
+
+			std::vector<Mat> rvecs, tvecs;
+			Size imageSize = cv::Size(m_imgWidth, m_imgHeight);
+			
+			calibrateCamera(objPoints, imgPoints, imageSize, intrinsic_matrix, distortion_coeffs, rvecs, tvecs, m_flags);
+		
 		}
 		catch( const std::exception & e )
 		{
@@ -246,28 +271,43 @@ public:
 			return;
 		}
 
-		///@todo check if the paramrers should not be flipped, as it is done at some other places.
-		const Math::Vector< double, 2 > tangential( disVal[ 2 ], disVal[ 3 ] );
-		Math::Vector< double, 6 > radial;
-		radial( 0 ) = disVal[ 0 ];
-		radial( 1 ) = disVal[ 1 ];
-		radial( 2 ) = disVal[ 4 ];
-		radial( 3 ) = disVal[ 5 ];
-		radial( 4 ) = disVal[ 6 ];
-		radial( 5 ) = disVal[ 7 ];
-		
-		Math::Matrix< double, 3, 3 > intrinsic;
-		intrinsic( 0, 0 ) = static_cast< double >( intrVal[0] );
-		intrinsic( 0, 1 ) = static_cast< double >( intrVal[1] );
-		intrinsic( 0, 2 ) = -static_cast< double >( intrVal[2] );
-		intrinsic( 1, 0 ) = static_cast< double >( intrVal[3] );
-		intrinsic( 1, 1 ) = static_cast< double >( intrVal[4] );
-		intrinsic( 1, 2 ) = -static_cast< double >( intrVal[5] );
-		intrinsic( 2, 0 ) = 0.0;
-		intrinsic( 2, 1 ) = 0.0;
-		intrinsic( 2, 2 ) = -1.0;
 
-		m_camIntrinsics = Math::CameraIntrinsics< double > ( intrinsic, radial, tangential );
+
+		///@todo check if the paramrers should not be flipped, as it is done at some other places.
+		Math::Matrix< double, 3, 3 > intrinsic;
+		intrinsic(0, 0) = intrinsic_matrix.at<double>(0, 0);
+		intrinsic(0, 1) = intrinsic_matrix.at<double>(0, 1);
+		intrinsic(0, 2) = -intrinsic_matrix.at<double>(0, 2);
+		intrinsic(1, 0) = intrinsic_matrix.at<double>(1, 0);
+		intrinsic(1, 1) = intrinsic_matrix.at<double>(1, 1);
+		intrinsic(1, 2) = -intrinsic_matrix.at<double>(1, 2);
+		intrinsic(2, 0) = intrinsic_matrix.at<double>(2, 0);
+		intrinsic(2, 1) = intrinsic_matrix.at<double>(2, 1);
+		intrinsic(2, 2) = -intrinsic_matrix.at<double>(2, 2);
+
+		if (m_useRationalModel) {			
+			Math::Vector< double, 6 > radial;
+			radial(0) = distortion_coeffs.at<double>(0);
+			radial(1) = distortion_coeffs.at<double>(1);
+			radial(2) = distortion_coeffs.at<double>(4);
+			radial(3) = distortion_coeffs.at<double>(5);
+			radial(4) = distortion_coeffs.at<double>(6);
+			radial(5) = distortion_coeffs.at<double>(7);
+
+			const Math::Vector< double, 2 > tangential(distortion_coeffs.at<double>(2), distortion_coeffs.at<double>(3));
+
+			m_camIntrinsics = Math::CameraIntrinsics< double >(intrinsic, radial, tangential, m_imgWidth, m_imgHeight);
+		}
+		else {			
+			Math::Vector< double, 2 > radial;
+			radial(0) = distortion_coeffs.at<double>(0);
+			radial(1) = distortion_coeffs.at<double>(1);
+
+			const Math::Vector< double, 2 > tangential(distortion_coeffs.at<double>(2), distortion_coeffs.at<double>(3));
+			
+			m_camIntrinsics = Math::CameraIntrinsics< double >(intrinsic, radial, tangential, m_imgWidth, m_imgHeight);
+		}
+		
 		m_intrPort.send( Measurement::CameraIntrinsics ( Measurement::now(), m_camIntrinsics ) );		
 		LOG4CPP_INFO( logger, "Finished camera calibration using " << m_values << " views." );
     }

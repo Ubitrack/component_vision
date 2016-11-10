@@ -175,11 +175,9 @@ void MarkerTrackerModule::trackMarkers( const Measurement::ImageMeasurement& m )
 		// check if debug image needs to be created
 		for ( it = components.begin(); it != components.end(); it++ )
 			if ( (*it)->debug() )
-			{
-				//pDebugImg = m->CvtColor( CV_GRAY2RGB, 3 );
-				if (!pDebugImg){
-					pDebugImg.reset(new Vision::Image(m->width(), m->height(), 3));
-					cv::cvtColor(m->Mat(), pDebugImg->Mat(), CV_GRAY2RGB);
+			{				
+				if (!pDebugImg){					
+					pDebugImg = m->CvtColor(CV_GRAY2RGB, 3);										
 					break;
 				}
 			}
