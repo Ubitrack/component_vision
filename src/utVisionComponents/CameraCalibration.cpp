@@ -295,9 +295,8 @@ public:
 			radial(5) = distortion_coeffs.at<double>(7);
 
 			const Math::Vector< double, 2 > tangential(distortion_coeffs.at<double>(2), distortion_coeffs.at<double>(3));
-			const Math::Vector< std::size_t, 2 > size(m_imgWidth, m_imgHeight);
 
-			m_camIntrinsics = Math::CameraIntrinsics< double >(size, intrinsic, 6, radial, tangential);
+			m_camIntrinsics = Math::CameraIntrinsics< double >(intrinsic, radial, tangential, (std::size_t)m_imgWidth, (std::size_t)m_imgHeight);
 		}
 		else {			
 			Math::Vector< double, 2 > radial;
@@ -305,9 +304,8 @@ public:
 			radial(1) = distortion_coeffs.at<double>(1);
 
 			const Math::Vector< double, 2 > tangential(distortion_coeffs.at<double>(2), distortion_coeffs.at<double>(3));
-			const Math::Vector< std::size_t, 2 > size(m_imgWidth, m_imgHeight);
 
-			m_camIntrinsics = Math::CameraIntrinsics< double >(size, intrinsic, 2, radial, tangential);
+			m_camIntrinsics = Math::CameraIntrinsics< double >(intrinsic, radial, tangential, (std::size_t)m_imgWidth, (std::size_t)m_imgHeight);
 		}
 		
 		m_intrPort.send( Measurement::CameraIntrinsics ( Measurement::now(), m_camIntrinsics ) );		
