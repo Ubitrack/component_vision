@@ -59,12 +59,6 @@
 
 #endif
 
-// @todo should that be a compiletime option??
-//#define DO_TIMING
-#ifdef DO_TIMING
-	#include <utUtil/BlockTimer.h>
-#endif
-
 #define WITH_OPENGL_TEXTURE_UPDATE 1
 
 #ifdef _WIN32
@@ -78,21 +72,22 @@
 #ifdef WITH_OPENGL_TEXTURE_UPDATE
 
 #ifdef _WIN32
-	#include "GL/freeglut.h"	
+	#include <GL/gl.h>
+	#include <GL/glu.h>
+	#include <utUtil/CleanWindows.h>
 #elif __APPLE__
-  #ifdef HAVE_FREEGLUT
-        #include "GL/freeglut.h"
-  #else
 	#include <OpenGL/OpenGL.h>
-	#include <GLUT/glut.h>
-  #endif
+	#include <OpenGL/glu.h>
 #elif ANDROID
-#include <GLES2/gl2.h>
+	#include <GLES2/gl2.h>
 #else
+	#include <GL/gl.h>
+	#include <GL/glu.h>
 	#include <GL/glx.h>
 #endif
 
 #endif
+
 #include <opencv/highgui.h>
 
 
@@ -130,9 +125,7 @@ namespace Ubitrack { namespace Components {
 	,convertedImage()
 #ifdef USE_UMAT
 	  , m_clImageInitialized(false)
-#ifdef DO_TIMING
-	  , m_blockTimer( "Rendering Timer",  "Ubitrack.Components.TextureUpdate")
-#endif
+
 #endif
     {
 		
@@ -280,64 +273,13 @@ namespace Ubitrack { namespace Components {
 			LOG4CPP_DEBUG(m_logger, "Update texture");
 
 		
-#ifdef DO_TIMING
-			{
-			UBITRACK_TIME( m_blockTimer );
-#endif
 			if (useOpenGL)
 				updateTextuteOpenGL(textureID);
 #ifdef WITH_DIRECTX11_TEXTURE_UPDATE
 			else
 				updateTextureDirectX11(textureID);
 #endif
-#ifdef DO_TIMING
-			}
-			static int i = 0;
-			if(i == 10)
-			{
-				LOG4CPP_INFO( m_logger, "timer: " << m_blockTimer << std::endl );
-				LOG4CPP_INFO( m_logger, "res: " << currentImage->width() << "x" << currentImage->height() << std::endl );
-				i = 0;
-			}
-			i++;
-#endif
-#ifdef DO_TIMING_1			
-
-			/*Measurement::Timestamp currentTimeStamp = Measurement::now();
-			Measurement::Timestamp diff = currentTimeStamp - currentImage.time();
-
-			LOG4CPP_INFO(m_logger, 
-				 "timestamp diff: " << Measurement::timestampToShortString(diff) << 
-				" original int: " << diff/1000000.0f << 
-				" currentTimeStamp: " << Measurement::timestampToShortString(currentTimeStamp) <<
-				" taken timestamp: " << Measurement::timestampToShortString(currentImage.time()) );*/
-			Measurement::Timestamp now = Util::getHighPerformanceCounter();
-			Measurement::Timestamp diff = now - currentImage.time();
-
-			m_blockTimer.addMeasurement(diff);
-			double delayInMS = diff/1000000.0f;
-			
-			/*if(delayInMS < 1000000)
-			{*/
-				static int counterI = 0;
-				static double sum = 0;
-				static unsigned long long numOfMeasurement = 0;
-
-				counterI++;
-				numOfMeasurement++;
-
-				sum += delayInMS;
-
-				if(counterI == 10)
-				{
-					counterI = 0;
-					LOG4CPP_INFO(m_logger, "avg: " << sum/numOfMeasurement << "sum: " << sum << " numOfMeasurement " << numOfMeasurement << " currntDelay: " << delayInMS);
-					LOG4CPP_INFO(m_logger, "blockTImer: " << m_blockTimer << std::endl);
-				
-				}
-			/*}*/
-#endif
-			
+		
 			currentImage.reset();
 		}
 
@@ -347,12 +289,7 @@ namespace Ubitrack { namespace Components {
     }
 
   protected:
-#ifdef DO_TIMING
-	Measurement::ImageMeasurement		currentImage;
-#else
-    
     boost::shared_ptr< Vision::Image >  currentImage;
-#endif
 
     /** Input port of the component. */
     Dataflow::PushConsumer< Measurement::ImageMeasurement > m_inPort;
@@ -722,11 +659,6 @@ void updateTextureDirectX11(Measurement::Timestamp texturePtr)
 	clEnqueueAcquireD3D11ObjectsNV_fn clEnqueueAcquireD3D11ObjectsNV;
 	clEnqueueReleaseD3D11ObjectsNV_fn clEnqueueReleaseD3D11ObjectsNV;
 #endif
-#endif
-
-
-#ifdef DO_TIMING
-	Ubitrack::Util::BlockTimer m_blockTimer;
 #endif
 
   };
