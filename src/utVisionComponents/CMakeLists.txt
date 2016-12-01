@@ -1,10 +1,10 @@
 set(the_description "The UbiTrack Vision Components")
 ut_add_component(utvisioncomponents DEPS utcore utdataflow utvision)
-ut_component_include_directories(component_core component_vision ${UBITRACK_CORE_DEPS_INCLUDE_DIR} ${OPENCV_INCLUDE_DIR} ${TBB_INCLUDE_DIR} ${Freeglut_INCLUDE_DIR})
+ut_component_include_directories(component_core component_vision ${UBITRACK_CORE_DEPS_INCLUDE_DIR} ${OPENCV_INCLUDE_DIR})
 ut_glob_component_sources("HEADERS" "*.h" "SOURCES" "*.cpp")
 
 if(ENABLE_EXPAND_MULTICOMPONENTS)
-    ut_create_multi_component(${OPENGL_LIBRARIES} ${Freeglut_LIBRARIES})
+    ut_create_multi_component(${OPENGL_LIBRARIES} )
 else(ENABLE_EXPAND_MULTICOMPONENTS)
-    ut_create_single_component(${OPENGL_LIBRARIES} ${Freeglut_LIBRARIES})
+    ut_create_single_component(${OPENGL_LIBRARIES} )
 endif(ENABLE_EXPAND_MULTICOMPONENTS)
