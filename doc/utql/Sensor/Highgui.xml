@@ -6,7 +6,7 @@
                       xmlns:h="http://www.w3.org/1999/xhtml"					  
                       xsi:schemaLocation='http://ar.in.tum.de/ubitrack/utql ../../../schema/utql_templates.xsd'>
     
-    <Pattern name="HighguiFrameGrabber" displayName="Highgui Framegrabber">
+    <Pattern name="HighguiFrameGrabber" displayName="Depricated: Highgui Framegrabber">
         <Description><h:p>This component grabs images from a Highgui device and pushes them.</h:p></Description>
         <Output>
             <Node name="Camera" displayName="Camera"/>
