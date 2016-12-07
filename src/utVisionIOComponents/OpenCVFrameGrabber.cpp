@@ -240,6 +240,10 @@ OpenCVFrameGrabber::OpenCVFrameGrabber( const std::string& sName, boost::shared_
 			m_autoGPUUpload = subgraph->m_DataflowAttributes.getAttributeString("uploadImageOnGPU") == "true";
 			LOG4CPP_INFO(logger, "Upload to GPU enabled? " << m_autoGPUUpload);
 		}
+		if (m_autoGPUUpload){
+			oclManager.activate();
+			LOG4CPP_INFO(logger, "Require OpenCLManager");
+		}
 	}
 
 	stop();
