@@ -124,6 +124,7 @@
                 <EnumValue name="ppm" displayName="PPM (Portable Image Format)"/>
                 <EnumValue name="tif" displayName="TIF (Tagged Image File Format)"/>
                 <EnumValue name="jp2" displayName="JP2 (JPEG 2000 images)"/>
+				<EnumValue name="BoostBinary" displayName="BoostBinary"/>
             </Attribute>
             <Attribute name="file" displayName="Timestamp File" default="frames.log" xsi:type="PathAttributeDeclarationType"/>
         </DataflowConfiguration>

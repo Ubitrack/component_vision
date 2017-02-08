@@ -52,6 +52,7 @@
 #include <utMeasurement/Measurement.h>
 #include <utUtil/OS.h>
 #include <utUtil/Exception.h>
+#include <utUtil/CalibFile.h>
 #include <utVision/Image.h>
 
 #include <opencv/highgui.h>
@@ -191,8 +192,16 @@ void ImageFileRecorder::saveImage( const ImageMeasurement &img )
 	path /= fileName;
 	
 	LOG4CPP_DEBUG( logger, "saveImage(): Saving image to file " << path );
-	if( cv::imwrite(path.string(), img->Mat()) == 0 )
-		LOG4CPP_ERROR( logger, "Error saving image " << path );
+
+	if (m_suffix == ".BoostBinary"){
+		Util::writeBinaryCalibFile(path.string(), *img);		
+	}
+	else {
+		if (cv::imwrite(path.string(), img->Mat()) == 0)
+			LOG4CPP_ERROR(logger, "Error saving image " << path);
+	}
+
+	
 	
 	os << (unsigned long long)( img.time() / 1000000.)  << " " << path.filename() << std::endl;
 }
