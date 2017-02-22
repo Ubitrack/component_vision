@@ -157,8 +157,13 @@ namespace Ubitrack { namespace Components {
 		boost::mutex::scoped_lock l( m_mutex );
 		
 		currentImage = image;
+
+		m_textureWidth = currentImage->width();
+		m_textureHeight = currentImage->height();
+		m_textureChannels = currentImage->channels();
+
 		LOG4CPP_INFO(m_logger, "new Image with timestamp: " << image.time() );
-		LOG4CPP_DEBUG(m_logger, "receiveImage:"<<currentImage.get());
+		
     }
 	
 	Measurement::Position receiveUpdateTexture( Measurement::Timestamp textureID )
@@ -166,10 +171,11 @@ namespace Ubitrack { namespace Components {
 		
 		LOG4CPP_INFO(m_logger, "receiveUpdateTexture TextureID: " << textureID);
 
-		//if( textureID == 0 && currentImage.get() == NULL)
-		//{
-		//	return Measurement::Position(0, Math::Vector< double, 3 >(0,0,0));
-		//}
+
+		if( textureID == 0 && currentImage.get() == NULL)
+		{
+			return Measurement::Position(0, Math::Vector< double, 3 >(0,0,0));
+		}
 
 		if( textureID == 0){
 			LOG4CPP_DEBUG(m_logger, "creating texture: " << m_textureWidth << "x" << m_textureHeight << "x" << m_textureChannels);
