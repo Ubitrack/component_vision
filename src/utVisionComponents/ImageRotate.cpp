@@ -127,6 +127,8 @@ void ImageRotate::pushImage( const ImageMeasurement& m )
 		height = m->width();
 	}
 
+	//LOG4CPP_INFO(logger, "ImageRotate input: " << m->width() << "," << m->height() << "," << m->channels() << "," << m->depth() << "," << m->dims);
+
 	if (m->isOnGPU()) {
 		out = rotateImage(m->uMat(), m_rotation);
 	} else {
@@ -135,7 +137,10 @@ void ImageRotate::pushImage( const ImageMeasurement& m )
 
 
 	out->copyImageFormatFrom(*m);
-	m_outPort.send( ImageMeasurement( m.time(), out ) );
+	// @todo FIX Image Class !!!!! nasty hack -> bug will cause further errors ...
+	out->set_channels(m->channels());
+	//LOG4CPP_INFO(logger, "ImageRotate output: " << out->width() << "," << out->height() << "," << out->channels() << "," << out->depth() << "," << out->dims);
+	m_outPort.send(ImageMeasurement(m.time(), out));
 }
 
 } } // namespace Ubitrack::Driver
