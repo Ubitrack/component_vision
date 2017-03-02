@@ -53,6 +53,7 @@
 #include <utUtil/OS.h>
 #include <utUtil/Exception.h>
 #include <utUtil/GlobFiles.h>
+#include <utUtil/CalibFile.h>
 #include <utVision/Image.h>
 
 #include <opencv/highgui.h>
@@ -93,13 +94,18 @@ protected:
 
 ImageReader::ImageReader( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > subgraph )
 	: Dataflow::Component( sName )
-	, m_outPort( "Output", *this, boost::bind( &ImageReader::pullImage, this, _1 ) )
+	, m_outPort( "Output", *this, boost::bind( &ImageReader::pullImage, this, _1 ) )	
 {
 	std::string path;
 	if ( subgraph->m_DataflowAttributes.hasAttribute( "file" ) )
 		path = subgraph->m_DataflowAttributes.getAttributeString( "file" );
 
 	Util::globFiles( path, Util::PATTERN_OPENCV_IMAGE_FILES, m_files );
+
+	if (m_files.size() <= 0){
+		LOG4CPP_DEBUG(logger, "No regular image files, testing with boostBinary format");		
+		Util::globFiles(path, Util::PATTERN_UBITRACK_BOOST_BINARY, m_files);
+	}
 	
 	LOG4CPP_DEBUG( logger, "Added " << m_files.size() << " images to list" );
 	
@@ -117,13 +123,30 @@ ImageMeasurement ImageReader::pullImage( Ubitrack::Measurement::Timestamp t )
 		m_fileIt = m_files.begin();
 	}
 	
+	boost::filesystem::path bfile = (*m_fileIt);
 	std::string file = (*m_fileIt).string();
+	
 
 	LOG4CPP_DEBUG( logger, "Loading image " << file );
 
 	m_fileIt++;
-	cv::Mat img = cv::imread(file, CV_LOAD_IMAGE_UNCHANGED);
+
+	cv::Mat img;
+
+	if (bfile.extension() == ".BoostBinary") {
+		Vision::Image tmp;
+		Util::readBinaryCalibFile(file, tmp);
+		img = tmp.Mat();
+	}
+	else {
+		img = cv::imread(file, CV_LOAD_IMAGE_UNCHANGED);
+	}
+
+
+	
+
 	boost::shared_ptr< Vision::Image > pImage( new Vision::Image( img ) );
+	
 
 	return ImageMeasurement( t, pImage );
 }

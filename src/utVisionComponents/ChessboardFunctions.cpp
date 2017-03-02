@@ -244,6 +244,8 @@ public:
 			
 			// prepare the object points, that always stay fix
 
+			LOG4CPP_INFO(logger, "Generating 3D points: width:" << m_width << " height:" << m_height << " sizeX:" << m_sizeX << " sizeY:" << m_sizeY);
+
 			objPoints.reset( new float[ 3 * m_edges ] );
 			const float offset = ( m_grid_type == 2 ) ? m_sizeX / 2 : 0;
 			for( int i = 0; i < m_edges ; ++i )
@@ -260,6 +262,8 @@ public:
 	/** Method that computes the result. */
 	void pushImage( const Measurement::ImageMeasurement& img )
 	{
+	
+
 		boost::scoped_array< CvPoint2D32f > corners( new CvPoint2D32f[ m_edges ] );
 		
 		int found;
@@ -319,7 +323,39 @@ public:
 			
 #else
             IplImage cvimg = img->Mat();
-			pattern_was_found = cvFindChessboardCorners( &cvimg, cvSize( m_width, m_height ) , corners.get(), &found, CV_CALIB_CB_ADAPTIVE_THRESH );
+
+			std::vector< cv::Point2f > centers; //( CvPoint2D32f == cv::Point2f )
+			centers.reserve(m_edges); //allocate some space for the values
+
+			switch (m_grid_type) //switch for correct detection method
+			{
+			case 0:				
+				pattern_was_found = cvFindChessboardCorners(&cvimg, cvSize(m_width, m_height), corners.get(), &found, CV_CALIB_CB_ADAPTIVE_THRESH);
+				break;
+			case 1:
+				
+				pattern_was_found = cv::findCirclesGrid(img->Mat(), cvSize(m_width, m_height), centers, cv::CALIB_CB_SYMMETRIC_GRID);
+				break;
+			case 2:
+				pattern_was_found = cv::findCirclesGrid(img->Mat(), cvSize(m_width, m_height), centers, cv::CALIB_CB_ASYMMETRIC_GRID);
+				break;
+			default:
+				LOG4CPP_ERROR(logger, "Cannot perform calibration grid detection, the type of the calibration grid is not specified correctly.");
+			}
+
+			switch (m_grid_type) //switch for correct detection method
+			{
+			case 1:
+			case 2:
+				if (pattern_was_found)
+				{
+					found = m_edges;
+					for (int i(0); i < m_edges; ++i)
+						corners[i] = centers[i];
+				}				
+			}
+
+			
 #endif
 		}
 		
@@ -334,6 +370,8 @@ public:
 			boost::scoped_array< float > imgPoints( new float[ 2 * m_edges ] );
 			CvMat image_points = cvMat ( m_edges, 2, CV_32F, imgPoints.get() );
 			CvMat object_points = cvMat ( m_edges, 3, CV_32F, objPoints.get() );
+
+
 
 			if( img->origin() ) // == IPL_ORIGIN_BL
 			{
@@ -381,7 +419,7 @@ public:
 					imgPoints[ 2 * index + 1 ] = ( img->height() - 1 - corners[ i ].y );
 #else				
 					imgPoints[ 2 * i     ] = corners[ i ].x;
-					imgPoints[ 2 * i + 1 ] = img->height - 1 - corners[ i ].y;
+					imgPoints[ 2 * i + 1 ] = img->height() - 1 - corners[ i ].y;
 #endif
 					LOG4CPP_TRACE( logger, "point: " << corners[i].x << ", " << corners[i].y );
 				}
@@ -402,12 +440,18 @@ public:
 			{
 				std::vector< Math::Vector< double, 2 > > positions;
 				positions.reserve( m_edges );
-				if( m_normalize )				
-					for( int i = 0; i < m_edges; ++i )
-						positions.push_back( Math::Vector< double, 2 >( imgPoints[ 2*i ] / (img->width()-1), imgPoints[ 2*i+1 ] / (img->height()-1) ) );
-				else
-					for( int i = 0; i < m_edges; ++i )
-						positions.push_back( Math::Vector< double, 2 >( imgPoints[ 2*i ] , imgPoints[ 2*i+1 ] ) );
+				if (m_normalize)				{
+					LOG4CPP_INFO(logger, "Send normalized 2d coordinates");
+					for (int i = 0; i < m_edges; ++i)
+						positions.push_back(Math::Vector< double, 2 >(imgPoints[2 * i] / (img->width() - 1), imgPoints[2 * i + 1] / (img->height() - 1)));
+				}
+					
+				else {
+					LOG4CPP_INFO(logger, "Send raw 2d coordinates");
+					for (int i = 0; i < m_edges; ++i)
+						positions.push_back(Math::Vector< double, 2 >(imgPoints[2 * i], imgPoints[2 * i + 1]));
+				}
+					
 							
 				m_outPoints2DPort.send( Measurement::PositionList2( img.time(), positions ) );
 			}
