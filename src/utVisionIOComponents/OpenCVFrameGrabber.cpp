@@ -332,6 +332,8 @@ void OpenCVFrameGrabber::ThreadProc()
 			boost::shared_ptr< Image > pColorImage;
 			boost::shared_ptr< Image > pGreyImage;
 
+			// @todo: define ImageFormatProperties here to match the decoded images.
+
 			// check CAP_PROP_FORMAT to find out what type of image is returned as frame
 			pColorImage.reset( new Image( frame ) );
 			pColorImage->set_origin(0);

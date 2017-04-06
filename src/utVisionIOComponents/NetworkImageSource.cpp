@@ -223,10 +223,10 @@ protected:
 	bool fetchImageHeader()
 	{
 		// boost::system::error_code msgError;
-		const std::size_t sizeHeader = boost::asio::read( m_socket, boost::asio::buffer( &imageHeaderInfos[ 0 ], 5*sizeof(int) ) );//, msgError );
-		if( sizeHeader != 5*sizeof(int) ) 
+		const std::size_t sizeHeader = boost::asio::read( m_socket, boost::asio::buffer( &imageHeaderInfos[ 0 ], 7*sizeof(int) ) );//, msgError );
+		if( sizeHeader != 7*sizeof(int) )
 		{
-			LOG4CPP_ERROR( logger, "Arrived packet did not contain enough data ("<< sizeHeader << " bytes, expected at least "<<  5*sizeof(int) << ") for image header, trying once more." );
+			LOG4CPP_ERROR( logger, "Arrived packet did not contain enough data ("<< sizeHeader << " bytes, expected at least "<<  7*sizeof(int) << ") for image header, trying once more." );
 			return false;
 		}
 
@@ -235,7 +235,10 @@ protected:
 			<< "\nheight  : " << imageHeaderInfos[ 1 ] << " [pixels]"
 			<< "\nchannels: " << imageHeaderInfos[ 2 ] 
 			<< "\ndepth   : " << imageHeaderInfos[ 3 ] << " [bit]"
-			<< "\norigin  : " << imageHeaderInfos[ 4 ] << " (0==top; 1==bottom)" );
+			<< "\norigin  : " << imageHeaderInfos[ 4 ] << " (0==top; 1==bottom)"
+			<< "\nbitsPerPixel  : " << imageHeaderInfos[ 5 ] << " bits"
+			<< "\nimageFormat  : " << imageHeaderInfos[ 6 ]
+		);
 			
 		return true;
 	}

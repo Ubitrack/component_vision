@@ -377,11 +377,11 @@ namespace Ubitrack { namespace Components {
 		glDisable( GL_TEXTURE_2D );
 		LOG4CPP_INFO(m_logger, "return");
 #else
-		if (sourceImage->depth() == IPL_DEPTH_32F) {
+		if (sourceImage->depth() == CV_32F) {
 			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sourceImage->width(), sourceImage->height(),
 				GL_RGBA, GL_FLOAT, sourceImage->Mat().data);
 		}
-		else if (sourceImage->depth() == IPL_DEPTH_8U) {
+		else if (sourceImage->depth() == CV_8U) {
 			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sourceImage->width(), sourceImage->height(),
 				GL_RGBA, GL_UNSIGNED_BYTE, sourceImage->Mat().data);
 		}
@@ -546,7 +546,7 @@ void updateTextureDirectX11(Measurement::Timestamp texturePtr)
 				//ctx->UpdateSubresource(d3dtex, 0, 0, data, sourceImage->width * 4, 0);
 			}
 
-			if ((desc.Format == DXGI_FORMAT_R32_SINT || desc.Format == DXGI_FORMAT_R32_TYPELESS) && currentImage->channels() == 1 && currentImage->depth() == IPL_DEPTH_32S) {
+			if ((desc.Format == DXGI_FORMAT_R32_SINT || desc.Format == DXGI_FORMAT_R32_TYPELESS) && currentImage->channels() == 1 && currentImage->depth() == CV_32S) {
 				bytePerRow = 4*currentImage->width();
 
 

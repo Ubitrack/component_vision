@@ -215,9 +215,9 @@ int main( int, char** )
 			// img_size.height		=  ) ;
 			CvSize size_scaled1	= cvSize( ( int ) img_size.width * ( 1. / 2 ), ( int ) img_size.height * ( 1. / 2 ) );
 			CvSize size_scaled2	= cvSize( ( int ) img_size.width * ( 1. / 4 ), ( int ) img_size.height * ( 1. / 4 ) );
-			IplImage *img_sml1	= cvCreateImage( size_scaled1, IPL_DEPTH_8U, 1 );
-			IplImage *img_sml2	= cvCreateImage( size_scaled2, IPL_DEPTH_8U, 1 );
-			img_col				= cvCreateImage( size_scaled2, IPL_DEPTH_8U, 3 );
+			IplImage *img_sml1	= cvCreateImage( size_scaled1, CV_8U, 1 );
+			IplImage *img_sml2	= cvCreateImage( size_scaled2, CV_8U, 1 );
+			img_col				= cvCreateImage( size_scaled2, CV_8U, 3 );
 			cvPyrDown( img_gray, img_sml1, CV_GAUSSIAN_5x5 );
 			cvPyrDown( img_sml1, img_sml2, CV_GAUSSIAN_5x5 );
 			cvCvtColor( img_sml2, img_col, CV_GRAY2BGR );

@@ -198,21 +198,26 @@ protected:
 		
 		if( !headerSend )
 		{
-			int imageHeaderInfos[ 5 ];
+			int imageHeaderInfos[ 7 ];
 			imageHeaderInfos[ 0 ] = m->width();
 			imageHeaderInfos[ 1 ] = m->height();
 			imageHeaderInfos[ 2 ] = m->channels();
 			imageHeaderInfos[ 3 ] = m->depth();
-			imageHeaderInfos[ 4 ] = m->origin();	
+			imageHeaderInfos[ 4 ] = m->origin();
+			imageHeaderInfos[ 5 ] = m->bitsPerPixel();
+			imageHeaderInfos[ 6 ] = (int)m->pixelFormat();
 
 			LOG4CPP_INFO( logger, "sending image header to \"" << m_dstAddress << ":" << m_dstPort << "\" :"
 				<< "\nwidth   : " << imageHeaderInfos[ 0 ] << " [pixels]"
 				<< "\nheight  : " << imageHeaderInfos[ 1 ] << " [pixels]"
 				<< "\nchannels: " << imageHeaderInfos[ 2 ] 
 				<< "\ndepth   : " << imageHeaderInfos[ 3 ] << " [bit]"
-				<< "\norigin  : " << imageHeaderInfos[ 4 ] << " (0==top; 1==bottom)" );
+				<< "\norigin  : " << imageHeaderInfos[ 4 ] << " (0==top; 1==bottom)"
+				<< "\nbitsPerPixel  : " << imageHeaderInfos[ 5 ] << " bits"
+				<< "\nimageFormat  : " << imageHeaderInfos[ 6 ]
+			);
 				
-			boost::asio::write( m_socket, boost::asio::buffer( &imageHeaderInfos[ 0 ], 5*sizeof(int) ) );
+			boost::asio::write( m_socket, boost::asio::buffer( &imageHeaderInfos[ 0 ], 7*sizeof(int) ) );
 			headerSend = true;
 		}
 		else

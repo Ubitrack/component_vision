@@ -106,7 +106,13 @@ void Color2Grayscale::pushImage(const ImageMeasurement& m )
 	{
 		LOG4CPP_DEBUG( logger, "Got grayscale image: pushing unmodified" );
 		m_outPort.send( m );
-	} else {
+	} else if (m->channels() > 1) {
+
+		Vision::Image::ImageFormatProperties fmt;
+		m->getFormatProperties(fmt);
+		fmt.bitsPerPixel = fmt.bitsPerPixel / fmt.channels;
+		fmt.channels = 1;
+		fmt.imageFormat = Vision::Image::LUMINANCE;
 
 		int cvtCode = 0;
 		switch(m->pixelFormat()) {
@@ -130,18 +136,18 @@ void Color2Grayscale::pushImage(const ImageMeasurement& m )
 			if (m->isOnGPU()) {
 				cv::UMat tmp;
 				cv::cvtColor(m->uMat(), tmp, cv::COLOR_RGB2GRAY);
-				pImage.reset( new Image( tmp ) );
+				pImage.reset( new Image( tmp, fmt ) );
 			}  else {
 				cv::Mat tmp;
 				cv::cvtColor(m->Mat(), tmp, cv::COLOR_RGB2GRAY);
-				pImage.reset( new Image( tmp ) );
+				pImage.reset( new Image( tmp, fmt ) );
 			}
-			pImage->copyImageFormatFrom(*m);
-			pImage->set_pixelFormat(Image::LUMINANCE);
 			m_outPort.send( ImageMeasurement( m.time(), pImage ) );
 		} else {
 			LOG4CPP_ERROR(logger, "Unkown PixelColor for Grayscale converion...");
 		}
+	} else {
+		LOG4CPP_ERROR(logger, "Invalid image ignored");
 	}
 }
 

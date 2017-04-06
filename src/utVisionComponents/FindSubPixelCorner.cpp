@@ -124,7 +124,7 @@ void CornerDetectionSubPix::pushPositions( const Measurement::Position2D& m )
 		cvFindCornerSubPix( &cvimg, corners.get(), 1, cvSize( m_winSize, m_winSize ), cvSize( -1, -1 ), cvTermCriteria( CV_TERMCRIT_ITER, 20, 0.01f ) );
 		if( m_outPortImage.isConnected() )
 		{
-			boost::shared_ptr< Vision::Image > imgOut = imgIn->CvtColor ( CV_GRAY2RGB, 3, IPL_DEPTH_8U );
+			boost::shared_ptr< Vision::Image > imgOut = imgIn->CvtColor ( CV_GRAY2RGB, 3, CV_8U );
 			IplImage cvimg_out = imgOut->Mat();
 			cvCircle( &cvimg_out, cvPoint( static_cast< int > ( position( 0 ) ), static_cast< int > ( position( 1 ) ) ), 5, CV_RGB( 255, 0, 0 ) );
 			cvCircle( &cvimg_out, cvPoint( static_cast< int > ( corners[ 0 ].x ), static_cast< int > ( corners[ 0 ].y ) ), 5, CV_RGB( 0, 255, 0 ) );
