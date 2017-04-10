@@ -414,10 +414,10 @@ void AdaptiveSkinDetector::Histogram::mergeWith(AdaptiveSkinDetector::Histogram 
 
 
 
-} } // namespace Ubitrack::MVLVision
+} } // namespace Ubitrack::Vision
 
 UBITRACK_REGISTER_COMPONENT( Dataflow::ComponentFactory* const cf ) {
-	cf->registerComponent< Ubitrack::MVLVision::AdaptiveSkinDetector > ( "AdaptiveSkinDetector" );
+	cf->registerComponent< Ubitrack::Vision::AdaptiveSkinDetector > ( "AdaptiveSkinDetector" );
 }
 
 
