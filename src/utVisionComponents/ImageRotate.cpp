@@ -97,7 +97,7 @@ ImageRotate::~ImageRotate()
 }
 
 template<typename T>
-boost::shared_ptr< Vision::Image > rotateImage(T& img, int rotate) {
+boost::shared_ptr< Vision::Image > rotateImage(T& img, int rotate, Vision::Image::ImageFormatProperties& fmt) {
 	T tmp;
 
 	if (rotate == 0) {
@@ -113,11 +113,14 @@ boost::shared_ptr< Vision::Image > rotateImage(T& img, int rotate) {
 	} else { //if not 0,1,2,3:
 		UBITRACK_THROW( "Invalid rotation specified" );
 	}
-	return boost::shared_ptr< Vision::Image >( new Image( tmp ) );
+	return boost::shared_ptr< Vision::Image >( new Image( tmp, fmt ) );
 }
 
 void ImageRotate::pushImage( const ImageMeasurement& m )
 {
+
+	Vision::Image::ImageFormatProperties fmt;
+	m->getFormatProperties(fmt);
 
 	boost::shared_ptr< Vision::Image > out;
 	unsigned int width = m->width();
@@ -127,19 +130,12 @@ void ImageRotate::pushImage( const ImageMeasurement& m )
 		height = m->width();
 	}
 
-	//LOG4CPP_INFO(logger, "ImageRotate input: " << m->width() << "," << m->height() << "," << m->channels() << "," << m->depth() << "," << m->dims);
-
 	if (m->isOnGPU()) {
-		out = rotateImage(m->uMat(), m_rotation);
+		out = rotateImage(m->uMat(), m_rotation, fmt);
 	} else {
-		out = rotateImage(m->Mat(), m_rotation);
+		out = rotateImage(m->Mat(), m_rotation, fmt);
 	}
 
-
-	out->copyImageFormatFrom(*m);
-	// @todo FIX Image Class !!!!! nasty hack -> bug will cause further errors ...
-	out->set_channels(m->channels());
-	//LOG4CPP_INFO(logger, "ImageRotate output: " << out->width() << "," << out->height() << "," << out->channels() << "," << out->depth() << "," << out->dims);
 	m_outPort.send(ImageMeasurement(m.time(), out));
 }
 
