@@ -135,11 +135,11 @@ void Color2Grayscale::pushImage(const ImageMeasurement& m )
 		if (cvtCode != 0) {
 			if (m->isOnGPU()) {
 				cv::UMat tmp;
-				cv::cvtColor(m->uMat(), tmp, cv::COLOR_RGB2GRAY);
+				cv::cvtColor(m->uMat(), tmp, cvtCode);
 				pImage.reset( new Image( tmp, fmt ) );
 			}  else {
 				cv::Mat tmp;
-				cv::cvtColor(m->Mat(), tmp, cv::COLOR_RGB2GRAY);
+				cv::cvtColor(m->Mat(), tmp, cvtCode);
 				pImage.reset( new Image( tmp, fmt ) );
 			}
 			m_outPort.send( ImageMeasurement( m.time(), pImage ) );
