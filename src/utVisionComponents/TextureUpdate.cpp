@@ -30,6 +30,7 @@
  * @author Frieder Pankratz <pankratz@in.tum.de>
  */
 
+#ifdef HAVE_OPENCL
 #include <log4cpp/Category.hh>
 
 #include <utDataflow/Component.h>
@@ -675,3 +676,5 @@ void updateTextureDirectX11(Measurement::Timestamp texturePtr)
   }
 
 } } // namespace Ubitrack::Components
+
+#endif //HAVE_OPENCL
