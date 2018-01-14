@@ -29,6 +29,8 @@ ENDIF(OpenCL_FOUND)
 
 set(UBITRACK_EXTRA_LIBS ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY} ${OpenCL_LIBRARY})
 
+# since we depend on it we now we have utvision:
+set(UBITRACK_COMPILE_DEFINITIONS ${UBITRACK_COMPILE_DEFINITIONS} "HAVE_UTVISION")
 
 add_subdirectory(src/utVisionComponents)
 add_subdirectory(src/utVisionIOComponents)
