@@ -41,7 +41,7 @@ class UbitrackCoreConan(ConanFile):
         cmake.install()
 
     def package(self):
-        pass
+        self.copy("*.h", dst="include", src="src", keep_path=True)
 
     def package_info(self):
         pass
