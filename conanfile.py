@@ -14,9 +14,9 @@ class UbitrackCoreConan(ConanFile):
     generators = "cmake"
 
     requires = (
-        "ubitrack_core/%s@ulricheck/stable" % version,
-        "ubitrack_vision/%s@ulricheck/stable" % version,
-        "ubitrack_dataflow/%s@ulricheck/stable" % version,
+        "ubitrack_core/%s@ubitrack/stable" % version,
+        "ubitrack_vision/%s@ubitrack/stable" % version,
+        "ubitrack_dataflow/%s@ubitrack/stable" % version,
        )
 
     default_options = (
