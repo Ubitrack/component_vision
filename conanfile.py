@@ -5,7 +5,7 @@ class UbitrackCoreConan(ConanFile):
     name = "ubitrack_component_vision"
     version = "1.3.0"
 
-    description = "Ubitrack Core Components"
+    description = "Ubitrack Vision Components"
     url = "https://github.com/Ubitrack/component_vision.git"
     license = "GPL"
 
