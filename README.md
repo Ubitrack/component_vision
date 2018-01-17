@@ -1,31 +1,44 @@
-utvisioncomponents
-===============
-This is the utvisioncomponents Ubitrack submodule.
+component_vision
+==============
+This is the Ubitrack component_vision submodule.
 
 Description
 ----------
-The utvisioncomponents contains components working on camera images (based on utvision methods). Also contains components to capture and transfer images and videos.
+The component_vision contains selected components for image processing.
 
+## For Users: Use this package
 
-Usage
------
-In order to use it, you have to clone the buildenvironment, change to the ubitrack directory and add the utvisioncomponents by executing:
+### Project setup
 
-    git submodule add https://github.com/Ubitrack/utvisioncomponents.git modules/utvisioncomponents
+If you handle multiple dependencies in your project is better to add a *conanfile.txt*
 
+    [requires]
+    ubitrack_component_vision/1.3.0@ubitrack/stable
 
-Dependencies
-----------
-In addition, this module has to following submodule dependencies which have to be added for successful building:
+    [generators]
+    cmake
+    txt
 
-<table>
-  <tr>
-    <th>Component</th><th>Dependency</th>
-  </tr>
-  <tr>
-    <td>all</td><td>utDataflow, utVision</td>
-  </tr>
-  <tr>
-    <td>ImageTrigger, FrameBuffer, ImageGate, FrameSampler</td><td>utComponents</td>
-  </tr>
-</table>
+Complete the installation of requirements for your project running:
+
+    $ mkdir build && cd build && conan install ..
+    
+Note: It is recommended that you run conan install from a build directory and not the root of the project directory.  This is because conan generates *conanbuildinfo* files specific to a single build configuration which by default comes from an autodetected default profile located in ~/.conan/profiles/default .  If you pass different build configuration options to conan install, it will generate different *conanbuildinfo* files.  Thus, they shoudl not be added to the root of the project, nor committed to git. 
+
+## For Packagers: Publish this Package
+
+The example below shows the commands used to publish to ulricheck conan repository. To publish to your own conan respository (for example, after forking this git repository), you will need to change the commands below accordingly. 
+
+## Build and package 
+
+The following command both runs all the steps of the conan file, and publishes the package to the local system cache.  This includes downloading dependencies from "build_requires" and "requires" , and then running the build() method. 
+
+    $ conan create . ubitrack/stable
+    
+## Add Remote
+
+    $ conan remote add camp "https://conan.campar.in.tum.de" True
+
+## Upload
+
+    $ conan upload -r camp ubitrack_component_vision/1.3.0@ubitrack/stable
