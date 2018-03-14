@@ -53,7 +53,9 @@
 #else
     #include "CL/cl_gl.h"
 	#ifdef WIN32
-		#include <CL/cl_d3d11_ext.h>
+// DirectX support is disabled for now
+// specifically, because it requires NVIDIA OpenCL
+//		#include <CL/cl_d3d11_ext.h>
 	#endif
 #endif
 
@@ -61,13 +63,15 @@
 
 #define WITH_OPENGL_TEXTURE_UPDATE 1
 
-#ifdef _WIN32
-#define WITH_DIRECTX11_TEXTURE_UPDATE 1
-#endif
+// DirectX support is disabled for now
+// specifically, because it requires NVIDIA OpenCL
+// #ifdef _WIN32
+// #define WITH_DIRECTX11_TEXTURE_UPDATE 1
+// #endif
 
-#ifdef WITH_DIRECTX11_TEXTURE_UPDATE
-#include <d3d11.h>
-#endif
+// #ifdef WITH_DIRECTX11_TEXTURE_UPDATE
+// #include <d3d11.h>
+// #endif
 
 #ifdef WITH_OPENGL_TEXTURE_UPDATE
 
@@ -281,10 +285,13 @@ namespace Ubitrack { namespace Components {
 		
 			if (useOpenGL)
 				updateTextuteOpenGL(textureID);
-#ifdef WITH_DIRECTX11_TEXTURE_UPDATE
+// DirectX support is disabled for now
+// specifically, because it requires NVIDIA OpenCL
+//#ifdef WITH_DIRECTX11_TEXTURE_UPDATE
 			else
-				updateTextureDirectX11(textureID);
-#endif
+				throw std::runtime_error("DirectX currently not supported.");
+//				updateTextureDirectX11(textureID);
+//#endif
 		
 			currentImage.reset();
 		}
@@ -388,265 +395,267 @@ namespace Ubitrack { namespace Components {
 #endif
 	}
 
-#ifdef WITH_DIRECTX11_TEXTURE_UPDATE
-#ifdef USE_UMAT
-void updateTextureDirectX11(Measurement::Timestamp texturePtr)
-{
-	LOG4CPP_DEBUG(m_logger, "updateTextureD11");
-	boost::shared_ptr< Vision::Image > sourceImage;
+// DirectX support is disabled for now
+// specifically, because it requires NVIDIA OpenCL
+// #ifdef WITH_DIRECTX11_TEXTURE_UPDATE
+// #ifdef USE_UMAT
+// void updateTextureDirectX11(Measurement::Timestamp texturePtr)
+// {
+// 	LOG4CPP_DEBUG(m_logger, "updateTextureD11");
+// 	boost::shared_ptr< Vision::Image > sourceImage;
 
-	if (currentImage->channels() == 4){
-		LOG4CPP_DEBUG(m_logger, "image correct channels");
-		sourceImage = currentImage;			
-	}
-	else if(currentImage->channels() == 3){
-		if (convertedImage.get() == 0){
-			convertedImage.reset(new Vision::Image(currentImage->width(), currentImage->height(), 4));
-		}
-		LOG4CPP_DEBUG(m_logger, "convert image");
-		cv::cvtColor(currentImage->uMat(), convertedImage->uMat(), cv::COLOR_BGR2RGBA);			
-		sourceImage = convertedImage;
-	}
-	else if(currentImage->channels() == 1 && currentImage->uMat().type() != CV_32FC1)
-	{
-		if (convertedImage.get() == 0){
-			LOG4CPP_INFO(m_logger, "create buffer image");
-			convertedImage.reset(new Vision::Image(currentImage->width(), currentImage->height(), 1));
-		}
-		currentImage->uMat().convertTo(convertedImage->uMat(), CV_32FC1, 1.0/255.0);
-		sourceImage = convertedImage;
-	}
+// 	if (currentImage->channels() == 4){
+// 		LOG4CPP_DEBUG(m_logger, "image correct channels");
+// 		sourceImage = currentImage;			
+// 	}
+// 	else if(currentImage->channels() == 3){
+// 		if (convertedImage.get() == 0){
+// 			convertedImage.reset(new Vision::Image(currentImage->width(), currentImage->height(), 4));
+// 		}
+// 		LOG4CPP_DEBUG(m_logger, "convert image");
+// 		cv::cvtColor(currentImage->uMat(), convertedImage->uMat(), cv::COLOR_BGR2RGBA);			
+// 		sourceImage = convertedImage;
+// 	}
+// 	else if(currentImage->channels() == 1 && currentImage->uMat().type() != CV_32FC1)
+// 	{
+// 		if (convertedImage.get() == 0){
+// 			LOG4CPP_INFO(m_logger, "create buffer image");
+// 			convertedImage.reset(new Vision::Image(currentImage->width(), currentImage->height(), 1));
+// 		}
+// 		currentImage->uMat().convertTo(convertedImage->uMat(), CV_32FC1, 1.0/255.0);
+// 		sourceImage = convertedImage;
+// 	}
 		
-	cl_mem clBuffer = (cl_mem) sourceImage->uMat().handle(cv::ACCESS_READ);	
-	ID3D11DeviceContext* ctx = NULL;
-	ID3D11Device* device = NULL;
+// 	cl_mem clBuffer = (cl_mem) sourceImage->uMat().handle(cv::ACCESS_READ);	
+// 	ID3D11DeviceContext* ctx = NULL;
+// 	ID3D11Device* device = NULL;
 	
 
-	ID3D11Texture2D* d3dtex = (ID3D11Texture2D*)texturePtr;
-	D3D11_TEXTURE2D_DESC desc;
-	d3dtex->GetDesc(&desc);
+// 	ID3D11Texture2D* d3dtex = (ID3D11Texture2D*)texturePtr;
+// 	D3D11_TEXTURE2D_DESC desc;
+// 	d3dtex->GetDesc(&desc);
 
-	//recover device
-	d3dtex->GetDevice(&device);
-	if (device == NULL){
-		LOG4CPP_ERROR(m_logger, "GetDevice == NULL");
-		return;
-	}
+// 	//recover device
+// 	d3dtex->GetDevice(&device);
+// 	if (device == NULL){
+// 		LOG4CPP_ERROR(m_logger, "GetDevice == NULL");
+// 		return;
+// 	}
 
-	//recover context
-	device->GetImmediateContext(&ctx);
-	if (ctx == NULL){
-		LOG4CPP_ERROR(m_logger, "GetImmediateContext == NULL");
-		return;
-	}
+// 	//recover context
+// 	device->GetImmediateContext(&ctx);
+// 	if (ctx == NULL){
+// 		LOG4CPP_ERROR(m_logger, "GetImmediateContext == NULL");
+// 		return;
+// 	}
 	
-	//aquire the clImage 
-	LOG4CPP_INFO(m_logger, "starting aquire");
-	cl_int err;
+// 	//aquire the clImage 
+// 	LOG4CPP_INFO(m_logger, "starting aquire");
+// 	cl_int err;
 	
-	err = clEnqueueAcquireD3D11ObjectsNV(m_commandQueue, 1, &m_clImage, 0, NULL, NULL);
-	if(err != CL_SUCCESS)
-	{
-		LOG4CPP_INFO( m_logger, "error at  clEnqueueAcquireGLObjects:" << err );
-		return;
-	}
-	LOG4CPP_INFO(m_logger, "done aquire");
-	size_t offset = 0; 
-	size_t dst_origin[3] = {0, 0, 0};
-	size_t region[3] = {sourceImage->width(), sourceImage->height(), 1};
+// 	err = clEnqueueAcquireD3D11ObjectsNV(m_commandQueue, 1, &m_clImage, 0, NULL, NULL);
+// 	if(err != CL_SUCCESS)
+// 	{
+// 		LOG4CPP_INFO( m_logger, "error at  clEnqueueAcquireGLObjects:" << err );
+// 		return;
+// 	}
+// 	LOG4CPP_INFO(m_logger, "done aquire");
+// 	size_t offset = 0; 
+// 	size_t dst_origin[3] = {0, 0, 0};
+// 	size_t region[3] = {sourceImage->width(), sourceImage->height(), 1};
 
-	//LOG4CPP_INFO(m_logger, "starting copy");
-	LOG4CPP_INFO(m_logger, "starting copy: offset: " << sourceImage->uMat().offset <<  ": "<< sourceImage->uMat().size().width << "x" << sourceImage->uMat().size().height << "x" << sourceImage->uMat().channels() );
-	if(sourceImage->uMat().isContinuous()){
-		err = clEnqueueCopyBufferToImage(m_commandQueue, clBuffer, m_clImage, 0, dst_origin, region, 0, NULL, NULL);
-	}
+// 	//LOG4CPP_INFO(m_logger, "starting copy");
+// 	LOG4CPP_INFO(m_logger, "starting copy: offset: " << sourceImage->uMat().offset <<  ": "<< sourceImage->uMat().size().width << "x" << sourceImage->uMat().size().height << "x" << sourceImage->uMat().channels() );
+// 	if(sourceImage->uMat().isContinuous()){
+// 		err = clEnqueueCopyBufferToImage(m_commandQueue, clBuffer, m_clImage, 0, dst_origin, region, 0, NULL, NULL);
+// 	}
 	
-	if (err != CL_SUCCESS)
-	{
-		LOG4CPP_INFO( m_logger, "error at  clEnqueueCopyBufferToImage:" << err );
-		err = clEnqueueReleaseD3D11ObjectsNV(m_commandQueue, 1, &m_clImage, 0, NULL, NULL);
-		LOG4CPP_INFO(m_logger, "releasing status: " << (err == CL_SUCCESS ? "SUCCESS" : "FAILED") );
-		return;
-	}
-	LOG4CPP_INFO(m_logger, "starting release");
-	err = clEnqueueReleaseD3D11ObjectsNV(m_commandQueue, 1, &m_clImage, 0, NULL, NULL);
-	if(err != CL_SUCCESS) 
-	{
-		LOG4CPP_INFO( m_logger, "error at  clEnqueueReleaseGLObjects:" << err );
-		return;
-	}
-	LOG4CPP_INFO(m_logger, "starting to finish");
-	err = clFinish(m_commandQueue);
+// 	if (err != CL_SUCCESS)
+// 	{
+// 		LOG4CPP_INFO( m_logger, "error at  clEnqueueCopyBufferToImage:" << err );
+// 		err = clEnqueueReleaseD3D11ObjectsNV(m_commandQueue, 1, &m_clImage, 0, NULL, NULL);
+// 		LOG4CPP_INFO(m_logger, "releasing status: " << (err == CL_SUCCESS ? "SUCCESS" : "FAILED") );
+// 		return;
+// 	}
+// 	LOG4CPP_INFO(m_logger, "starting release");
+// 	err = clEnqueueReleaseD3D11ObjectsNV(m_commandQueue, 1, &m_clImage, 0, NULL, NULL);
+// 	if(err != CL_SUCCESS) 
+// 	{
+// 		LOG4CPP_INFO( m_logger, "error at  clEnqueueReleaseGLObjects:" << err );
+// 		return;
+// 	}
+// 	LOG4CPP_INFO(m_logger, "starting to finish");
+// 	err = clFinish(m_commandQueue);
 
-	if (err != CL_SUCCESS)
-	{
-		LOG4CPP_INFO( m_logger, "error at  clFinish:" << err );
-		return;
-	}
-	static int receivedAndREnder = 0;
-	LOG4CPP_INFO(m_logger, "CL done: " << receivedAndREnder++);
-}
-#else
-//#ifdef WITH_DIRECTX11_TEXTURE_UPDATE
+// 	if (err != CL_SUCCESS)
+// 	{
+// 		LOG4CPP_INFO( m_logger, "error at  clFinish:" << err );
+// 		return;
+// 	}
+// 	static int receivedAndREnder = 0;
+// 	LOG4CPP_INFO(m_logger, "CL done: " << receivedAndREnder++);
+// }
+// #else
+// //#ifdef WITH_DIRECTX11_TEXTURE_UPDATE
 
-	void updateTextureDirectX11(Measurement::Timestamp texturePtr)
-	{
-		try{
+// 	void updateTextureDirectX11(Measurement::Timestamp texturePtr)
+// 	{
+// 		try{
 			
-			LOG4CPP_INFO(m_logger, "updateTextureDirectX11");
-			ID3D11Resource* textureResource = (ID3D11Resource*)texturePtr;
-			ID3D11DeviceContext* ctx = NULL;
-			ID3D11Device* device = NULL;
+// 			LOG4CPP_INFO(m_logger, "updateTextureDirectX11");
+// 			ID3D11Resource* textureResource = (ID3D11Resource*)texturePtr;
+// 			ID3D11DeviceContext* ctx = NULL;
+// 			ID3D11Device* device = NULL;
 			
-			textureResource->GetDevice(&device);
-			if (device == NULL){
-				LOG4CPP_ERROR(m_logger, "GetDevice == NULL");
-				return;
-			}
-			device->GetImmediateContext(&ctx);
-			if (ctx == NULL){
-				LOG4CPP_ERROR(m_logger, "GetImmediateContext == NULL");
-				return;
-			}
+// 			textureResource->GetDevice(&device);
+// 			if (device == NULL){
+// 				LOG4CPP_ERROR(m_logger, "GetDevice == NULL");
+// 				return;
+// 			}
+// 			device->GetImmediateContext(&ctx);
+// 			if (ctx == NULL){
+// 				LOG4CPP_ERROR(m_logger, "GetImmediateContext == NULL");
+// 				return;
+// 			}
 
-			ID3D11Texture2D* d3dtex = (ID3D11Texture2D*)texturePtr;
-			D3D11_TEXTURE2D_DESC desc;
-			d3dtex->GetDesc(&desc);
-
-
-
-			/*LOG4CPP_INFO(m_logger, "	desc.Usage : " << desc.Usage);
-			LOG4CPP_INFO(m_logger, "	desc.Width : " << desc.Width << " : " <<currentImage->width);
-			LOG4CPP_INFO(m_logger, "	desc.Height : " << desc.Height << " : " << currentImage->height);
-			LOG4CPP_INFO(m_logger, "	desc.Format : " << DXGI_FORMAT_R32_SINT << " : " << desc.Format << " : " << currentImage->nChannels << " : " << currentImage->depth);
-*/
+// 			ID3D11Texture2D* d3dtex = (ID3D11Texture2D*)texturePtr;
+// 			D3D11_TEXTURE2D_DESC desc;
+// 			d3dtex->GetDesc(&desc);
 
 
 
+// 			/*LOG4CPP_INFO(m_logger, "	desc.Usage : " << desc.Usage);
+// 			LOG4CPP_INFO(m_logger, "	desc.Width : " << desc.Width << " : " <<currentImage->width);
+// 			LOG4CPP_INFO(m_logger, "	desc.Height : " << desc.Height << " : " << currentImage->height);
+// 			LOG4CPP_INFO(m_logger, "	desc.Format : " << DXGI_FORMAT_R32_SINT << " : " << desc.Format << " : " << currentImage->nChannels << " : " << currentImage->depth);
+// */
 
-			unsigned char* data = (unsigned char*)currentImage->iplImage()->imageData;
-			boost::shared_ptr<D3D11_BOX> box;
-			int bytePerRow=4;
 
-			if (desc.Height == currentImage->height() && desc.Width == currentImage->width()) {
-				LOG4CPP_INFO(m_logger, "same width and height  ");
+
+
+// 			unsigned char* data = (unsigned char*)currentImage->iplImage()->imageData;
+// 			boost::shared_ptr<D3D11_BOX> box;
+// 			int bytePerRow=4;
+
+// 			if (desc.Height == currentImage->height() && desc.Width == currentImage->width()) {
+// 				LOG4CPP_INFO(m_logger, "same width and height  ");
 				
-			} else{
-				boost::shared_ptr< Vision::Image > sourceImage;
+// 			} else{
+// 				boost::shared_ptr< Vision::Image > sourceImage;
 				
-				bytePerRow = 4;
-				box.reset(new D3D11_BOX());
+// 				bytePerRow = 4;
+// 				box.reset(new D3D11_BOX());
 					
-				box->back = 1;
-				box->front = 0;
-				box->left = 0;
-				box->right = sourceImage->width();
-				box->bottom = 0;
-				box->top = sourceImage->height();				
-				//ctx->UpdateSubresource(d3dtex, 0, 0, data, sourceImage->width * 4, 0);
-			}
+// 				box->back = 1;
+// 				box->front = 0;
+// 				box->left = 0;
+// 				box->right = sourceImage->width();
+// 				box->bottom = 0;
+// 				box->top = sourceImage->height();				
+// 				//ctx->UpdateSubresource(d3dtex, 0, 0, data, sourceImage->width * 4, 0);
+// 			}
 
-			if ((desc.Format == DXGI_FORMAT_R32_SINT || desc.Format == DXGI_FORMAT_R32_TYPELESS) && currentImage->channels() == 1 && currentImage->depth() == CV_32S) {
-				bytePerRow = 4*currentImage->width();
-
-
-				LOG4CPP_INFO(m_logger, "same byte layout, nothing to do  ");
+// 			if ((desc.Format == DXGI_FORMAT_R32_SINT || desc.Format == DXGI_FORMAT_R32_TYPELESS) && currentImage->channels() == 1 && currentImage->depth() == CV_32S) {
+// 				bytePerRow = 4*currentImage->width();
 
 
+// 				LOG4CPP_INFO(m_logger, "same byte layout, nothing to do  ");
 
-			}
-			else if (currentImage->channels() == 3) {
-				//LOG4CPP_INFO(m_logger, "convert else");
-				if (convertedImage.get() == 0){
-					LOG4CPP_INFO(m_logger, "create buffer image");
-					convertedImage.reset(new Vision::Image(currentImage->width(), currentImage->height(), 4, 8, currentImage->origin()));
 
-				}
-				//LOG4CPP_INFO(m_logger, "convert image");
-				cvCvtColor(currentImage.get(), convertedImage.get(), CV_BGR2RGBA);
-				data = (unsigned char*)convertedImage->iplImage()->imageData;
-				bytePerRow = 4 * currentImage->width();
-			}
+
+// 			}
+// 			else if (currentImage->channels() == 3) {
+// 				//LOG4CPP_INFO(m_logger, "convert else");
+// 				if (convertedImage.get() == 0){
+// 					LOG4CPP_INFO(m_logger, "create buffer image");
+// 					convertedImage.reset(new Vision::Image(currentImage->width(), currentImage->height(), 4, 8, currentImage->origin()));
+
+// 				}
+// 				//LOG4CPP_INFO(m_logger, "convert image");
+// 				cvCvtColor(currentImage.get(), convertedImage.get(), CV_BGR2RGBA);
+// 				data = (unsigned char*)convertedImage->iplImage()->imageData;
+// 				bytePerRow = 4 * currentImage->width();
+// 			}
 
 		
 
-			//data = new unsigned char[desc.Width*desc.Height * 4];
-			//FillTextureFromCode(desc.Width, desc.Height, desc.Width * 4, data);
+// 			//data = new unsigned char[desc.Width*desc.Height * 4];
+// 			//FillTextureFromCode(desc.Width, desc.Height, desc.Width * 4, data);
 			
-			ctx->UpdateSubresource(d3dtex, 0, box.get(), data, bytePerRow, 0);
+// 			ctx->UpdateSubresource(d3dtex, 0, box.get(), data, bytePerRow, 0);
 			
-			//delete[] data;
+// 			//delete[] data;
 
-			ctx->Release();
-		}
-		catch (...) {
-			LOG4CPP_ERROR(m_logger, "exception");
-			return;
-		}
+// 			ctx->Release();
+// 		}
+// 		catch (...) {
+// 			LOG4CPP_ERROR(m_logger, "exception");
+// 			return;
+// 		}
 		
 		
-	}
+// 	}
 
-	HRESULT UpdateSubresource_Workaround(
-		ID3D11Device *pDevice,
-		ID3D11DeviceContext *pDeviceContext,
-		ID3D11Resource *pDstResource,
-		UINT dstSubresource,
-		const D3D11_BOX *pDstBox,
-		const void *pSrcData,
-		UINT srcBytesPerElement,
-		UINT srcRowPitch,
-		UINT srcDepthPitch,
-		bool* pDidWorkAround)
-	{
-		HRESULT hr = S_OK;
-		bool needWorkaround = false;
-		D3D11_DEVICE_CONTEXT_TYPE contextType = pDeviceContext->GetType();
+// 	HRESULT UpdateSubresource_Workaround(
+// 		ID3D11Device *pDevice,
+// 		ID3D11DeviceContext *pDeviceContext,
+// 		ID3D11Resource *pDstResource,
+// 		UINT dstSubresource,
+// 		const D3D11_BOX *pDstBox,
+// 		const void *pSrcData,
+// 		UINT srcBytesPerElement,
+// 		UINT srcRowPitch,
+// 		UINT srcDepthPitch,
+// 		bool* pDidWorkAround)
+// 	{
+// 		HRESULT hr = S_OK;
+// 		bool needWorkaround = false;
+// 		D3D11_DEVICE_CONTEXT_TYPE contextType = pDeviceContext->GetType();
 
-		if (pDstBox && (D3D11_DEVICE_CONTEXT_DEFERRED == contextType))
-		{
-			D3D11_FEATURE_DATA_THREADING threadingCaps = { FALSE, FALSE };
+// 		if (pDstBox && (D3D11_DEVICE_CONTEXT_DEFERRED == contextType))
+// 		{
+// 			D3D11_FEATURE_DATA_THREADING threadingCaps = { FALSE, FALSE };
 
-			hr = pDevice->CheckFeatureSupport(D3D11_FEATURE_THREADING, &threadingCaps, sizeof(threadingCaps));
-			if (SUCCEEDED(hr))
-			{
-				if (!threadingCaps.DriverCommandLists)
-				{
-					needWorkaround = true;
-				}
-			}
-		}
+// 			hr = pDevice->CheckFeatureSupport(D3D11_FEATURE_THREADING, &threadingCaps, sizeof(threadingCaps));
+// 			if (SUCCEEDED(hr))
+// 			{
+// 				if (!threadingCaps.DriverCommandLists)
+// 				{
+// 					needWorkaround = true;
+// 				}
+// 			}
+// 		}
 
-		const void* pAdjustedSrcData = pSrcData;
+// 		const void* pAdjustedSrcData = pSrcData;
 
-		if (needWorkaround)
-		{
-			D3D11_BOX alignedBox = *pDstBox;
+// 		if (needWorkaround)
+// 		{
+// 			D3D11_BOX alignedBox = *pDstBox;
 
-			// convert from pixels to blocks
-			if (false)
-			{
-				alignedBox.left /= 4;
-				alignedBox.right /= 4;
-				alignedBox.top /= 4;
-				alignedBox.bottom /= 4;
-			}
+// 			// convert from pixels to blocks
+// 			if (false)
+// 			{
+// 				alignedBox.left /= 4;
+// 				alignedBox.right /= 4;
+// 				alignedBox.top /= 4;
+// 				alignedBox.bottom /= 4;
+// 			}
 
-			pAdjustedSrcData = ((const BYTE*)pSrcData) - (alignedBox.front * srcDepthPitch) - (alignedBox.top * srcRowPitch) - (alignedBox.left * srcBytesPerElement);
-		}
+// 			pAdjustedSrcData = ((const BYTE*)pSrcData) - (alignedBox.front * srcDepthPitch) - (alignedBox.top * srcRowPitch) - (alignedBox.left * srcBytesPerElement);
+// 		}
 
-		pDeviceContext->UpdateSubresource(pDstResource, dstSubresource, pDstBox, pAdjustedSrcData, srcRowPitch, srcDepthPitch);
+// 		pDeviceContext->UpdateSubresource(pDstResource, dstSubresource, pDstBox, pAdjustedSrcData, srcRowPitch, srcDepthPitch);
 
-		if (pDidWorkAround)
-		{
-			*pDidWorkAround = needWorkaround;
-		}
+// 		if (pDidWorkAround)
+// 		{
+// 			*pDidWorkAround = needWorkaround;
+// 		}
 
-		return hr;
-	}
+// 		return hr;
+// 	}
 
-#endif
-#endif
+// #endif
+// #endif
     /** log4cpp logger reference */
     log4cpp::Category& m_logger;	
 	
@@ -661,10 +670,10 @@ void updateTextureDirectX11(Measurement::Timestamp texturePtr)
 	cl_mem m_clImage;
 	cl_command_queue m_commandQueue;
 	bool m_clImageInitialized;
-#ifdef WITH_DIRECTX11_TEXTURE_UPDATE
-	clEnqueueAcquireD3D11ObjectsNV_fn clEnqueueAcquireD3D11ObjectsNV;
-	clEnqueueReleaseD3D11ObjectsNV_fn clEnqueueReleaseD3D11ObjectsNV;
-#endif
+// #ifdef WITH_DIRECTX11_TEXTURE_UPDATE
+// 	clEnqueueAcquireD3D11ObjectsNV_fn clEnqueueAcquireD3D11ObjectsNV;
+// 	clEnqueueReleaseD3D11ObjectsNV_fn clEnqueueReleaseD3D11ObjectsNV;
+// #endif
 #endif
 
   };
