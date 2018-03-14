@@ -204,57 +204,58 @@ namespace Ubitrack { namespace Components {
 			{
 				oclManager.initializeOpenGL();
 				m_clImage = clCreateFromGLTexture2D( oclManager.getContext(), CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, (GLuint) textureID, &err);
-			}else
+			} else
 			{
-				ID3D11Texture2D* textureResource = (ID3D11Texture2D*) textureID;
-				D3D11_TEXTURE2D_DESC textureDesc;
-				textureResource->GetDesc(&textureDesc);
-				LOG4CPP_DEBUG(m_logger, "D3DX11Info: width: " << textureDesc.Width << " height: " << textureDesc.Height << " format: " << textureDesc.Format);
+				throw std::runtime_error("DirectX is currently not supported.");
+				// ID3D11Texture2D* textureResource = (ID3D11Texture2D*) textureID;
+				// D3D11_TEXTURE2D_DESC textureDesc;
+				// textureResource->GetDesc(&textureDesc);
+				// LOG4CPP_DEBUG(m_logger, "D3DX11Info: width: " << textureDesc.Width << " height: " << textureDesc.Height << " format: " << textureDesc.Format);
 				
 
-				//ID3D11Resource* textureResource = (ID3D11Resource*)textureID;
-				ID3D11DeviceContext* ctx = NULL;
-				ID3D11Device* device = NULL;
+				// //ID3D11Resource* textureResource = (ID3D11Resource*)textureID;
+				// ID3D11DeviceContext* ctx = NULL;
+				// ID3D11Device* device = NULL;
 			
-				textureResource->GetDevice(&device);
-				if (device == NULL){
-					LOG4CPP_ERROR(m_logger, "GetDevice == NULL");
-				}
+				// textureResource->GetDevice(&device);
+				// if (device == NULL){
+				// 	LOG4CPP_ERROR(m_logger, "GetDevice == NULL");
+				// }
 
-				oclManager.initializeDirectX(device);
+				// oclManager.initializeDirectX(device);
 
 			
 
-				clCreateFromD3D11Texture2DNV_fn clCreateFromD3D11Texture2DNV = (clCreateFromD3D11Texture2DNV_fn) clGetExtensionFunctionAddress("clCreateFromD3D11Texture2DNV");
-				//clCreateFromD3D11Texture2DKHR = (clCreateFromD3D11Texture2DNV_fn) clGetExtensionFunctionAddress("clCreateFromD3D11Texture2DKHR");
-				LOG4CPP_INFO(m_logger, "func pointer to clCreateFromD3D11Texture2DNV" << clCreateFromD3D11Texture2DNV);
+				// clCreateFromD3D11Texture2DNV_fn clCreateFromD3D11Texture2DNV = (clCreateFromD3D11Texture2DNV_fn) clGetExtensionFunctionAddress("clCreateFromD3D11Texture2DNV");
+				// //clCreateFromD3D11Texture2DKHR = (clCreateFromD3D11Texture2DNV_fn) clGetExtensionFunctionAddress("clCreateFromD3D11Texture2DKHR");
+				// LOG4CPP_INFO(m_logger, "func pointer to clCreateFromD3D11Texture2DNV" << clCreateFromD3D11Texture2DNV);
 
-				ID3D11Texture2D* d3dtex = (ID3D11Texture2D*)textureID;
-				m_clImage = clCreateFromD3D11Texture2DNV( oclManager.getContext(), CL_MEM_WRITE_ONLY, d3dtex, 0, &err);
+				// ID3D11Texture2D* d3dtex = (ID3D11Texture2D*)textureID;
+				// m_clImage = clCreateFromD3D11Texture2DNV( oclManager.getContext(), CL_MEM_WRITE_ONLY, d3dtex, 0, &err);
 				
-				if(err != CL_SUCCESS){
-					m_clImageInitialized = false;
-					LOG4CPP_INFO(m_logger, "Error creating clImage from Texture: " <<err);
-				}else{
-					m_clImageInitialized = true;
-					LOG4CPP_INFO(m_logger, "success: created From D3DX11 Texture");
-				}
+				// if(err != CL_SUCCESS){
+				// 	m_clImageInitialized = false;
+				// 	LOG4CPP_INFO(m_logger, "Error creating clImage from Texture: " <<err);
+				// }else{
+				// 	m_clImageInitialized = true;
+				// 	LOG4CPP_INFO(m_logger, "success: created From D3DX11 Texture");
+				// }
 
-				clEnqueueAcquireD3D11ObjectsNV = (clEnqueueAcquireD3D11ObjectsNV_fn) clGetExtensionFunctionAddress("clEnqueueAcquireD3D11ObjectsNV");
-				LOG4CPP_INFO(m_logger, "func pointer to clEnqueueAcquireD3D11ObjectsNV" << clCreateFromD3D11Texture2DNV);
-				if(!clEnqueueAcquireD3D11ObjectsNV)
-				{
-					LOG4CPP_ERROR(m_logger, "clEnqueueAcquireD3D11ObjectsNV NULL");
-					m_clImageInitialized = false;
-				}
+				// clEnqueueAcquireD3D11ObjectsNV = (clEnqueueAcquireD3D11ObjectsNV_fn) clGetExtensionFunctionAddress("clEnqueueAcquireD3D11ObjectsNV");
+				// LOG4CPP_INFO(m_logger, "func pointer to clEnqueueAcquireD3D11ObjectsNV" << clCreateFromD3D11Texture2DNV);
+				// if(!clEnqueueAcquireD3D11ObjectsNV)
+				// {
+				// 	LOG4CPP_ERROR(m_logger, "clEnqueueAcquireD3D11ObjectsNV NULL");
+				// 	m_clImageInitialized = false;
+				// }
 
-				clEnqueueReleaseD3D11ObjectsNV = (clEnqueueReleaseD3D11ObjectsNV_fn) clGetExtensionFunctionAddress("clEnqueueReleaseD3D11ObjectsNV");
-				LOG4CPP_INFO(m_logger, "func pointer to clEnqueueReleaseD3D11ObjectsNV" << clCreateFromD3D11Texture2DNV);
-				if(!clEnqueueReleaseD3D11ObjectsNV)
-				{
-					LOG4CPP_ERROR(m_logger, "clEnqueueReleaseD3D11ObjectsNV NULL");
-					m_clImageInitialized = false;
-				}
+				// clEnqueueReleaseD3D11ObjectsNV = (clEnqueueReleaseD3D11ObjectsNV_fn) clGetExtensionFunctionAddress("clEnqueueReleaseD3D11ObjectsNV");
+				// LOG4CPP_INFO(m_logger, "func pointer to clEnqueueReleaseD3D11ObjectsNV" << clCreateFromD3D11Texture2DNV);
+				// if(!clEnqueueReleaseD3D11ObjectsNV)
+				// {
+				// 	LOG4CPP_ERROR(m_logger, "clEnqueueReleaseD3D11ObjectsNV NULL");
+				// 	m_clImageInitialized = false;
+				// }
 			}
 			
 			m_commandQueue = oclManager.getCommandQueue();
