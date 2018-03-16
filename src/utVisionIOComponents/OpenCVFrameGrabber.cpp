@@ -109,6 +109,15 @@ public:
 		}
 	}
 
+    Measurement::CameraIntrinsics getCameraModel( Measurement::Timestamp t )
+    {
+        if (m_undistorter) {
+            return Measurement::CameraIntrinsics( t, m_undistorter->getIntrinsics() );
+        } else {
+            UBITRACK_THROW( "No undistortion configured for OpenCVFrameGrabber" );
+        }
+    }
+
 protected:
 	// thread main loop
 	void ThreadProc();
@@ -127,6 +136,7 @@ protected:
 	Dataflow::PushSupplier< Measurement::ImageMeasurement > m_colorPort;
 	Dataflow::PushSupplier< Measurement::ImageMeasurement > m_greyPort;
 	Dataflow::PullSupplier< Measurement::Matrix3x3 > m_intrinsicsPort;
+    Dataflow::PullSupplier< Measurement::CameraIntrinsics > m_cameraModelPort;
 
 	/** undistorter */
 	boost::shared_ptr<Vision::Undistortion> m_undistorter;
@@ -189,6 +199,7 @@ OpenCVFrameGrabber::OpenCVFrameGrabber( const std::string& sName, boost::shared_
 	, m_colorPort( "ColorOutput", *this )
 	, m_greyPort( "Output", *this )
 	, m_intrinsicsPort( "Intrinsics", *this, boost::bind( &OpenCVFrameGrabber::getIntrinsic, this, _1 ) )
+    , m_cameraModelPort( "CameraModel", *this, boost::bind( &OpenCVFrameGrabber::getCameraModel, this, _1 ) )
 	, m_autoGPUUpload(false)
 
 {
