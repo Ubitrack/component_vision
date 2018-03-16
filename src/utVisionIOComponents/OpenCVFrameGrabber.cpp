@@ -140,7 +140,6 @@ protected:
 
 	/** undistorter */
 	boost::shared_ptr<Vision::Undistortion> m_undistorter;
-	bool m_useUndistortion;
 
 	// camera data structures
 	cv::VideoCapture m_videocapture;
@@ -189,7 +188,6 @@ void OpenCVFrameGrabber::start()
 
 OpenCVFrameGrabber::OpenCVFrameGrabber( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > subgraph )
 	: Dataflow::Component( sName )
-	, m_useUndistortion(false)
 	, m_videocapture(0)
 	, m_bStop( true )
 	, m_width( 640 )
@@ -238,15 +236,13 @@ OpenCVFrameGrabber::OpenCVFrameGrabber( const std::string& sName, boost::shared_
 	if (subgraph->m_DataflowAttributes.hasAttribute("cameraModelFile")){
 		std::string cameraModelFile = subgraph->m_DataflowAttributes.getAttributeString("cameraModelFile");
 		m_undistorter.reset(new Vision::Undistortion(cameraModelFile));
-		m_useUndistortion = true;
 	}
-	else if (subgraph->m_DataflowAttributes.hasAttribute("intrinsicMatrixFile")) {
+	else {
 		std::string intrinsicFile = subgraph->m_DataflowAttributes.getAttributeString("intrinsicMatrixFile");
 		std::string distortionFile = subgraph->m_DataflowAttributes.getAttributeString("distortionFile");
+
+
 		m_undistorter.reset(new Vision::Undistortion(intrinsicFile, distortionFile));
-		m_useUndistortion = true;
-	} else {
-	 	LOG4CPP_INFO( logger, "Setup Capture without undistortion." );
 	}
 
 	Vision::OpenCLManager& oclManager = Vision::OpenCLManager::singleton();
@@ -361,9 +357,7 @@ void OpenCVFrameGrabber::ThreadProc()
 					pColorImage->uMat();
 				}
 			}
-			if (m_useUndistortion) {
-				pColorImage = m_undistorter->undistort( pColorImage );
-			}
+			pColorImage = m_undistorter->undistort( pColorImage );
 			m_colorPort.send( Measurement::ImageMeasurement( time, pColorImage ) );
 
 			if (m_greyPort.isConnected()) {
