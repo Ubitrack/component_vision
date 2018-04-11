@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <string>
 #include <sstream>
+#include <list>
 #include <boost/foreach.hpp>
 #include <log4cpp/Category.hh>
 
@@ -59,6 +60,31 @@
 #ifdef DO_TIMING
 #include <utUtil/BlockTimer.h>
 #endif
+
+namespace Ubitrack {
+  namespace Dataflow {
+    /**
+    * \internal
+    * Defines how to extract the priority out of a data type.
+    * Specialized for image measurements to reduce the maximum queue length.
+    */
+    template<>
+    struct EventTypeTraits< Measurement::ImageMeasurement >
+    {
+      unsigned long long getPriority(const Measurement::ImageMeasurement& m) const
+      {
+        return m.time();
+      }
+
+      /** the maximum queue length for images is 1! */
+      int getMaxQueueLength() const
+      {
+        return 1;
+      }
+    };
+
+  }
+}
 
 // get a logger
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.MarkerTracker" ) );
@@ -333,6 +359,10 @@ class MarkerTracker
 public:
 	MarkerTracker( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > subgraph, const IdKey& componentKey, MarkerTrackerModule* pModule );
 
+  // start and stop functions for all processes
+  virtual void start();
+  virtual void stop();
+
 	/** is the debug port connected? */
 	bool debug();
 	
@@ -366,6 +396,26 @@ protected:
 	
 	// some variables where the module stores information
 	Measurement::Timestamp m_lastTime;
+			
+  bool m_bThreadingEnabled;
+
+  // temp image for the image queue function (used in threading mode)
+  Measurement::ImageMeasurement m_measurement;
+  
+  // the event dispatching thread 
+  boost::shared_ptr< boost::thread > m_pThread;
+
+  // current state of the event thread 
+  enum { state_running, state_stopping, state_stopped, state_end } m_State;
+
+  // condition variable for thread synchronization 
+  boost::condition m_NewEventCondition;
+
+  // mutex for thread synchronization 
+  boost::mutex m_Mutex;
+
+  // queue thread function 
+  void threadFunction();
 			
 	friend class MarkerTrackerModule;
 };

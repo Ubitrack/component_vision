@@ -293,7 +293,10 @@ public:
 		}
 		else  // m_scaleFactor == 0
 		{
-#if CV_MAJOR_VERSION > 1 && CV_MINOR_VERSION > 2
+			
+// added DEACTIVATED because of error of cv::Mat constructor
+#if CV_MAJOR_VERSION > 1 && CV_MINOR_VERSION > 2 && DEACTIVATED
+
 			cv::Mat calib_image( *img, false );
 			
 			std::vector< cv::Point2f > centers; //( CvPoint2D32f == cv::Point2f )
