@@ -29,6 +29,13 @@ class UbitrackCoreConan(ConanFile):
     # all sources are deployed with the package
     exports_sources = "doc/*", "src/*", "CMakeLists.txt"
 
+
+    def requirements(self):
+        if self.options["ubitrack_vision"].opengl_extension_wrapper == 'glad':
+            self.requires("glad/[>=0.1.27]@camposs/stable")
+        elif self.options["ubitrack_vision"].opengl_extension_wrapper == 'glew':
+            self.requires("glew/2.1.0@camposs/stable")
+
     def imports(self):
         self.copy(pattern="*.dll", dst="bin", src="bin") # From bin to bin
         self.copy(pattern="*.dylib*", dst="lib", src="lib") 
