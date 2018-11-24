@@ -32,6 +32,8 @@
 
 #include <log4cpp/Category.hh>
 
+#include <utVision/OpenGLPlatform.h>
+
 #include <utDataflow/Component.h>
 #include <utDataflow/PushConsumer.h>
 #include <utDataflow/PullSupplier.h>
@@ -72,28 +74,6 @@
 // #ifdef WITH_DIRECTX11_TEXTURE_UPDATE
 // #include <d3d11.h>
 // #endif
-
-#ifdef WITH_OPENGL_TEXTURE_UPDATE
-
-// GLAD
-#include <glad/glad.h>
-
-// #ifdef _WIN32
-// 	#include <GL/gl.h>
-// 	#include <GL/glu.h>
-// 	#include <utUtil/CleanWindows.h>
-// #elif __APPLE__
-// 	#include <OpenGL/OpenGL.h>
-// 	#include <OpenGL/glu.h>
-// #elif ANDROID
-// 	#include <GLES2/gl2.h>
-// #else
-// 	#include <GL/gl.h>
-// 	#include <GL/glu.h>
-// 	#include <GL/glx.h>
-// #endif
-
-#endif
 
 #include <opencv/highgui.h>
 
