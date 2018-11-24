@@ -13,6 +13,10 @@ class UbitrackCoreConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     generators = "cmake"
 
+    options = {
+        "opengl_extension_wrapper": "ANY",
+    }
+
     requires = (
         "ubitrack_core/%s@ubitrack/stable" % version,
         "ubitrack_vision/%s@ubitrack/stable" % version,
@@ -24,17 +28,14 @@ class UbitrackCoreConan(ConanFile):
         "ubitrack_core:shared=True",
         "ubitrack_vision:shared=True",
         "ubitrack_dataflow:shared=True",
+        "opengl_extension_wrapper=glad",
         )
 
     # all sources are deployed with the package
     exports_sources = "doc/*", "src/*", "CMakeLists.txt"
 
-
-    def requirements(self):
-        if self.options["ubitrack_vision"].opengl_extension_wrapper == 'glad':
-            self.requires("glad/[>=0.1.27]@camposs/stable")
-        elif self.options["ubitrack_vision"].opengl_extension_wrapper == 'glew':
-            self.requires("glew/2.1.0@camposs/stable")
+    def configure(self):
+        self.options.opengl_extension_wrapper = self.options['ubitrack_vision'].opengl_extension_wrapper
 
     def imports(self):
         self.copy(pattern="*.dll", dst="bin", src="bin") # From bin to bin
