@@ -26,12 +26,16 @@
             <Edge displayName="Undistorted Image" name="Output" source="Camera" destination="ImagePlaneA">
                 <Attribute name="type" value="Image" xsi:type="EnumAttributeReferenceType"/>
             </Edge>
+			 <Edge displayName="Undistorted Intrinsics" name="OutIntrinsics" source="Camera" destination="ImagePlaneA">
+                <Attribute name="type" value="3x3Matrix" xsi:type="EnumAttributeReferenceType"/>				
+            </Edge>
         </Output>
         
         <Constraints>
         	<TriggerGroup>
                 <Edge edge-ref="Input"/>
                 <Edge edge-ref="Output"/>
+				<Edge edge-ref="OutIntrinsics"/>
             </TriggerGroup>
         </Constraints>
 

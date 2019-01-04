@@ -197,13 +197,24 @@ void ImageFileRecorder::saveImage( const ImageMeasurement &img )
 		Util::writeBinaryCalibFile(path.string(), *img);		
 	}
 	else {
-		if (cv::imwrite(path.string(), img->Mat()) == 0)
+		bool writeResult = false;
+		cv::Mat writeImage;
+		if (img->origin() == 0) {
+			writeImage = img->Mat();
+		}
+		else {			
+			flip(img->Mat(), writeImage, 0);			
+		}
+
+		
+		if (cv::imwrite(path.string(), writeImage) == 0)
 			LOG4CPP_ERROR(logger, "Error saving image " << path);
 	}
 
 	
-	
-	os << (unsigned long long)( img.time() / 1000000.)  << " " << path.filename() << std::endl;
+	// breaking change, records with synchronized cameras are otherwise wrong and there is no need to shorten the timestamp
+	//os << (unsigned long long)( img.time() / 1000000.)  << " " << path.filename() << std::endl;
+	os << img.time() << " " << path.filename() << std::endl;
 }
 
 } } // namespace Ubitrack::Driver

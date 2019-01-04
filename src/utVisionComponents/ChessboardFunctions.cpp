@@ -294,7 +294,7 @@ public:
 		else  // m_scaleFactor == 0
 		{
 #if CV_MAJOR_VERSION > 1 && CV_MINOR_VERSION > 2
-			cv::Mat calib_image( *img, false );
+			cv::Mat calib_image = img->Mat();
 			
 			std::vector< cv::Point2f > centers; //( CvPoint2D32f == cv::Point2f )
 			centers.reserve( m_edges ); //allocate some space for the values

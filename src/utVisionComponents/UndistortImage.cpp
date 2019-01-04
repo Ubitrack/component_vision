@@ -75,6 +75,8 @@ protected:
 	
 	/** undistorted outgoing image */
 	TriggerOutPort< Measurement::ImageMeasurement > m_imageOut;
+
+	TriggerOutPort<Measurement::Matrix3x3> m_intrinsicsOut;
 	
 	/** structure to handle the undistortion */
 	Vision::Undistortion m_undistorter;
@@ -87,6 +89,7 @@ public:
 		, m_intrinsicsPort( "CameraIntrinsics", *this ) //new port
 		, m_imageIn( "Input", *this )
 		, m_imageOut( "Output", *this )
+		, m_intrinsicsOut("OutIntrinsics", *this)
 		, m_undistorter( )
 	{}
 	
@@ -110,6 +113,8 @@ public:
 		
 		boost::shared_ptr< Image > imgUndistorted = m_undistorter.undistort( *pImage );
 		m_imageOut.send( Measurement::ImageMeasurement( t, imgUndistorted ) );
+
+		m_intrinsicsOut.send(Measurement::Matrix3x3(t, m_undistorter.getMatrix()));
 	}
 	
 	bool reset( const Measurement::Timestamp t )
@@ -140,6 +145,10 @@ public:
 		
 		m_undistorter.reset( camIntrinsics );
 		return true;
+	}
+
+	Measurement::Matrix3x3 getIntrinsics(const Measurement::Timestamp t) {
+		return Measurement::Matrix3x3(t, m_undistorter.getMatrix());
 	}
 };
 

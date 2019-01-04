@@ -190,7 +190,15 @@ ImageWriter::~ImageWriter(){};
 void ImageWriter::pushImage( const ImageMeasurement& m )
 {
 
-	if( cv::imwrite( m_filename, m->Mat() ) == 0 )
+	cv::Mat writeImage;
+	if (m->origin() == 0) {
+		writeImage = m->Mat();
+	}
+	else {
+		flip(m->Mat(), writeImage, 0);
+	}
+
+	if (cv::imwrite(m_filename, writeImage) == 0)
 		LOG4CPP_ERROR( logger, "Error saving image " << m_filename );
 }
 

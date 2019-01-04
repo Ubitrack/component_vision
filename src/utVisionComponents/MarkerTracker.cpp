@@ -419,6 +419,11 @@ MarkerTracker::MarkerTracker( const std::string& sName, boost::shared_ptr< Graph
 		//LOG4CPP_ERROR( logger, "Cannot start component as a marker tracker, since there is no \"Marker\"-node in the dfg." );
 		LOG4CPP_DEBUG( logger, "This is a \"" << getKey() << "\" component and no marker tracker, still no problem if it is the only one." );
 	}
+
+	m_info.bEnableTracking = false;
+	m_info.bEnablePixelFlow = false;
+	m_info.bEnableFastTracking = false;
+	m_info.bEnableFlipCheck = true;
 		
 	if ( subgraph->m_DataflowAttributes.hasAttribute( "edgeRefinement" ) ) // enable Edge Refinement
 		m_bEdgeRefinement = subgraph->m_DataflowAttributes.getAttributeString( "edgeRefinement" ) == "true";
@@ -1113,10 +1118,10 @@ void MultiMarkerTrackerBundleAdustment::imageQueue(const Measurement::ImageMeasu
 			writeConfigFile();
 		}
 
-		LOG4CPP_INFO( logger, "imagequeue: imagecount>2" );
+		
 		// the image will only be stored in the image queue, if at least two markers can be seen
 		if( markerCount >= 2 ){
-
+			LOG4CPP_INFO(logger, ">= 2 markers visible");
 			// count the number of images for the next marker bundle
 			m_imageCount++;
 
@@ -1154,7 +1159,7 @@ void MultiMarkerTrackerBundleAdustment::imageQueue(const Measurement::ImageMeasu
 
 			// no separation possible in first image
 			if( !m_tempMarkerBundle.empty() ){
-
+				LOG4CPP_INFO(logger, "check for bundle adjustment");
 				// if the amount of new and known separated markers is the same as all markers in the image, than a separation of markers has occured
 				// all markers, which can be seen in the image, are not from the previous iteration (start point is the first image, which are never separated)
 				if( newMarkerCount + separatedMarkerCount == markerCount ){
@@ -1230,6 +1235,7 @@ void MultiMarkerTrackerBundleAdustment::imageQueue(const Measurement::ImageMeasu
 			BOOST_FOREACH( MarkerIDCount::value_type& mapEl, m_markerID )
 			{
 				if( mapEl.second < 2 ){
+					LOG4CPP_INFO(logger, "Not enough images of marker: " << mapEl.first.ID);
 					enoughMarkers = false;
 					break;
 				}
@@ -1238,6 +1244,21 @@ void MultiMarkerTrackerBundleAdustment::imageQueue(const Measurement::ImageMeasu
 			// start the bundle adjustment, if all new markers can be seen in at least two different set of images,
 			// or if the number of images in the queue is to long
 			// and no separated markers can be seen in the image
+
+			LOG4CPP_INFO(logger, "Bundle Adjustment condition, valid image count: " << (m_imageCount >= maxImage || m_newMarker));
+
+			LOG4CPP_INFO(logger, "Bundle Adjustment condition, enough markers: " << enoughMarkers);
+
+			LOG4CPP_INFO(logger, "Bundle Adjustment condition, seperated markers: " << m_separatedMarkers.empty());
+
+			if (!m_separatedMarkers.empty()) {
+				BOOST_FOREACH(SeparatedMarkers::value_type& mapEl, m_separatedMarkers)
+				{
+					LOG4CPP_INFO(logger, " seperated marker: " << mapEl.first.ID);
+				}
+			}
+
+
 			if( (m_imageCount >= maxImage || m_newMarker) && enoughMarkers && m_separatedMarkers.empty() ){ 
 
 				// write all data in m_markerBundle

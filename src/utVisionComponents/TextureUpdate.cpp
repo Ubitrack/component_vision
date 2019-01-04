@@ -30,7 +30,8 @@
  * @author Frieder Pankratz <pankratz@in.tum.de>
  */
 
-#ifdef HAVE_OPENCL
+
+
 #include <log4cpp/Category.hh>
 
 #include <utDataflow/Component.h>
@@ -42,8 +43,13 @@
 #include <opencv/cv.h>
 
 // @todo should that be a compiletime option??
+
+#ifdef HAVE_OPENCL
+
 #ifdef WIN32
 #define USE_UMAT
+#endif
+
 #endif
 
 #ifdef USE_UMAT
@@ -87,7 +93,7 @@
 	#include <GL/glx.h>
 #endif
 
-#endif
+
 
 #include <opencv/highgui.h>
 
@@ -163,29 +169,28 @@ namespace Ubitrack { namespace Components {
 		m_textureHeight = currentImage->height();
 		m_textureChannels = currentImage->channels();
 
-		LOG4CPP_INFO(m_logger, "new Image with timestamp: " << image.time() );
+		//LOG4CPP_INFO(m_logger, "new Image with timestamp: " << image.time() );
 		
     }
 	
 	Measurement::Position receiveUpdateTexture( Measurement::Timestamp textureID )
     {
 		
-		LOG4CPP_INFO(m_logger, "receiveUpdateTexture TextureID: " << textureID);
+		//LOG4CPP_INFO(m_logger, "receiveUpdateTexture TextureID: " << textureID);	
 
-
-		if( textureID == 0 && currentImage.get() == NULL)
+		if (currentImage.get() == NULL)
 		{
-			return Measurement::Position(0, Math::Vector< double, 3 >(0,0,0));
+			return Measurement::Position(0, Math::Vector< double, 3 >(0, 0, 0));
 		}
 
 		if( textureID == 0){
-			LOG4CPP_DEBUG(m_logger, "creating texture: " << m_textureWidth << "x" << m_textureHeight << "x" << m_textureChannels);
+			LOG4CPP_INFO(m_logger, "no texture id provided ");
 			Measurement::Position result(textureID, Math::Vector< double, 3 >(m_textureWidth, m_textureHeight, m_textureChannels));
-			//Measurement::Position result(textureID, Math::Vector< double, 3 >(640, 480, 4));
 			return result;
 		}
 		
-#ifdef USE_UMAT
+//#ifdef USE_UMAT
+#ifdef DONTUSE
 
 		if( !m_clImageInitialized )
 		{
@@ -218,6 +223,7 @@ namespace Ubitrack { namespace Components {
 					LOG4CPP_ERROR(m_logger, "GetDevice == NULL");
 				}
 
+				LOG4CPP_INFO(m_logger, "call initializeDirectX");
 				oclManager.initializeDirectX(device);
 
 			
@@ -265,8 +271,10 @@ namespace Ubitrack { namespace Components {
 			LOG4CPP_INFO(m_logger, "initializeing finished: " << oclManager.isInitialized() );
 		}
 #endif
+
+		
 			
-			LOG4CPP_INFO(m_logger, "receiveUpdateTexture start");
+		//LOG4CPP_INFO(m_logger, "receiveUpdateTexture start");
 		{
 
 			boost::mutex::scoped_lock l( m_mutex );
@@ -277,14 +285,15 @@ namespace Ubitrack { namespace Components {
 				return Measurement::Position(0, Math::Vector< double, 3 >(0,0,0));
 			}
 
-			LOG4CPP_DEBUG(m_logger, "Update texture");
+			//LOG4CPP_DEBUG(m_logger, "Update texture");
 
 		
 			if (useOpenGL)
 				updateTextuteOpenGL(textureID);
 #ifdef WITH_DIRECTX11_TEXTURE_UPDATE
 			else
-				updateTextureDirectX11(textureID);
+				updateTextureDirectX11CPU(textureID);
+				//updateTextureDirectX11(textureID);
 #endif
 		
 			currentImage.reset();
@@ -442,7 +451,7 @@ void updateTextureDirectX11(Measurement::Timestamp texturePtr)
 	}
 	
 	//aquire the clImage 
-	LOG4CPP_INFO(m_logger, "starting aquire");
+	//LOG4CPP_INFO(m_logger, "starting aquire");
 	cl_int err;
 	
 	err = clEnqueueAcquireD3D11ObjectsNV(m_commandQueue, 1, &m_clImage, 0, NULL, NULL);
@@ -451,22 +460,22 @@ void updateTextureDirectX11(Measurement::Timestamp texturePtr)
 		LOG4CPP_INFO( m_logger, "error at  clEnqueueAcquireGLObjects:" << err );
 		return;
 	}
-	LOG4CPP_INFO(m_logger, "done aquire");
+	//LOG4CPP_INFO(m_logger, "done aquire");
 	size_t offset = 0; 
 	size_t dst_origin[3] = {0, 0, 0};
 	size_t region[3] = {sourceImage->width(), sourceImage->height(), 1};
 
 	//LOG4CPP_INFO(m_logger, "starting copy");
-	LOG4CPP_INFO(m_logger, "starting copy: offset: " << sourceImage->uMat().offset <<  ": "<< sourceImage->uMat().size().width << "x" << sourceImage->uMat().size().height << "x" << sourceImage->uMat().channels() );
+	//LOG4CPP_INFO(m_logger, "starting copy: offset: " << sourceImage->uMat().offset <<  ": "<< sourceImage->uMat().size().width << "x" << sourceImage->uMat().size().height << "x" << sourceImage->uMat().channels() );
 	if(sourceImage->uMat().isContinuous()){
 		err = clEnqueueCopyBufferToImage(m_commandQueue, clBuffer, m_clImage, 0, dst_origin, region, 0, NULL, NULL);
 	}
 	
 	if (err != CL_SUCCESS)
 	{
-		LOG4CPP_INFO( m_logger, "error at  clEnqueueCopyBufferToImage:" << err );
+		//LOG4CPP_INFO( m_logger, "error at  clEnqueueCopyBufferToImage:" << err );
 		err = clEnqueueReleaseD3D11ObjectsNV(m_commandQueue, 1, &m_clImage, 0, NULL, NULL);
-		LOG4CPP_INFO(m_logger, "releasing status: " << (err == CL_SUCCESS ? "SUCCESS" : "FAILED") );
+		//LOG4CPP_INFO(m_logger, "releasing status: " << (err == CL_SUCCESS ? "SUCCESS" : "FAILED") );
 		return;
 	}
 	LOG4CPP_INFO(m_logger, "starting release");
@@ -487,10 +496,12 @@ void updateTextureDirectX11(Measurement::Timestamp texturePtr)
 	static int receivedAndREnder = 0;
 	LOG4CPP_INFO(m_logger, "CL done: " << receivedAndREnder++);
 }
-#else
-//#ifdef WITH_DIRECTX11_TEXTURE_UPDATE
 
-	void updateTextureDirectX11(Measurement::Timestamp texturePtr)
+#endif
+
+
+
+	void updateTextureDirectX11CPU(Measurement::Timestamp texturePtr)
 	{
 		try{
 			
@@ -516,16 +527,16 @@ void updateTextureDirectX11(Measurement::Timestamp texturePtr)
 
 
 
-			/*LOG4CPP_INFO(m_logger, "	desc.Usage : " << desc.Usage);
-			LOG4CPP_INFO(m_logger, "	desc.Width : " << desc.Width << " : " <<currentImage->width);
-			LOG4CPP_INFO(m_logger, "	desc.Height : " << desc.Height << " : " << currentImage->height);
-			LOG4CPP_INFO(m_logger, "	desc.Format : " << DXGI_FORMAT_R32_SINT << " : " << desc.Format << " : " << currentImage->nChannels << " : " << currentImage->depth);
-*/
+			//LOG4CPP_INFO(m_logger, "	desc.Usage : " << desc.Usage);
+			//LOG4CPP_INFO(m_logger, "	desc.Width : " << desc.Width << " : " <<currentImage->width());
+			//LOG4CPP_INFO(m_logger, "	desc.Height : " << desc.Height << " : " << currentImage->height());
+			//LOG4CPP_INFO(m_logger, "	desc.Format : " << DXGI_FORMAT_R32_SINT << " : " << desc.Format << " : " << currentImage->nChannels << " : " << currentImage->depth);
 
 
 
 
-			unsigned char* data = (unsigned char*)currentImage->iplImage()->imageData;
+
+			unsigned char* data = (unsigned char*)currentImage->Mat().data;
 			boost::shared_ptr<D3D11_BOX> box;
 			int bytePerRow=4;
 
@@ -533,6 +544,7 @@ void updateTextureDirectX11(Measurement::Timestamp texturePtr)
 				LOG4CPP_INFO(m_logger, "same width and height  ");
 				
 			} else{
+				LOG4CPP_INFO(m_logger, "different width and height  ");
 				boost::shared_ptr< Vision::Image > sourceImage;
 				
 				bytePerRow = 4;
@@ -551,34 +563,42 @@ void updateTextureDirectX11(Measurement::Timestamp texturePtr)
 				bytePerRow = 4*currentImage->width();
 
 
-				LOG4CPP_INFO(m_logger, "same byte layout, nothing to do  ");
+				LOG4CPP_INFO(m_logger, "4 byte layout, nothing to do  ");
 
 
 
 			}
 			else if (currentImage->channels() == 3) {
-				//LOG4CPP_INFO(m_logger, "convert else");
+				//LOG4CPP_INFO(m_logger, "no convert");
 				if (convertedImage.get() == 0){
 					LOG4CPP_INFO(m_logger, "create buffer image");
 					convertedImage.reset(new Vision::Image(currentImage->width(), currentImage->height(), 4, 8, currentImage->origin()));
 
 				}
 				//LOG4CPP_INFO(m_logger, "convert image");
-				cvCvtColor(currentImage.get(), convertedImage.get(), CV_BGR2RGBA);
-				data = (unsigned char*)convertedImage->iplImage()->imageData;
+				cvtColor(currentImage->Mat(), convertedImage->Mat(), CV_BGR2RGBA);
+				data = (unsigned char*)convertedImage->Mat().data;
 				bytePerRow = 4 * currentImage->width();
+
+				//LOG4CPP_INFO(m_logger, "3 byte layout, convert  ");
+				
+				//data = (unsigned char*)currentImage->Mat().data;
+				//bytePerRow = 3 * currentImage->width();
 			}
 
 		
 
-			//data = new unsigned char[desc.Width*desc.Height * 4];
-			//FillTextureFromCode(desc.Width, desc.Height, desc.Width * 4, data);
 			
+			
+			//LOG4CPP_INFO(m_logger, "no convert1 " );
 			ctx->UpdateSubresource(d3dtex, 0, box.get(), data, bytePerRow, 0);
-			
+			bool res;
+			//UpdateSubresource_Workaround(device, ctx, d3dtex, 0, 0, data, 3, bytePerRow, 0, &res);
+			//LOG4CPP_INFO(m_logger, "no convert2:" << res);
 			//delete[] data;
-
+			
 			ctx->Release();
+			//LOG4CPP_INFO(m_logger, "no convert3");
 		}
 		catch (...) {
 			LOG4CPP_ERROR(m_logger, "exception");
@@ -647,7 +667,9 @@ void updateTextureDirectX11(Measurement::Timestamp texturePtr)
 	}
 
 #endif
-#endif
+
+
+
     /** log4cpp logger reference */
     log4cpp::Category& m_logger;	
 	

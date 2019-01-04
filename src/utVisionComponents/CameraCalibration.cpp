@@ -168,7 +168,8 @@ public:
 			}
 		}
 			
-		m_intrPort.send( Measurement::CameraIntrinsics ( t, m_camIntrinsics ) );
+		// no need to send the old intrinsics, once the thread finishes the calculation it will push the result
+		//m_intrPort.send( Measurement::CameraIntrinsics ( t, m_camIntrinsics ) );
 	}
 
 	void computeIntrinsic( const std::vector< vector_3d_type > points3D, const std::vector< vector_2d_type > points2D )
@@ -262,7 +263,8 @@ public:
 			std::vector<Mat> rvecs, tvecs;
 			Size imageSize = cv::Size(m_imgWidth, m_imgHeight);
 			
-			calibrateCamera(objPoints, imgPoints, imageSize, intrinsic_matrix, distortion_coeffs, rvecs, tvecs, m_flags);
+			double reprojectionError = calibrateCamera(objPoints, imgPoints, imageSize, intrinsic_matrix, distortion_coeffs, rvecs, tvecs, m_flags);
+			LOG4CPP_INFO(logger, "Final reprojeciton error:" << reprojectionError << " using " << m_values << " views");
 		
 		}
 		catch( const std::exception & e )
