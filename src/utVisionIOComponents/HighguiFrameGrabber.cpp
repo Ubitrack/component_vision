@@ -287,7 +287,7 @@ void HighguiFrameGrabber::ThreadProc()
 				boost::shared_ptr< Image > pImage( new Image( pIpl->width, pIpl->height, pIpl->nChannels ) );
 				pImage->Mat() = pMat.clone();
 #else
-				boost::shared_ptr< Image > pImage( new Image( pMat.rows, pMat.cols, 3 ) );
+				boost::shared_ptr< Image > pImage(new Image( pMat.cols, pMat.rows, 3));
 				if (m_autoGPUUpload){
 					cv::cvtColor(pMat.getUMat(0), pImage->uMat(), cv::COLOR_RGB2BGR);
 				}
