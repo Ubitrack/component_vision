@@ -102,7 +102,7 @@ namespace Ubitrack { namespace Vision {
 \endverbatim
  */
 
-class IntrinsicComponent
+class DeprecatedIntrinsicComponent
 	: public Dataflow::TriggerComponent
 {
 public:
@@ -112,7 +112,7 @@ public:
 	 * @param sName Unique name of the component.
 	 * @param cfg ComponentConfiguration containing all configuration.
 	 */
-	IntrinsicComponent( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > pCfg )
+	DeprecatedIntrinsicComponent( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > pCfg )
 		: Dataflow::TriggerComponent( sName, pCfg )
 		, m_height( -1 )
 		, m_width( -1 )
@@ -277,7 +277,7 @@ protected:
 
 
 UBITRACK_REGISTER_COMPONENT( Dataflow::ComponentFactory* const cf ) {
-	cf->registerComponent< IntrinsicComponent > ( "IntrinsicCalibration" );
+	cf->registerComponent< DeprecatedIntrinsicComponent > ( "DeprecatedIntrinsicCalibration" );
 }
 
 } } // namespace Ubitrack::Components

@@ -7,7 +7,7 @@
                       xsi:schemaLocation='http://ar.in.tum.de/ubitrack/utql ../../schema/utql_templates.xsd'>
 
 					  
-	<Pattern name="CameraCalibration" displayName="Experimental: Camera Calibration (please use old one (==deprecated))">
+	<Pattern name="CameraCalibration" displayName="Camera Calibration (NEEDS TESTING)">
         <Description>
 			<p xmlns="http://www.w3.org/1999/xhtml">
 			Computes (normalized) intrinsic camera parameters consisting of a 3x3 matrix and (radial+tangential) distortion parameters.
@@ -95,43 +95,6 @@
         </DataflowConfiguration>
     </Pattern>
 	
-	
-    <Pattern name="IntrinsicCalibration" displayName="Deprecated: Camera Calibration">
-        <Description><p xmlns="http://www.w3.org/1999/xhtml">Computes intrinsic camera parameters consisting of a 3x3 matrix and 4 radial distortion parameters.</p></Description>
-        <Input>
-            <Node name="ImagePlane" displayName="ImagePlane">
-                <GuiPos x="200" y="0"/>
-            </Node>
-            <Node name="ChessBoard" displayName="Chessboard">
-                <GuiPos x="100" y="200"/>
-            </Node>
-            <Edge name="Corners" source="ImagePlane" destination="ChessBoard" displayName="Corner Positions">
-                <Predicate>type=='2DPositionList'&amp;&amp;mode=='push'</Predicate>
-            </Edge>
-        </Input>
-        <Output>
-            <Node name="Camera" displayName="Camera">
-                <GuiPos x="0" y="0"/>
-            </Node>
-            <Edge name="Intrinsic" source="Camera" destination="ImagePlane" displayName="Intrinsic Matrix">
-                <Attribute name="type" value="3x3Matrix" xsi:type="EnumAttributeReferenceType"/>
-                <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
-                <Attribute name="static" value="true" xsi:type="EnumAttributeReferenceType"/>
-            </Edge>
-            <Edge name="Distortion" source="Camera" destination="ImagePlane" displayName="Distortion Parameters">
-                <Attribute name="type" value="4DVector" xsi:type="EnumAttributeReferenceType"/>
-                <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
-                <Attribute name="static" value="true" xsi:type="EnumAttributeReferenceType"/>
-            </Edge>
-        </Output>
-        <DataflowConfiguration>
-            <UbitrackLib class="IntrinsicCalibration"/>
-            <Attribute name="imgWidth" displayName="image width (pixels)" default="320" min="0" xsi:type="IntAttributeDeclarationType"/>
-            <Attribute name="imgHeight" displayName="image height (pixels)" default="240" min="0" xsi:type="IntAttributeDeclarationType"/>
-            <Attribute name="expansion" value="time" xsi:type="EnumAttributeReferenceType"/>
-        </DataflowConfiguration>
-    </Pattern>
-    
     
     <!-- Attribute declarations -->
     
