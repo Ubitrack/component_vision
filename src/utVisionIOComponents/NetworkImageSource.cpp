@@ -47,7 +47,7 @@
 
 
 #include <utVision/Image.h>
-#include <opencv/highgui.h>
+#include <opencv2/highgui.hpp>
 
 #include <log4cpp/Category.hh>
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Drivers.NetworkSource" ) );

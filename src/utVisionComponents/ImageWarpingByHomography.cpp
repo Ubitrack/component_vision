@@ -44,7 +44,7 @@
 #include <utMath/Vector.h>
 #include <utUtil/Exception.h>
 
-#include <opencv/highgui.h>
+#include <opencv2/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.ImageWarpingByHomography" ) );

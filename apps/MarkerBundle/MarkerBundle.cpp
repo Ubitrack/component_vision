@@ -48,7 +48,8 @@
 #ifdef _WIN32
 #include <utUtil/CleanWindows.h>
 #endif
-#include <opencv/highgui.h>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgcodecs/legacy/constants_c.h>
 
 
 // Ubitrack
@@ -1168,8 +1169,8 @@ int main( int ac, char** av )
 			baInfo.imageToCam[ *itImage ] = camId;
 			
 			// load image			
-			IplImage* myImage = cvLoadImage( itImage->c_str(), CV_LOAD_IMAGE_GRAYSCALE );	
-			if( myImage == 0 ){
+			cv::Mat myImage = imread( itImage->c_str(), cv::IMREAD_GRAYSCALE);	
+			if( myImage.empty()){
 				LOG4CPP_ERROR(logger, "Image could not be loaded" << itImage->c_str() << "\n");
 				continue;
 			} 

@@ -88,7 +88,7 @@
 
 #endif
 
-#include <opencv/highgui.h>
+#include <opencv2/highgui.hpp>
 
 
 namespace Ubitrack { namespace Components {
