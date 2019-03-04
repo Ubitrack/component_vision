@@ -46,7 +46,7 @@
 #include <utUtil/Exception.h>
 #include <utVision/Image.h>
 
-#include <opencv2/highgui.hpp>
+#include <opencv/highgui.h>
 
 // define macros not present in all OpenCV versions
 #ifndef CV_LOAD_IMAGE_GRAYSCALE

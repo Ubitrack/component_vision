@@ -56,7 +56,7 @@
 #include <utUtil/CalibFile.h>
 #include <utVision/Image.h>
 
-#include <opencv2/highgui.hpp>
+#include <opencv/highgui.h>
 
 using namespace Ubitrack;
 using namespace Ubitrack::Vision;

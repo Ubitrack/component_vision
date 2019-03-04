@@ -44,7 +44,7 @@
 #include <utMath/Vector.h>
 #include <utUtil/Exception.h>
 
-#include <opencv2/highgui.hpp>
+#include <opencv/highgui.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
 

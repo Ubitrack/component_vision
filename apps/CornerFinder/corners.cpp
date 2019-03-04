@@ -46,9 +46,8 @@
 #endif
 
 // OpenCV
-#include <opencv2/opencv.hpp>
-#include <opencv2/highgui/highgui_c.h>
-#include <opencv2/imgproc/imgproc_c.h>
+#include <opencv/cv.h>
+#include <opencv/highgui.h>
 
 // Ubitrack
 #include <utUtil/Logging.h>
@@ -201,7 +200,7 @@ int main( int, char** )
 		for ( std::vector< std::string >::iterator itImage = imageNames.begin(); itImage != imageNames.end(); itImage++ )
 		{
 
-			boost::shared_ptr< Vision::Image > pImage( new Vision::Image( cv::imread( itImage->c_str(), cv::IMREAD_GRAYSCALE ) ) );
+			boost::shared_ptr< Vision::Image > pImage( new Vision::Image( cvLoadImage( itImage->c_str(), CV_LOAD_IMAGE_GRAYSCALE ) ) );
 			tmp_name =  std::string( itImage-> c_str() );
 			
 			std::cout << "Bild " << itImage->c_str() << std::endl;
