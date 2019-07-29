@@ -100,10 +100,14 @@ ImageReader::ImageReader( const std::string& sName, boost::shared_ptr< Graph::UT
 	if ( subgraph->m_DataflowAttributes.hasAttribute( "file" ) )
 		path = subgraph->m_DataflowAttributes.getAttributeString( "file" );
 
-	Util::globFiles( path, Util::PATTERN_OPENCV_IMAGE_FILES, m_files );
+	try {
+		Util::globFiles( path, Util::PATTERN_OPENCV_IMAGE_FILES, m_files );
+	} catch (const Ubitrack::Util::Exception &e) {
+		LOG4CPP_DEBUG(logger, "No regular image files found> " << e.what());		
+	}
 
 	if (m_files.size() <= 0){
-		LOG4CPP_DEBUG(logger, "No regular image files, testing with boostBinary format");		
+		LOG4CPP_DEBUG(logger, "Testing with boostBinary format");		
 		Util::globFiles(path, Util::PATTERN_UBITRACK_BOOST_BINARY, m_files);
 	}
 	
