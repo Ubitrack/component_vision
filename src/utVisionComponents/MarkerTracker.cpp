@@ -410,7 +410,15 @@ MarkerTracker::MarkerTracker( const std::string& sName, boost::shared_ptr< Graph
 	, m_bEdgeRefinement( true )
 	, m_info( 0.06f )
 	, m_lastTime( 0 )
+  , m_State(state_stopped)
+  , m_pThread(nullptr)
+  , m_bThreadingEnabled(false)
 {
+  if (subgraph->m_DataflowAttributes.hasAttribute("enableThreading")) // enable threading
+    m_bThreadingEnabled = subgraph->m_DataflowAttributes.getAttributeString("enableThreading") == "true";
+
+  m_pThread = boost::shared_ptr< boost::thread >(new boost::thread(boost::bind(&MarkerTracker::threadFunction, this)));
+
 	// get configuration
 	if( subgraph->hasNode( "Marker" ) )
 		subgraph->getNode( "Marker" )->getAttributeData( "markerSize", m_info.fSize );
@@ -438,6 +446,44 @@ MarkerTracker::MarkerTracker( const std::string& sName, boost::shared_ptr< Graph
 	LOG4CPP_INFO( logger, "MarkerTracker configuration: edgebased refinement: " << m_bEdgeRefinement << " enableTracking: " << m_info.bEnableTracking << " enablePixelFlow: " << m_info.bEnablePixelFlow << " enableFlipCheck " << m_info.bEnableFlipCheck << " bEnableFastTracking " << m_info.bEnableFastTracking );
 }
 
+/*! ***************************************************************************
+\brief
+
+\return void
+
+\author  tbochtl        \date  17.11.2017
+******************************************************************************/
+void MarkerTracker::start()
+{
+  if (m_bThreadingEnabled == false) return;
+
+  boost::mutex::scoped_lock l(m_Mutex);
+  m_State = state_running;
+  m_NewEventCondition.notify_all();
+}
+
+/*! ***************************************************************************
+\brief
+
+\return void
+
+\author  tbochtl        \date  17.11.2017
+******************************************************************************/
+void MarkerTracker::stop()
+{
+  boost::mutex::scoped_lock l(m_Mutex);
+  if (m_State != state_stopped)
+  {
+    // tell thread to stop
+    m_State = state_stopping;
+    m_NewEventCondition.notify_all();
+
+    // wait until thread has actually stopped
+    while (m_State != state_stopped)
+      m_NewEventCondition.wait(l);
+  }
+}
+
 bool MarkerTracker::debug()
 { 
 	return m_debugPort.isConnected(); 
@@ -457,7 +503,61 @@ bool MarkerTracker::useEdgeRefinement() const
 	return m_bEdgeRefinement; 
 }
 void MarkerTracker::pushImage( const Measurement::ImageMeasurement& m )
-	{ getModule().trackMarkers( m ); }
+{ 
+  if (m_bThreadingEnabled == false)
+  {
+    getModule().trackMarkers(m);
+  }
+  else
+  {
+    boost::mutex::scoped_lock l(m_Mutex);
+    m_measurement = m;
+
+    m_NewEventCondition.notify_all();
+  }
+}
+
+/*! ***************************************************************************
+\brief
+
+\return void
+
+\author  tbochtl        \date  15.11.2017
+******************************************************************************/
+void MarkerTracker::threadFunction()
+{
+  Measurement::ImageMeasurement m;
+  while (true)
+  {
+    if (m_State == state_running && m_measurement.invalid() == false)
+    {
+      m_Mutex.lock();
+      m = m_measurement;
+      m.time(m_measurement.time());
+      m_measurement = Measurement::ImageMeasurement();
+      m_Mutex.unlock();
+      getModule().trackMarkers(m);
+    }
+    else if (m_State == state_end)
+    {
+      return;
+    }
+    else if (m_State == state_stopping)
+    {
+      // stop and wait for something to happen
+      m_State = state_stopped;
+
+      // tell other threads we have stopped
+      m_NewEventCondition.notify_all();
+    }
+    else
+    {
+      // wait for something to happen
+      boost::mutex::scoped_lock l(m_Mutex);
+      m_NewEventCondition.wait(l);
+    }
+  }
+}
 
 //MultiMarkerTracker
 MultiMarkerTracker::MultiMarkerTracker( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > subgraph, const IdKey& componentKey, MarkerTrackerModule* pModule )

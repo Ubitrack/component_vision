@@ -95,6 +95,15 @@
         <DataflowConfiguration>
             <UbitrackLib class="MarkerTracker"/>
 			
+            <Attribute name="enableThreading" displayName="Enable threading" default="false" xsi:type="EnumAttributeDeclarationType">
+                <Description>
+                    <h:p>
+					Enables Running the marker tracking in a seperate thread.
+                    </h:p>
+                </Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true"  displayName="True"/>
+            </Attribute>
             <Attribute name="enableTracking" displayName="Enable tracking" default="false" xsi:type="EnumAttributeDeclarationType">
                 <Description>
                     <h:p>
@@ -216,6 +225,15 @@
         <DataflowConfiguration>
             <UbitrackLib class="MarkerTracker"/>
 			
+            <Attribute name="enableThreading" displayName="Enable threading" default="false" xsi:type="EnumAttributeDeclarationType">
+                <Description>
+                    <h:p>
+					Enables Running the marker tracking in a seperate thread.
+                    </h:p>
+                </Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true"  displayName="True"/>
+            </Attribute>
             <Attribute name="enableTracking" displayName="Enable tracking" default="true" xsi:type="EnumAttributeDeclarationType">
                 <Description>
                     <h:p>
