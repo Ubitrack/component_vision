@@ -14,7 +14,7 @@
             <Node name="ImagePlaneB" displayName="Distorted Image Plane"/>
 			<Node name="Camera" displayName="Camera"/>
 			
-            <Edge displayName="Camera Intrinsics" name="CameraIntrinsics" source="ImagePlaneA" destination="ImagePlaneB">
+            <Edge displayName="Camera Intrinsics" name="CameraIntrinsics" source="Camera" destination="ImagePlaneB">
                 <Predicate>type=='Intrinsics'&amp;&amp;mode=='pull'</Predicate>
             </Edge>
             <Edge displayName="Distorted Image" name="Input" source="Camera" destination="ImagePlaneB">
