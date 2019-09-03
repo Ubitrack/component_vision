@@ -10,7 +10,7 @@
     	<Description><h:p>Removes radial and tangential distortion from images suing given camera intrinsic parameters.</h:p></Description>
   		
         <Input>
-            <Node name="ImagePlaneA" displayName="Undistorted Image Plane"/>
+            
             <Node name="ImagePlaneB" displayName="Distorted Image Plane"/>
 			<Node name="Camera" displayName="Camera"/>
 			
@@ -23,11 +23,13 @@
         </Input>
         
         <Output>
+			<Node name="ImagePlaneA" displayName="Undistorted Image Plane"/>
             <Edge displayName="Undistorted Image" name="Output" source="Camera" destination="ImagePlaneA">
                 <Attribute name="type" value="Image" xsi:type="EnumAttributeReferenceType"/>
             </Edge>
 			 <Edge displayName="Undistorted Intrinsics" name="OutIntrinsics" source="Camera" destination="ImagePlaneA">
-                <Attribute name="type" value="3x3Matrix" xsi:type="EnumAttributeReferenceType"/>				
+                <Attribute name="type" value="3x3Matrix" xsi:type="EnumAttributeReferenceType"/>	
+				<Attribute name="mode" value="pull" xsi:type="EnumAttributeReferenceType"/>				
             </Edge>
         </Output>
         
@@ -35,7 +37,6 @@
         	<TriggerGroup>
                 <Edge edge-ref="Input"/>
                 <Edge edge-ref="Output"/>
-				<Edge edge-ref="OutIntrinsics"/>
             </TriggerGroup>
         </Constraints>
 
