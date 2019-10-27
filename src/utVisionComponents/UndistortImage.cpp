@@ -77,8 +77,10 @@ protected:
 	TriggerOutPort< Measurement::ImageMeasurement > m_imageOut;
 
 	PullSupplier<Measurement::Matrix3x3> m_intrinsicsOut;
-	
-	/** structure to handle the undistortion */
+
+    PullSupplier<Measurement::CameraIntrinsics> m_cameraIntrinsicsOut;
+
+    /** structure to handle the undistortion */
 	Vision::Undistortion m_undistorter;
 	
 public:
@@ -90,6 +92,7 @@ public:
 		, m_imageIn( "Input", *this )
 		, m_imageOut( "Output", *this )
 		, m_intrinsicsOut("OutIntrinsics", *this, boost::bind(&UndistortImage::getIntrinsics, this, _1))
+		, m_cameraIntrinsicsOut("OutCameraIntrinsics", *this, boost::bind(&UndistortImage::getCameraIntrinsics, this, _1))
 		, m_undistorter( )
 	{}
 	
@@ -147,6 +150,10 @@ public:
 
 	Measurement::Matrix3x3 getIntrinsics(const Measurement::Timestamp t) {
 		return Measurement::Matrix3x3(t, m_undistorter.getMatrix());
+	}
+
+	Measurement::CameraIntrinsics getCameraIntrinsics(const Measurement::Timestamp t) {
+	    return Measurement::CameraIntrinsics(t, m_undistorter.getIntrinsics());
 	}
 
 };
