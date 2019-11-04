@@ -194,7 +194,13 @@ ImageWriter::~ImageWriter(){};
 void ImageWriter::pushImage( const ImageMeasurement& m )
 {
 
-	cv::Mat writeImage;
+    if (m.invalid()) {
+        LOG4CPP_ERROR( logger, "Received invalid image.");
+        return;
+    }
+
+
+    cv::Mat writeImage;
 	if (m->origin() == 0) {
 		writeImage = m->Mat();
 	}

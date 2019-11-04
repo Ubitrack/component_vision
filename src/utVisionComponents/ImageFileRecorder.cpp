@@ -184,7 +184,10 @@ void ImageFileRecorder::saveImage( const ImageMeasurement &img )
 {
 	char fileName[256]; 
 
-	LOG4CPP_DEBUG( logger, "saveImage(): ");
+	if (img.invalid()) {
+	    LOG4CPP_ERROR( logger, "Received invalid image.");
+	    return;
+	}
 
 	std::ostream os( &filebuffer );
 	std::sprintf ( fileName, "%s%.5u%s", m_prefix.c_str(), m_counter++, m_suffix.c_str() );
