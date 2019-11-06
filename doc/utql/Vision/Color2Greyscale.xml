@@ -29,6 +29,9 @@
         
         <DataflowConfiguration>
             <UbitrackLib class="Color2Grayscale"/>
+            <Attribute name="maxValue" displayName="max value" default="1000" min="0" xsi:type="DoubleAttributeDeclarationType">
+                <Description><h:p>The maximum expected value used in 16bit, 1 channel to 8bit, 1 channel conversion, otherwise this value is not used. E.g. IR images. Example values: Kinect4Azure Passive IR: 100, Normal: 1000</h:p></Description>
+            </Attribute>
         </DataflowConfiguration>
     </Pattern>
     

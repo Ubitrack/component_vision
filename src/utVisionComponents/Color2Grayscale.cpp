@@ -85,6 +85,9 @@ protected:
 	// the ports
 	Dataflow::PushSupplier< ImageMeasurement > m_outPort;
 	Dataflow::PushConsumer< ImageMeasurement > m_inPort;
+
+	// for 16bit gray to 8 bit gray conversion (e.g. kinect ir image)
+	double m_maxValue;
 };
 
 
@@ -92,7 +95,10 @@ Color2Grayscale::Color2Grayscale( const std::string& sName, boost::shared_ptr< G
 	: Dataflow::Component( sName )
 	, m_outPort( "Output", *this )
 	, m_inPort( "Input", *this, boost::bind( &Color2Grayscale::pushImage, this, _1 ) )
+	, m_maxValue(1000)
 {
+    if ( subgraph->m_DataflowAttributes.hasAttribute( "maxValue" ) ) // enable Flipping of y Coordinate
+        subgraph->m_DataflowAttributes.getAttributeData( "maxValue", m_maxValue );
 }
 
 
@@ -102,10 +108,23 @@ Color2Grayscale::~Color2Grayscale()
 
 void Color2Grayscale::pushImage(const ImageMeasurement& m )
 {
+    boost::shared_ptr< Image > pImage;
+
 	if(m->channels() == 1)
 	{
-		LOG4CPP_DEBUG( logger, "Got grayscale image: pushing unmodified" );
-		m_outPort.send( m );
+	    if(m->bitsPerPixel() == 8) {
+            LOG4CPP_DEBUG( logger, "Got grayscale image: pushing unmodified" );
+            m_outPort.send( m );
+	    } else if(m->bitsPerPixel() == 16) {
+            cv::Mat tmp;
+            m->Mat().convertTo(tmp, CV_MAKETYPE(CV_MAT_DEPTH(CV_8UC1), 1), 255. / m_maxValue);
+            pImage.reset(new Vision::Image(tmp));
+            pImage->set_pixelFormat(Vision::Image::LUMINANCE);
+            pImage->set_origin(pImage->origin());
+
+            m_outPort.send(  ImageMeasurement( m.time(), pImage ) );
+	    }
+
 	} else if (m->channels() > 1) {
 
 		Vision::Image::ImageFormatProperties fmt;
@@ -131,7 +150,7 @@ void Color2Grayscale::pushImage(const ImageMeasurement& m )
 		default:
 			break;
 		}
-		boost::shared_ptr< Image > pImage;
+
 		if (cvtCode != 0) {
 			if (m->isOnGPU()) {
 				cv::UMat tmp;
