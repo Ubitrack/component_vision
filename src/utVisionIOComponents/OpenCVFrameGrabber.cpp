@@ -65,6 +65,24 @@ static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.devi
 using namespace Ubitrack;
 using namespace Ubitrack::Vision;
 
+namespace {
+    class CVVideoCaptureAPIPrefix : public std::map< std::string, cv::VideoCaptureAPIs > {
+    public:
+        CVVideoCaptureAPIPrefix() {
+            (*this)["ANY"] = cv::VideoCaptureAPIs ::CAP_ANY;
+            (*this)["V4L"] = cv::VideoCaptureAPIs ::CAP_V4L;
+            (*this)["V4L2"] = cv::VideoCaptureAPIs ::CAP_V4L2;
+            (*this)["MSMF"] = cv::VideoCaptureAPIs ::CAP_MSMF;
+            (*this)["DSHOW"] = cv::VideoCaptureAPIs ::CAP_DSHOW;
+            (*this)["AVFOUNDATION"] = cv::VideoCaptureAPIs ::CAP_AVFOUNDATION;
+            (*this)["WINRT"] = cv::VideoCaptureAPIs ::CAP_WINRT;
+            (*this)["GSTREAMER"] = cv::VideoCaptureAPIs ::CAP_GSTREAMER; // this needs a string !!
+        }
+    };
+    static CVVideoCaptureAPIPrefix cvVideoCaptureAPIPrefix;
+
+}
+
 
 namespace Ubitrack { namespace Drivers {
 
@@ -205,8 +223,15 @@ OpenCVFrameGrabber::OpenCVFrameGrabber( const std::string& sName, boost::shared_
 {
 	subgraph->m_DataflowAttributes.getAttributeData( "Divisor", m_divisor );
 	subgraph->m_DataflowAttributes.getAttributeData( "CamId", m_camid );
-	subgraph->m_DataflowAttributes.getAttributeData( "CamDomain", m_cam_domain );
-	
+
+	if (subgraph->m_DataflowAttributes.hasAttribute("CamDomain")) {
+	    std::string cam_domain = subgraph->m_DataflowAttributes.getAttributeString("CamDomain");
+        if (cvVideoCaptureAPIPrefix.find(cam_domain) == cvVideoCaptureAPIPrefix.end()) {
+            UBITRACK_THROW( "Unknown VideoCapture cam_domain" );
+        }
+        m_cam_domain = cvVideoCaptureAPIPrefix[cam_domain];
+    }
+
 	// (daniel) added for compatibility with trackman pattern, but it's inconsistent, as resolution attribute on 'Camera' node does same thing
 	subgraph->m_DataflowAttributes.getAttributeData( "SizeX", m_width ); 
 	subgraph->m_DataflowAttributes.getAttributeData( "SizeY", m_height );

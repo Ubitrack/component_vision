@@ -120,7 +120,7 @@
                     <h:p>The Camera ID in order of recognition (unreliable) .. might be replaced with Camera GUID later.</h:p>
                 </Description>
             </Attribute>
-            <Attribute name="CamDomain" default="0" xsi:type="IntAttributeDeclarationType" displayName="Camera Domain">
+            <Attribute name="CamDomain" xsi:type="EnumAttributeReferenceType">
                 <Description>
                     <h:p>OpenCV Domain (selection of backend).</h:p>
                 </Description>
@@ -170,6 +170,21 @@
         <!-- Unfortunately, the xpointer used in Xinclude is currently restricted to the element scheme and absolute element indices in Xerces (and thus XMLBeans) -->
         <xi:include href="file:GlobalAttrSpec.xml" xpointer="element(/1/3/1)" />
         <xi:include href="file:GlobalAttrSpec.xml" xpointer="element(/1/3/2)" />
+
+        <Attribute name="CamDomain" displayName="OpenCV Camera Domain" default="ANY" xsi:type="EnumAttributeDeclarationType">
+            <Description>
+                <h:p>Select the OpenCV VideoCapture CameraDomain.
+                </h:p>
+            </Description>
+            <EnumValue name="ANY" displayName="ANY"/>
+            <EnumValue name="V4L" displayName="V4L"/>
+            <EnumValue name="V4L2" displayName="V4L2"/>
+            <EnumValue name="MSMF" displayName="MSMF"/>
+            <EnumValue name="DSHOW" displayName="DSHOW"/>
+            <EnumValue name="AVFOUNDATION" displayName="AVFOUNDATION"/>
+            <EnumValue name="WINRT" displayName="WINRT"/>
+            <EnumValue name="GSTREAMER" displayName="GSTREAMER"/>
+        </Attribute>
     </GlobalDataflowAttributeDeclarations>
 
 </UTQLPatternTemplates>
