@@ -9,7 +9,7 @@ foreach(fpath ${UBITRACK_SRCS})
 
 	add_library(${UBITRACK_LIBRARY_NAME} SHARED ${fpath})
 
-	target_link_libraries(${UBITRACK_LIBRARY_NAME} 
+	target_link_libraries(${UBITRACK_LIBRARY_NAME} PUBLIC
   		CONAN_PKG::ubitrack_core
   		CONAN_PKG::ubitrack_vision
   		CONAN_PKG::ubitrack_dataflow
