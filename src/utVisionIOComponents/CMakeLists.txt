@@ -15,8 +15,14 @@ foreach(fpath ${UBITRACK_SRCS})
   		CONAN_PKG::ubitrack_dataflow
 		OpenGL::GL
 		OpenGL::GLU
-		OpenCL::OpenCL
   		)
+
+
+	if(WITH_OPENCL)
+		target_link_libraries(${UBITRACK_LIBRARY_NAME} PUBLIC
+			OpenCL::OpenCL
+		)
+	endif()
 
 	get_target_property(coreIncDirs CONAN_PKG::ubitrack_component_core INTERFACE_INCLUDE_DIRECTORIES)
 	target_include_directories(${UBITRACK_LIBRARY_NAME} PRIVATE

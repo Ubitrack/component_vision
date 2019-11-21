@@ -47,6 +47,7 @@ class UbitrackCoreConan(ConanFile):
         cmake = CMake(self)
         cmake.definitions['HAVE_GLAD'] = self.options['ubitrack_vision'].opengl_extension_wrapper == 'glad'
         cmake.definitions['HAVE_GLEW'] = self.options['ubitrack_vision'].opengl_extension_wrapper == 'glew'
+        cmake.definitions['WITH_OPENCL'] = self.options['ubitrack_vision'].with_opencl
         cmake.configure()
         cmake.build()
         cmake.install()
