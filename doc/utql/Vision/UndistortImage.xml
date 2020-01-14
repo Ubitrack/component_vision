@@ -67,20 +67,27 @@
         </Input>
         
         <Output>
-            <Node name="ImagePlaneA" displayName="Undistorted Image Plane"/>
+			<Node name="ImagePlaneA" displayName="Undistorted Image Plane"/>
             <Edge displayName="Undistorted Image" name="Output" source="Camera" destination="ImagePlaneA">
                 <Attribute name="type" value="Image" xsi:type="EnumAttributeReferenceType"/>
-        <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
+		<Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
             </Edge>
-             <Edge displayName="Undistorted Intrinsics" name="OutIntrinsics" source="Camera" destination="ImagePlaneA">
-                <Attribute name="type" value="3x3Matrix" xsi:type="EnumAttributeReferenceType"/>    
-                <Attribute name="mode" value="pull" xsi:type="EnumAttributeReferenceType"/>             
+			 <Edge displayName="Undistorted Intrinsics" name="OutIntrinsics" source="Camera" destination="ImagePlaneA">
+                <Attribute name="type" value="3x3Matrix" xsi:type="EnumAttributeReferenceType"/>	
+				<Attribute name="mode" value="pull" xsi:type="EnumAttributeReferenceType"/>				
             </Edge>
             <Edge displayName="Undistorted CameraIntrinsics" name="OutCameraIntrinsics" source="Camera" destination="ImagePlaneA">
                 <Attribute name="type" value="Intrinsics" xsi:type="EnumAttributeReferenceType"/>
                 <Attribute name="mode" value="pull" xsi:type="EnumAttributeReferenceType"/>
             </Edge>
         </Output>
+        
+ 
+
+        <DataflowConfiguration>
+            <UbitrackLib class="UndistortImage"/>
+        </DataflowConfiguration>
+    </Pattern>
 
     <!-- Attribute declarations -->
     
