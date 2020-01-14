@@ -41,6 +41,7 @@
         	<TriggerGroup>
                 <Edge edge-ref="Input"/>
                 <Edge edge-ref="Output"/>
+                
             </TriggerGroup>
         </Constraints>
 
@@ -48,6 +49,38 @@
             <UbitrackLib class="UndistortImage"/>
         </DataflowConfiguration>
     </Pattern>    
+
+    <Pattern name="ImageUndistortion_push" displayName="Image Undistortion Push (NEEDS TESTING)">
+        <Description><h:p>Removes radial and tangential distortion from images suing given camera intrinsic parameters. Image input fixed to push. Bug with trigger components</h:p></Description>
+        
+        <Input>
+            
+            <Node name="ImagePlaneB" displayName="Distorted Image Plane"/>
+            <Node name="Camera" displayName="Camera"/>
+            
+            <Edge displayName="Camera Intrinsics" name="CameraIntrinsics" source="Camera" destination="ImagePlaneB">
+                <Predicate>type=='Intrinsics'&amp;&amp;mode=='pull'</Predicate>
+            </Edge>
+            <Edge displayName="Distorted Image" name="Input" source="Camera" destination="ImagePlaneB">
+                <Predicate>type=='Image'&amp;&amp;mode=='push'</Predicate>
+            </Edge>
+        </Input>
+        
+        <Output>
+            <Node name="ImagePlaneA" displayName="Undistorted Image Plane"/>
+            <Edge displayName="Undistorted Image" name="Output" source="Camera" destination="ImagePlaneA">
+                <Attribute name="type" value="Image" xsi:type="EnumAttributeReferenceType"/>
+        <Attribute name="mode" value="push" xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+             <Edge displayName="Undistorted Intrinsics" name="OutIntrinsics" source="Camera" destination="ImagePlaneA">
+                <Attribute name="type" value="3x3Matrix" xsi:type="EnumAttributeReferenceType"/>    
+                <Attribute name="mode" value="pull" xsi:type="EnumAttributeReferenceType"/>             
+            </Edge>
+            <Edge displayName="Undistorted CameraIntrinsics" name="OutCameraIntrinsics" source="Camera" destination="ImagePlaneA">
+                <Attribute name="type" value="Intrinsics" xsi:type="EnumAttributeReferenceType"/>
+                <Attribute name="mode" value="pull" xsi:type="EnumAttributeReferenceType"/>
+            </Edge>
+        </Output>
 
     <!-- Attribute declarations -->
     
