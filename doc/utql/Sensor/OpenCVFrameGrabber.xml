@@ -53,7 +53,7 @@
                     <h:p>The Camera ID in order of recognition (unreliable) .. might be replaced with Camera GUID later.</h:p>
                 </Description>
             </Attribute>
-            <Attribute name="CamDomain" default="0" xsi:type="IntAttributeDeclarationType" displayName="Camera Domain">
+            <Attribute name="CamDomain" xsi:type="EnumAttributeReferenceType">
                 <Description>
                     <h:p>OpenCV Domain (selection of backend).</h:p>
                 </Description>
