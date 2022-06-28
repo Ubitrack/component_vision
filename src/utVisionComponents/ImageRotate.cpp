@@ -85,7 +85,7 @@ ImageRotate::ImageRotate( const std::string& sName, boost::shared_ptr< Graph::UT
 	: Dataflow::Component( sName )
 	, m_rotation ( 0 )
 	, m_outPort( "Output", *this )
-	, m_inPort( "Input", *this, boost::bind( &ImageRotate::pushImage, this, _1 ) )
+	, m_inPort( "Input", *this, boost::bind( &ImageRotate::pushImage, this,  boost::placeholders::_1 ) )
 {
 	if ( subgraph -> m_DataflowAttributes.hasAttribute( "imageRotation" ) )
 		subgraph -> m_DataflowAttributes.getAttributeData( "imageRotation", m_rotation );

@@ -74,7 +74,7 @@ public:
 		: Dataflow::Component( sName )
 		, m_w(640)
 		, m_h(480)
-		, m_inImagePort( "InputImage", *this, boost::bind( &ImageWarpingByHomography::compute, this, _1 ) )
+		, m_inImagePort( "InputImage", *this, boost::bind( &ImageWarpingByHomography::compute, this,  boost::placeholders::_1 ) )
 		, m_outImagePort("OutputImage", *this )
 		, m_inHomographyPort( "InputHomography", *this )
 	{

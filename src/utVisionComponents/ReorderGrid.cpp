@@ -104,7 +104,7 @@ public:
 		: Dataflow::Component( sName )
 		, m_height( -1 )
 		, m_width( -1 )
-		, m_inPort( "Input", *this, boost::bind( &ReorderGridComponent::pushPoints, this, _1 ) )
+		, m_inPort( "Input", *this, boost::bind( &ReorderGridComponent::pushPoints, this,  boost::placeholders::_1 ) )
 		, m_outPort( "Output", *this )
     {
 

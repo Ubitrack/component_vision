@@ -97,7 +97,7 @@ CornerDetectionSubPix::CornerDetectionSubPix( const std::string& sName, boost::s
 	, f_flipping( true )
 	, m_winSize( 5 )
 	, m_inPortImage( "ImageIn", *this )
-	, m_inPortPosition( "PositionIn", *this, boost::bind( &CornerDetectionSubPix::pushPositions, this, _1 ))
+	, m_inPortPosition( "PositionIn", *this, boost::bind( &CornerDetectionSubPix::pushPositions, this,  boost::placeholders::_1 ))
 	, m_outPortImage( "ImageOut", *this )
 	, m_outPortPosition( "PositionOut", *this )
 {

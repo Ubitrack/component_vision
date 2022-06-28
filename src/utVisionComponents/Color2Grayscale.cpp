@@ -94,7 +94,7 @@ protected:
 Color2Grayscale::Color2Grayscale( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > subgraph )
 	: Dataflow::Component( sName )
 	, m_outPort( "Output", *this )
-	, m_inPort( "Input", *this, boost::bind( &Color2Grayscale::pushImage, this, _1 ) )
+	, m_inPort( "Input", *this, boost::bind( &Color2Grayscale::pushImage, this,  boost::placeholders::_1 ) )
 	, m_maxValue(1000)
 {
     if ( subgraph->m_DataflowAttributes.hasAttribute( "maxValue" ) ) // enable Flipping of y Coordinate

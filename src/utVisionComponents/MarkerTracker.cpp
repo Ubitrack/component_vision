@@ -401,7 +401,7 @@ boost::shared_ptr< MarkerTrackerBase > MarkerTrackerModule::createComponent( con
 
 MarkerTracker::MarkerTracker( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > subgraph, const IdKey& componentKey, MarkerTrackerModule* pModule )
 	: MarkerTrackerBase( sName, subgraph, componentKey, pModule )
-	, m_inPort( "Image", *this, boost::bind( &MarkerTracker::pushImage, this, _1 ) )
+	, m_inPort( "Image", *this, boost::bind( &MarkerTracker::pushImage, this,  boost::placeholders::_1 ) )
 	, m_inIntrinsics( "CameraIntrinsics", *this )
 	, m_outCorners( "Corners", *this )
 	, m_outPort( "Output", *this )
@@ -468,7 +468,7 @@ void MarkerTracker::pushImage( const Measurement::ImageMeasurement& m )
 MultiMarkerTracker::MultiMarkerTracker( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > subgraph, const IdKey& componentKey, MarkerTrackerModule* pModule )
 		: MarkerTrackerBase( sName, subgraph, componentKey, pModule )
 		, m_outErrorPose( "ErrorPose", *this )
-//		, m_worldMapPort( "Output3DCorners", *this, boost::bind( &MultiMarkerTracker::getWorldMap, this, _1 ) )
+//		, m_worldMapPort( "Output3DCorners", *this, boost::bind( &MultiMarkerTracker::getWorldMap, this,  boost::placeholders::_1 ) )
 		, m_useInnerEdgels( true )
 	{
 	
@@ -508,7 +508,7 @@ MultiMarkerTracker::MultiMarkerTracker( const std::string& sName, boost::shared_
 		if ( subgraph->hasEdge( "Output3DCorners" ) ){
 			m_worldMapPort = boost::shared_ptr< Dataflow::PullSupplier< Measurement::PositionList > >
 			( new Dataflow::PullSupplier< Measurement::PositionList >( "Output3DCorners", *this, 
-			boost::bind( &MultiMarkerTracker::getWorldMap, this, _1 ) ) );
+			boost::bind( &MultiMarkerTracker::getWorldMap, this,  boost::placeholders::_1 ) ) );
 		}*/
 		readConfigFile(config);
 		LOG4CPP_INFO( logger, "info" );
@@ -791,13 +791,13 @@ MultiMarkerTrackerBundleAdustment::MultiMarkerTrackerBundleAdustment( const std:
 		if ( it->second->isInput() ){
 			if ( 0 == it->first.compare( 0, 11, "ImageBundle" ) ){
 				m_inBundleCamPort = boost::shared_ptr< Dataflow::PushConsumer< Measurement::ImageMeasurement > >
-					( new Dataflow::PushConsumer< Measurement::ImageMeasurement >( it->first, *this, boost::bind( &MultiMarkerTrackerBundleAdustment::getImage, this, _1 ) ) );
+					( new Dataflow::PushConsumer< Measurement::ImageMeasurement >( it->first, *this, boost::bind( &MultiMarkerTrackerBundleAdustment::getImage, this,  boost::placeholders::_1 ) ) );
 			} else if( 0 == it->first.compare( 0, 22, "BundleCameraIntrinsics" ) ){
 				m_inBundleCamIntrinsics = boost::shared_ptr< Dataflow::PullConsumer< Measurement::Matrix3x3 > >
 					( new Dataflow::PullConsumer< Measurement::Matrix3x3 >( it->first, *this ) );
 			} else if( 0 == it->first.compare( 0, 11, "ResetButton" ) ){
 				m_resetPort = boost::shared_ptr< Dataflow::PushConsumer< Measurement::Button > >
-					( new Dataflow::PushConsumer< Measurement::Button >( it->first, *this, boost::bind( &MultiMarkerTrackerBundleAdustment::resetMarkerBundle, this, _1 ) ) );
+					( new Dataflow::PushConsumer< Measurement::Button >( it->first, *this, boost::bind( &MultiMarkerTrackerBundleAdustment::resetMarkerBundle, this,  boost::placeholders::_1 ) ) );
 			}
 		}
 	}

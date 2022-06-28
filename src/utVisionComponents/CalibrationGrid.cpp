@@ -66,7 +66,7 @@ public:
 	 */
 	CalibrationGrid( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > pCfg )
 		: Dataflow::Component( sName )
-		, m_outPort( "Output", *this, boost::bind( &CalibrationGrid::getGrid, this, _1 ) )
+		, m_outPort( "Output", *this, boost::bind( &CalibrationGrid::getGrid, this,  boost::placeholders::_1 ) )
     {
 
 		if( !pCfg->hasNode( "CalibrationGridPoints" ) )

@@ -216,8 +216,8 @@ OpenCVFrameGrabber::OpenCVFrameGrabber( const std::string& sName, boost::shared_
 	, m_divisor_count( 0 )
 	, m_colorPort( "ColorOutput", *this )
 	, m_greyPort( "Output", *this )
-	, m_intrinsicsPort( "Intrinsics", *this, boost::bind( &OpenCVFrameGrabber::getIntrinsic, this, _1 ) )
-    , m_cameraModelPort( "CameraModel", *this, boost::bind( &OpenCVFrameGrabber::getCameraModel, this, _1 ) )
+	, m_intrinsicsPort( "Intrinsics", *this, boost::bind( &OpenCVFrameGrabber::getIntrinsic, this,  boost::placeholders::_1 ) )
+    , m_cameraModelPort( "CameraModel", *this, boost::bind( &OpenCVFrameGrabber::getCameraModel, this,  boost::placeholders::_1 ) )
 	, m_autoGPUUpload(false)
 
 {

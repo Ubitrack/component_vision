@@ -74,7 +74,7 @@ public:
      */
     SignalGeneratorVision( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > subgraph  )
 		: Dataflow::Component( sName )
-		, m_inPort( "Input", *this, boost::bind( &SignalGeneratorVision::receiveMeasurement, this, _1 ) )
+		, m_inPort( "Input", *this, boost::bind( &SignalGeneratorVision::receiveMeasurement, this,  boost::placeholders::_1 ) )
 		, m_outPort( "Output", *this )
 		, m_button( ' ' )
 		, m_logger( log4cpp::Category::getInstance( "Ubitrack.Components.SignalGeneratorVision" ) )

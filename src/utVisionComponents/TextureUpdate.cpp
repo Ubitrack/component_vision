@@ -108,8 +108,8 @@ namespace Ubitrack { namespace Components {
      */
     TextureUpdateOpenGL( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > subgraph  )
       : Dataflow::Component( sName )      
-      , m_inPort( "Input", *this, boost::bind( &TextureUpdateOpenGL::receiveImage, this, _1 ) )
-	  , m_inPortTextureID( "InputTextureID", *this, boost::bind( &TextureUpdateOpenGL::receiveUpdateTexture, this, _1 ) )      
+      , m_inPort( "Input", *this, boost::bind( &TextureUpdateOpenGL::receiveImage, this,  boost::placeholders::_1 ) )
+	  , m_inPortTextureID( "InputTextureID", *this, boost::bind( &TextureUpdateOpenGL::receiveUpdateTexture, this,  boost::placeholders::_1 ) )      
       , m_logger( log4cpp::Category::getInstance( "Ubitrack.Components.TextureUpdate:" + subgraph->m_ID) )
 	  , useOpenGL(true)
 //	,m_lastUpdate(0)

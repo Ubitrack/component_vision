@@ -91,8 +91,8 @@ public:
 		, m_intrinsicsPort( "CameraIntrinsics", *this ) //new port
 		, m_imageIn( "Input", *this )
 		, m_imageOut( "Output", *this )
-		, m_intrinsicsOut("OutIntrinsics", *this, boost::bind(&UndistortImage::getIntrinsics, this, _1))
-		, m_cameraIntrinsicsOut("OutCameraIntrinsics", *this, boost::bind(&UndistortImage::getCameraIntrinsics, this, _1))
+		, m_intrinsicsOut("OutIntrinsics", *this, boost::bind(&UndistortImage::getIntrinsics, this,  boost::placeholders::_1))
+		, m_cameraIntrinsicsOut("OutCameraIntrinsics", *this, boost::bind(&UndistortImage::getCameraIntrinsics, this,  boost::placeholders::_1))
 		, m_undistorter( )
 	{}
 	
