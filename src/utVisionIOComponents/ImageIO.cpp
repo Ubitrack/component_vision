@@ -94,7 +94,7 @@ protected:
 
 ImageReader::ImageReader( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > subgraph )
 	: Dataflow::Component( sName )
-	, m_outPort( "Output", *this, boost::bind( &ImageReader::pullImage, this, _1 ) )	
+	, m_outPort( "Output", *this, boost::bind( &ImageReader::pullImage, this, boost::placeholders::_1 ) )	
 {
 	std::string path;
 	if ( subgraph->m_DataflowAttributes.hasAttribute( "file" ) )
@@ -175,7 +175,7 @@ protected:
 
 ImageWriter::ImageWriter( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > subgraph )
 	: Dataflow::Component( sName )
-	, m_inPort( "Input", *this, boost::bind( &ImageWriter::pushImage, this, _1 ) )
+	, m_inPort( "Input", *this, boost::bind( &ImageWriter::pushImage, this, boost::placeholders::_1 ) )
 {
 	if ( subgraph -> m_DataflowAttributes.hasAttribute( "file" ) )
 		m_filename = subgraph -> m_DataflowAttributes.getAttributeString( "file" );

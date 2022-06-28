@@ -104,7 +104,7 @@ public:
 	/** constructor */
 	ImageNetworkSinkComponent( const std::string& name, boost::shared_ptr< Graph::UTQLSubgraph > pConfig )
 		: Dataflow::Component( name )
-		, m_inPort( "Input", *this, boost::bind( &ImageNetworkSinkComponent::eventIn, this, _1 ) )
+		, m_inPort( "Input", *this, boost::bind( &ImageNetworkSinkComponent::eventIn, this, boost::placeholders::_1 ) )
 		, m_ioService()
 		, m_socket( m_ioService )
 		, m_dstAddress( "127.0.0.1" )

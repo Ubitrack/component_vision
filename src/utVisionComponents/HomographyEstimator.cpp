@@ -74,7 +74,7 @@ public:
 	 */
 	HomographyEstimator( const std::string& sName, boost::shared_ptr< Graph::UTQLSubgraph > pConfig )
 		: Dataflow::Component( sName )
-		, m_inPlanePosePort(  "InputPlanePose", *this, boost::bind( &HomographyEstimator::compute, this, _1 ) )
+		, m_inPlanePosePort(  "InputPlanePose", *this, boost::bind( &HomographyEstimator::compute, this, boost::placeholders::_1 ) )
 		, m_inRelativePosePort("InputRelative", *this )
 		, m_inIntrinsicSrcPort("InputIntrinsicSrc", *this )
 		, m_inIntrinsicDstPort("InputIntrinsicDst", *this )

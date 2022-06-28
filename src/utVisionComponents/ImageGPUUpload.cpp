@@ -86,7 +86,7 @@ ImageGPUUpload::ImageGPUUpload( const std::string& sName, boost::shared_ptr< Gra
 	: Dataflow::Component( sName )
 	, m_factor ( 0 )
 	, m_outPort( "Output", *this )
-	, m_inPort( "Input", *this, boost::bind( &ImageGPUUpload::pushImage, this, _1 ) )
+	, m_inPort( "Input", *this, boost::bind( &ImageGPUUpload::pushImage, this, boost::placeholders::_1 ) )
 {
 }
 

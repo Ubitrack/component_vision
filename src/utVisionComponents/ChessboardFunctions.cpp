@@ -125,7 +125,7 @@ public:
 		, m_edges( 0 )
 		, m_scaleFactor( 0 )
 		, m_normalize ( false )
-		, m_inPort( "Image", *this, boost::bind( &ChessboardFunctionsComponent::pushImage, this, _1 ) )
+		, m_inPort( "Image", *this, boost::bind( &ChessboardFunctionsComponent::pushImage, this, boost::placeholders::_1 ) )
 		, m_intrinsicPort( "Intrinsic", *this )
 		, m_distortionPort( "Distortion", *this )
 		// the old files ChessBoardDetection and ChessBoardTracking used the same name "Output" for their different Output Ports

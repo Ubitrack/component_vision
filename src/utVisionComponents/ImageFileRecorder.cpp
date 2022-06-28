@@ -138,7 +138,7 @@ ImageFileRecorder::ImageFileRecorder( const std::string& sName, boost::shared_pt
 	, m_imgDir( "" )
 	, m_logfile( "frames.txt" )
 	, m_counter( 0 )
-	, m_inPort( "Input", *this, boost::bind( &ImageFileRecorder::saveImage, this, _1 ) )
+	, m_inPort( "Input", *this, boost::bind( &ImageFileRecorder::saveImage, this, boost::placeholders::_1 ) )
 {
 	LOG4CPP_DEBUG( logger, "ImageFileRecorder(): Configuring..." );
 

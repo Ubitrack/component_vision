@@ -84,7 +84,7 @@ ImageShrink::ImageShrink( const std::string& sName, boost::shared_ptr< Graph::UT
 	: Dataflow::Component( sName )
 	, m_factor ( 0 )
 	, m_outPort( "Output", *this )
-	, m_inPort( "Input", *this, boost::bind( &ImageShrink::pushImage, this, _1 ) )
+	, m_inPort( "Input", *this, boost::bind( &ImageShrink::pushImage, this, boost::placeholders::_1 ) )
 {
 	if ( subgraph -> m_DataflowAttributes.hasAttribute( "factor" ) )
 		subgraph -> m_DataflowAttributes.getAttributeData( "factor", m_factor );
